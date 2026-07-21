@@ -672,14 +672,6 @@ tbody tr:hover{
   margin-top:20px;
 }
 
-/* ================================================================
-   IMPORT PENUGASAN CSV
-================================================================ */
-
-.import-assignment{
-  margin-top:20px;
-}
-
 .import-guide{
   display:grid;
   grid-template-columns:repeat(4,minmax(170px,1fr));
