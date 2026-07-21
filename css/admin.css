@@ -219,6 +219,34 @@ button:disabled{
   flex-wrap:wrap;
 }
 
+.header-action-button{
+  min-height:46px;
+  padding:11px 14px;
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:9px;
+  color:#fff;
+  font-size:12px;
+  font-weight:700;
+  white-space:nowrap;
+  box-shadow:0 4px 12px rgba(0,0,0,.25);
+}
+
+.header-import-user{
+  background:#7b5c16;
+}
+
+.header-import-assignment{
+  background:#315f78;
+}
+
+.header-register-user{
+  background:#277a49;
+}
+
+.header-action-button:hover{
+  filter:brightness(1.14);
+}
+
 .content{
   width:min(100%,1500px);
   margin:auto;
