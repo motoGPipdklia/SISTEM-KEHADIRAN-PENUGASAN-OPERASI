@@ -14,5 +14,5 @@ window.SKPO_CONFIG = {
 
   /* Tampalkan Publishable Key projek Supabase anda di bawah. */
   SUPABASE_PUBLISHABLE_KEY:
-    "MASUKKAN_PUBLISHABLE_KEY_ANDA_DI_SINI"
+    "sb_publishable_2Px0J5xxzhIyWu0FkGoQEw_ezyOZXvt"
 };
