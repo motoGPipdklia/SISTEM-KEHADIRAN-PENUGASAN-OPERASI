@@ -1627,62 +1627,112 @@ async function hantarResetDevice() {
    NAVIGASI MODUL PENTADBIR
 ================================================================ */
 
+function tutupSemuaModulPentadbir() {
+  const senaraiModul = [
+    {
+      modul: "modulImportPengguna",
+      kandungan: "kandunganImportPengguna",
+      butang: "btnToggleImportPengguna",
+      teks: "PAPARKAN IMPORT"
+    },
+    {
+      modul: "modulImportPenugasan",
+      kandungan: "kandunganImportPenugasan",
+      butang: "btnToggleImportPenugasan",
+      teks: "PAPARKAN IMPORT"
+    },
+    {
+      modul: "modulDaftarPengguna",
+      kandungan: "borangDaftarPengguna",
+      butang: "btnToggleDaftarPengguna",
+      teks: "PAPARKAN BORANG"
+    }
+  ];
+
+  senaraiModul.forEach(item => {
+    const modul = el(item.modul);
+    const kandungan = el(item.kandungan);
+    const butang = el(item.butang);
+
+    if (modul) {
+      modul.hidden = true;
+      modul.classList.remove("modul-disorot");
+    }
+
+    if (kandungan) {
+      kandungan.hidden = true;
+    }
+
+    if (butang) {
+      butang.setAttribute("aria-expanded", "false");
+      butang.textContent = item.teks;
+    }
+  });
+}
+
+
 function bukaDanSkrolModul(
   idModul,
-  idKandungan = null,
-  idButangToggle = null,
-  teksButangBuka = ""
+  idKandungan,
+  idButangToggle,
+  teksButangBuka
 ) {
   const modul = el(idModul);
+  const kandungan = el(idKandungan);
+  const butangToggle = el(idButangToggle);
 
   if (!modul) {
     alert("Modul tidak ditemui.");
     return;
   }
 
-  if (idKandungan) {
-    const kandungan = el(idKandungan);
+  /*
+    Hanya satu modul dipaparkan pada satu masa.
+  */
+  tutupSemuaModulPentadbir();
 
-    if (kandungan?.hidden) {
-      kandungan.hidden = false;
+  modul.hidden = false;
 
-      const butangToggle =
-        idButangToggle
-          ? el(idButangToggle)
-          : null;
-
-      if (butangToggle) {
-        butangToggle.setAttribute(
-          "aria-expanded",
-          "true"
-        );
-
-        butangToggle.textContent =
-          teksButangBuka;
-      }
-    }
+  if (kandungan) {
+    kandungan.hidden = false;
   }
 
-  modul.scrollIntoView({
-    behavior: "smooth",
-    block: "start"
-  });
+  if (butangToggle) {
+    butangToggle.setAttribute(
+      "aria-expanded",
+      "true"
+    );
 
-  modul.classList.remove(
-    "modul-disorot"
-  );
+    butangToggle.textContent =
+      teksButangBuka;
+  }
 
-  void modul.offsetWidth;
+  /*
+    Tunggu browser memaparkan modul dahulu,
+    kemudian scroll ke kedudukannya.
+  */
+  window.requestAnimationFrame(() => {
+    modul.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
 
-  modul.classList.add(
-    "modul-disorot"
-  );
-
-  window.setTimeout(() => {
     modul.classList.remove(
       "modul-disorot"
     );
-  }, 1800);
+
+    void modul.offsetWidth;
+
+    modul.classList.add(
+      "modul-disorot"
+    );
+
+    window.setTimeout(() => {
+      modul.classList.remove(
+        "modul-disorot"
+      );
+    }, 1800);
+  });
 }
 
 
