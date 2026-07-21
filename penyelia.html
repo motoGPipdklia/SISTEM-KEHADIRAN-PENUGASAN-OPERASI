@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SKPO Penyelia</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#111;color:#fff;font-family:Arial,sans-serif}.container{max-width:1050px;margin:35px auto;padding:18px}.logo{color:#d4af37;font-size:28px;font-weight:700;text-align:center}.sub{text-align:center;color:#ccc;margin-bottom:24px}.card{background:#222;border-radius:15px;padding:22px;margin:15px 0;box-shadow:0 5px 18px rgba(0,0,0,.35)}input{width:100%;padding:14px;margin:7px 0;border:0;border-radius:8px;font-size:16px}button{padding:12px 16px;border:0;border-radius:8px;font-weight:700;cursor:pointer}.btn-main{width:100%;margin-top:10px;background:#d4af37;color:#111;font-size:17px}.btn-secondary{background:#444;color:#fff}.btn-ok{background:#2e7d32;color:#fff}.btn-no{background:#b3261e;color:#fff}.btn-change{background:#1565c0;color:#fff}.btn-refresh{background:#d4af37;color:#111}.btn-read{background:#6a1b9a;color:#fff}.report-tabs{display:flex;gap:10px;margin:15px 0}.report-tabs button{flex:1;background:#444;color:#fff}.report-tabs button.active{background:#d4af37;color:#111}.report-card{background:#181818;border:1px solid #3d3d3d;border-radius:12px;padding:16px;text-align:left}.report-card.unread{border-color:#d4af37}.report-card h3{margin:0 0 10px;color:#d4af37}.report-text{white-space:pre-wrap;background:#111;padding:12px;border-radius:8px;margin-top:6px;line-height:1.5}.badge-report{display:inline-block;padding:5px 9px;border-radius:999px;font-size:11px;font-weight:bold}.badge-unread{background:#493b13;color:#ffe08a}.badge-read{background:#173c25;color:#8beca8}.hidden{display:none}.status{padding:13px;border-radius:9px;margin-top:12px;line-height:1.5}.success{background:#123a24;color:#b9f6ca;border:1px solid #2b7043}.warning{background:#3a3013;color:#ffe29a;border:1px solid #766126}.error{background:#401b1b;color:#ffc1c1;border:1px solid #7b3232}.topbar{display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap}.profile{background:#181818;padding:14px;border-radius:10px;line-height:1.6}.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:15px 0}.toolbar input{flex:1;min-width:220px;margin:0}.list{display:grid;gap:14px}.record{background:#181818;border:1px solid #3d3d3d;border-radius:12px;padding:16px;text-align:left}.record h3{margin:0 0 10px;color:#d4af37}.grid{display:grid;grid-template-columns:150px 1fr;gap:7px}.label{font-weight:700}.actions{display:flex;gap:10px;margin-top:15px}.actions button{flex:1}.empty{text-align:center;color:#ccc;padding:25px}.count{color:#ffd166;font-weight:700}.modal{position:fixed;inset:0;background:rgba(0,0,0,.78);display:flex;align-items:center;justify-content:center;padding:18px;z-index:9999}.modal.hidden{display:none}.modal-box{width:min(560px,100%);max-height:92vh;overflow:auto;background:#222;border:1px solid #555;border-radius:15px;padding:22px}.modal-box h2{margin-top:0;color:#d4af37}.modal-box select,.modal-box textarea{width:100%;padding:13px;margin:7px 0;border:0;border-radius:8px;font-size:16px}.modal-box textarea{min-height:90px;resize:vertical}.modal-actions{display:flex;gap:10px;margin-top:15px}.modal-actions button{flex:1}.petugas-preview{background:#181818;border:1px solid #444;border-radius:10px;padding:13px;margin-top:10px;line-height:1.6}.mode-tabs{display:flex;gap:8px;margin:14px 0}.mode-tabs button{flex:1;background:#444;color:#fff}.mode-tabs button.active{background:#d4af37;color:#111}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.form-grid .full{grid-column:1/-1}.info-note{background:#152a35;border:1px solid #2c6078;color:#c9efff;padding:12px;border-radius:9px;margin:10px 0}@media(max-width:600px){.form-grid{grid-template-columns:1fr}.form-grid .full{grid-column:auto}}@media(max-width:600px){.container{margin-top:15px}.grid{grid-template-columns:115px 1fr;font-size:14px}.actions{flex-direction:column}.topbar button{width:100%}}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="logo">OPS LITAR (MOTOGP 2026)</div>
+  <div class="sub">Modul Pengesahan URUSETIA</div>
+
+  <section id="loginSection" class="card">
+    <h2>Login URUSETIA</h2>
+    <input id="noBadan" placeholder="No Badan" autocomplete="username">
+    <input id="password" type="password" placeholder="Password" autocomplete="current-password">
+    <button id="btnLogin" class="btn-main" onclick="loginPenyeliaUI()">LOGIN URUSETIA</button>
+    <div id="loginStatus"></div>
+    <button class="btn-main btn-secondary" onclick="window.top.location.href='<?= webAppUrl ?>';">KEMBALI KE LOGIN PETUGAS</button>
+  </section>
+
+  <section id="dashboardSection" class="hidden">
+    <div class="card">
+      <div class="topbar">
+        <div>
+          <h2 style="margin:0">Dashboard URUSETIA</h2>
+          <div id="profile" class="profile" style="margin-top:12px"></div>
+        </div>
+        <button class="btn-secondary" onclick="logoutPenyelia()">LOG KELUAR</button>
+      </div>
+      <div class="toolbar">
+        <input id="carian" placeholder="Cari nama, No Badan, tugas atau lokasi" oninput="paparRekod()">
+        <button id="btnRefresh" class="btn-refresh" onclick="segarSemuaData()">SEMAK SEMULA</button>
+      </div>
+      <div class="report-tabs">
+        <button id="tabPengesahan" class="active" onclick="tukarPaparanPenyelia('PENGESAHAN')">
+          PENGESAHAN KEHADIRAN
+        </button>
+        <button id="tabLaporan" onclick="tukarPaparanPenyelia('LAPORAN')">
+          PELAPORAN PETUGAS (<span id="jumlahLaporanBelumDibaca">0</span>)
+        </button>
+      </div>
+
+      <div id="bahagianPengesahan">
+      <div id="senaraiStatus" class="status warning">Sedang mendapatkan rekod...</div>
+      <p>Menunggu pengesahan: <span id="jumlah" class="count">0</span></p>
+      <div class="info-note">
+        Petugas yang telah dibuat RESET DEVICE oleh Pentadbir akan kembali kepada status BELUM HADIR dan tidak akan dipaparkan dalam senarai pengesahan sehingga membuat Check-In semula.
+      </div>
+      <div id="senarai" class="list"></div>
+      </div>
+
+      <div id="bahagianLaporan" class="hidden">
+        <div id="statusLaporanPenyelia" class="status warning">
+          Sedang mendapatkan laporan petugas...
+        </div>
+        <p>Jumlah laporan: <span id="jumlahLaporan" class="count">0</span></p>
+        <div id="senaraiLaporan" class="list"></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div id="modalTukar" class="modal hidden">
+  <div class="modal-box">
+    <h2>Tukar Petugas</h2>
+    <div id="petugasAsalPreview" class="petugas-preview"></div>
+
+    <div class="mode-tabs">
+      <button id="tabCari" class="active" onclick="pilihModPetugas('CARI')">CARI PETUGAS SEDIA ADA</button>
+      <button id="tabDaftar" onclick="pilihModPetugas('DAFTAR')">DAFTAR PETUGAS BAHARU</button>
+    </div>
+
+    <div id="modCari">
+      <label><strong>No Badan Petugas Ganti</strong></label>
+      <input id="noBadanGanti" placeholder="Masukkan No Badan">
+      <button id="btnCariGanti" class="btn-refresh" style="width:100%;margin-top:5px" onclick="cariGanti()">CARI PETUGAS</button>
+      <div id="petugasGantiPreview" class="petugas-preview hidden"></div>
+    </div>
+
+    <div id="modDaftar" class="hidden">
+      <div class="info-note">
+        Petugas baharu akan dimasukkan ke Sheet PETUGAS. Maklumat petugas lama dalam baris PENUGASAN akan digantikan secara automatik. Rekod audit asal tetap disimpan.
+      </div>
+      <div class="form-grid">
+        <div>
+          <label><strong>No Badan *</strong></label>
+          <input id="daftarNoBadan" placeholder="No Badan">
+        </div>
+        <div>
+          <label><strong>Pangkat *</strong></label>
+          <input id="daftarPangkat" placeholder="Contoh: KONSTABEL">
+        </div>
+        <div class="full">
+          <label><strong>Nama Penuh *</strong></label>
+          <input id="daftarNama" placeholder="Nama penuh petugas">
+        </div>
+        <div>
+          <label><strong>Kata Laluan *</strong></label>
+          <input id="daftarPassword" type="password" placeholder="Kata laluan login">
+        </div>
+        <div>
+          <label><strong>Telefon</strong></label>
+          <input id="daftarTelefon" placeholder="No telefon">
+        </div>
+        <div>
+          <label><strong>Bahagian/Balai/Cawangan</strong></label>
+          <input id="daftarBahagian" placeholder="Bahagian atau balai">
+        </div>
+        <div>
+          <label><strong>Daerah</strong></label>
+          <input id="daftarDaerah" placeholder="Daerah">
+        </div>
+      </div>
+    </div>
+
+    <label><strong>Sebab Pertukaran</strong></label>
+    <select id="sebabPertukaran">
+      <option value="">-- Pilih sebab --</option>
+      <option value="CUTI">CUTI</option>
+      <option value="SAKIT">SAKIT</option>
+      <option value="KURSUS">KURSUS</option>
+      <option value="BERTUGAS LAIN">BERTUGAS LAIN</option>
+      <option value="KECEMASAN">KECEMASAN</option>
+      <option value="LAIN-LAIN">LAIN-LAIN</option>
+    </select>
+
+    <label><strong>Catatan</strong></label>
+    <textarea id="catatanPertukaran" placeholder="Catatan tambahan"></textarea>
+
+    <div id="statusPertukaran"></div>
+
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="tutupModalTukar()">BATAL</button>
+      <button id="btnSimpanTukar" class="btn-change" onclick="simpanPertukaran()" disabled>SIMPAN PERTUKARAN</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let penyeliaLogin=null;
+let semuaRekod=[];
+let semuaLaporan=[];
+let paparanPenyeliaAktif="PENGESAHAN";
+let timerRefresh=null;
+let rekodPertukaran=null;
+let petugasGantiDipilih=null;
+let modPetugasGanti='CARI';
+const SELANG_REFRESH=15000;
+
+function loginPenyeliaUI(){
+  const noBadan=document.getElementById('noBadan').value.trim();
+  const password=document.getElementById('password').value.trim();
+  const status=document.getElementById('loginStatus');
+  const btn=document.getElementById('btnLogin');
+  if(!noBadan||!password){status.className='status error';status.textContent='Sila masukkan No Badan dan kata laluan.';return;}
+  btn.disabled=true;status.className='status warning';status.textContent='Sedang menyemak...';
+  google.script.run.withSuccessHandler(function(res){
+    btn.disabled=false;
+    if(res&&res.status===true){
+      penyeliaLogin=res;sessionStorage.setItem('skpoPenyelia',JSON.stringify(res));
+      bukaDashboard();
+    }else{status.className='status error';status.textContent=(res&&res.mesej)||'Login gagal.';}
+  }).withFailureHandler(function(err){btn.disabled=false;status.className='status error';status.textContent='Ralat sistem: '+err.message;}).loginPenyelia(noBadan,password);
+}
+
+function bukaDashboard(){
+  document.getElementById('loginSection').classList.add('hidden');
+  document.getElementById('dashboardSection').classList.remove('hidden');
+  document.getElementById('profile').innerHTML='<strong>'+escapeHtml(penyeliaLogin.pangkat||'')+' '+escapeHtml(penyeliaLogin.nama||'-')+'</strong><br>No Badan: '+escapeHtml(penyeliaLogin.noBadan||'-');
+  muatSenarai();
+  muatLaporanPenyelia();
+  if(timerRefresh)clearInterval(timerRefresh);
+  timerRefresh=setInterval(function(){
+    muatSenarai();
+    muatLaporanPenyelia();
+  },SELANG_REFRESH);
+}
+
+function muatSenarai(){
+  if(!penyeliaLogin)return;
+  const status=document.getElementById('senaraiStatus');
+  const btn=document.getElementById('btnRefresh');
+  btn.disabled=true;status.className='status warning';status.textContent='Sedang mendapatkan rekod menunggu pengesahan...';
+  google.script.run.withSuccessHandler(function(res){
+    btn.disabled=false;
+    if(res&&res.status===true){
+
+      /*
+        Hanya rekod yang benar-benar MENUNGGU PENGESAHAN PENYELIA
+        dipaparkan.
+
+        Rekod DIGANTI, BELUM HADIR, DITOLAK atau HADIR tidak
+        dimasukkan. Selepas RESET DEVICE dibuat oleh Pentadbir,
+        rekod Check-In dipadam dan petugas kembali BELUM HADIR,
+        maka rekod tersebut akan hilang daripada senarai ini.
+      */
+      semuaRekod=(Array.isArray(res.rekod)?res.rekod:[])
+        .filter(function(r){
+
+          const statusSemasa=statusRekod(r);
+
+          return (
+            statusSemasa==='' ||
+            statusSemasa==='MENUNGGU PENGESAHAN PENYELIA'
+          );
+
+        });
+
+      status.className='status success';
+
+      status.textContent=
+        semuaRekod.length>0
+          ? semuaRekod.length+' rekod menunggu pengesahan.'
+          : 'Tiada rekod Check-In menunggu pengesahan.';
+
+      paparRekod();
+
+    }else{semuaRekod=[];status.className='status error';status.textContent=(res&&res.mesej)||'Senarai tidak dapat diperoleh.';paparRekod();}
+  }).withFailureHandler(function(err){btn.disabled=false;status.className='status error';status.textContent='Ralat sistem: '+err.message;}).dapatkanSenaraiMenungguPengesahan(penyeliaLogin.noBadan);
+}
+
+function paparRekod(){
+  if(paparanPenyeliaAktif==="LAPORAN"){
+    paparLaporanPenyelia();
+    return;
+  }
+
+  const q=document.getElementById('carian').value.trim().toLowerCase();
+
+  const data=semuaRekod.filter(function(r){
+
+    const statusSemasa=statusRekod(r);
+
+    if(
+      statusSemasa!=='' &&
+      statusSemasa!=='MENUNGGU PENGESAHAN PENYELIA'
+    ){
+      return false;
+    }
+
+    return !q||[
+      r.nama,
+      r.noBadan,
+      r.pangkat,
+      r.jenisTugas,
+      r.tempatTugas,
+      r.penyelia,
+      r.pemegangSet
+    ].join(' ').toLowerCase().includes(q);
+
+  });
+
+  document.getElementById('jumlah').textContent=data.length;
+  const senarai=document.getElementById('senarai');
+  if(!data.length){senarai.innerHTML='<div class="empty">Tiada rekod menunggu pengesahan.</div>';return;}
+  senarai.innerHTML=data.map(function(r){return '<div class="record" id="rekod-'+escapeAttr(r.idCheckIn)+'">'+
+    '<h3>'+escapeHtml((r.pangkat||'')+' '+(r.nama||'-'))+'</h3><div class="grid">'+
+    baris('No Badan',r.noBadan)+baris('Tarikh',r.tarikh)+baris('Masa Check-In',r.masa)+baris('Jenis Tugas',r.jenisTugas)+baris('Tempat Tugas',r.tempatTugas)+baris('Penyelia Tugas',r.penyelia)+baris('Pemegang Set',r.pemegangSet)+baris('Status',statusRekod(r)||'MENUNGGU PENGESAHAN PENYELIA')+baris('Ketepatan GPS',r.ketepatanGPS? r.ketepatanGPS+' m':'-')+baris('Jarak',r.jarak? r.jarak+' m':'-')+
+    '</div><div class="actions"><button class="btn-ok" onclick="prosesRekod(\''+escapeJs(r.idCheckIn)+'\',\'SAHKAN\')">SAHKAN</button><button class="btn-no" onclick="prosesRekod(\''+escapeJs(r.idCheckIn)+'\',\'TOLAK\')">TOLAK</button><button class="btn-change" onclick="bukaModalTukar(\''+escapeJs(r.idCheckIn)+'\')">TUKAR PETUGAS</button></div></div>';}).join('');
+}
+
+
+function segarSemuaData(){
+  muatSenarai();
+  muatLaporanPenyelia();
+}
+
+function tukarPaparanPenyelia(mod){
+  paparanPenyeliaAktif=mod;
+
+  document.getElementById("bahagianPengesahan")
+    .classList.toggle("hidden",mod!=="PENGESAHAN");
+
+  document.getElementById("bahagianLaporan")
+    .classList.toggle("hidden",mod!=="LAPORAN");
+
+  document.getElementById("tabPengesahan")
+    .classList.toggle("active",mod==="PENGESAHAN");
+
+  document.getElementById("tabLaporan")
+    .classList.toggle("active",mod==="LAPORAN");
+
+  if(mod==="LAPORAN") muatLaporanPenyelia();
+}
+
+function muatLaporanPenyelia(){
+  if(!penyeliaLogin) return;
+
+  const status=document.getElementById("statusLaporanPenyelia");
+
+  if(status){
+    status.className="status warning";
+    status.textContent="Sedang mendapatkan laporan petugas...";
+  }
+
+  google.script.run
+    .withSuccessHandler(function(res){
+      if(res && res.status===true){
+        semuaLaporan=Array.isArray(res.laporan)?res.laporan:[];
+
+        document.getElementById("jumlahLaporan").textContent=semuaLaporan.length;
+        document.getElementById("jumlahLaporanBelumDibaca").textContent=
+          Number(res.belumDibaca||0);
+
+        if(status){
+          status.className="status success";
+          status.textContent=semuaLaporan.length
+            ? semuaLaporan.length+" laporan petugas diterima."
+            : "Belum ada laporan petugas.";
+        }
+
+        paparLaporanPenyelia();
+      }else{
+        semuaLaporan=[];
+        document.getElementById("jumlahLaporan").textContent="0";
+        document.getElementById("jumlahLaporanBelumDibaca").textContent="0";
+
+        if(status){
+          status.className="status error";
+          status.textContent=(res&&res.mesej)||"Laporan tidak dapat diperoleh.";
+        }
+
+        paparLaporanPenyelia();
+      }
+    })
+    .withFailureHandler(function(err){
+      if(status){
+        status.className="status error";
+        status.textContent="Ralat mendapatkan laporan: "+err.message;
+      }
+    })
+    .dapatkanLaporanPenyelia(penyeliaLogin.noBadan);
+}
+
+function paparLaporanPenyelia(){
+  const q=document.getElementById("carian").value.trim().toLowerCase();
+
+  const data=semuaLaporan.filter(function(r){
+    return !q||[
+      r.nama,r.noBadan,r.pangkat,r.jenisTugas,r.tempatTugas,
+      r.vvipVip,r.perkaraMenarik,r.tarikh,r.masa
+    ].join(" ").toLowerCase().includes(q);
+  });
+
+  const senarai=document.getElementById("senaraiLaporan");
+
+  if(!data.length){
+    senarai.innerHTML='<div class="empty">Tiada laporan petugas.</div>';
+    return;
+  }
+
+  senarai.innerHTML=data.map(function(r){
+    const sudahDibaca=String(r.statusBaca||"").toUpperCase()==="DIBACA";
+
+    return '<div class="report-card '+(sudahDibaca?'':'unread')+'">'+
+      '<h3>'+escapeHtml((r.pangkat||"")+" "+(r.nama||"-"))+'</h3>'+
+      '<div class="grid">'+
+      baris("No Badan",r.noBadan)+
+      baris("Tarikh / Masa",(r.tarikh||"-")+" "+(r.masa||"-"))+
+      baris("Jenis Tugas",r.jenisTugas)+
+      baris("Tempat Tugas",r.tempatTugas)+
+      baris("Jumlah Pengunjung",r.jumlahPengunjung)+
+      baris("Jumlah Kenderaan",r.jumlahKenderaan)+
+      '</div>'+
+      '<div style="margin-top:12px"><strong>VVIP / VIP</strong></div>'+
+      '<div class="report-text">'+escapeHtml(r.vvipVip||"TIADA")+'</div>'+
+      '<div style="margin-top:12px"><strong>Perkara Menarik</strong></div>'+
+      '<div class="report-text">'+escapeHtml(r.perkaraMenarik||"TIADA")+'</div>'+
+      '<div style="margin-top:12px">'+
+      (sudahDibaca
+        ? '<span class="badge-report badge-read">DIBACA</span>'
+        : '<span class="badge-report badge-unread">BELUM DIBACA</span>')+
+      '</div>'+
+      (sudahDibaca
+        ? '<div style="margin-top:8px;color:#aaa;font-size:13px">Dibaca oleh: '+
+          escapeHtml(r.dibacaOleh||"-")+
+          (r.masaDibaca?'<br>Masa dibaca: '+escapeHtml(r.masaDibaca):'')+
+          '</div>'
+        : '<div class="actions"><button class="btn-read" onclick="tandaLaporanDibaca(\''+
+          escapeJs(r.idLaporan)+'\')">TANDA DIBACA</button></div>')+
+      '</div>';
+  }).join("");
+}
+
+function tandaLaporanDibaca(idLaporan){
+  if(!penyeliaLogin || !idLaporan) return;
+
+  google.script.run
+    .withSuccessHandler(function(res){
+      if(res && res.status===true){
+        muatLaporanPenyelia();
+      }else{
+        alert((res&&res.mesej)||"Status laporan gagal dikemas kini.");
+      }
+    })
+    .withFailureHandler(function(err){
+      alert("Ralat sistem: "+err.message);
+    })
+    .tandakanLaporanDibaca(idLaporan,penyeliaLogin.noBadan);
+}
+
+function prosesRekod(id,tindakan){
+  if(!penyeliaLogin)return;
+
+  const rekodSemasa=semuaRekod.find(function(r){
+    return String(r.idCheckIn)===String(id);
+  });
+
+  if(!rekodSemasa){
+    alert(
+      'Rekod ini tidak lagi berada dalam senarai menunggu. ' +
+      'Ia mungkin telah direset oleh Pentadbir atau telah diproses.'
+    );
+    muatSenarai();
+    return;
+  }
+
+  const statusSemasa=statusRekod(rekodSemasa);
+
+  if(
+    statusSemasa!=='' &&
+    statusSemasa!=='MENUNGGU PENGESAHAN PENYELIA'
+  ){
+    alert(
+      'Tindakan tidak dibenarkan kerana status rekod kini ' +
+      statusSemasa +
+      '.'
+    );
+    muatSenarai();
+    return;
+  }
+
+  const teks=tindakan==='SAHKAN'?'sahkan':'tolak';
+  if(!confirm('Adakah anda pasti mahu '+teks+' rekod ini?'))return;
+  const kad=document.getElementById('rekod-'+id);if(kad)kad.style.opacity='.55';
+  google.script.run.withSuccessHandler(function(res){
+    if(res&&res.status===true){
+      muatSenarai();
+    }else{
+      if(kad)kad.style.opacity='1';
+      alert(
+        (res&&res.mesej) ||
+        'Tindakan tidak berjaya. Rekod mungkin telah direset oleh Pentadbir atau telah diproses.'
+      );
+      muatSenarai();
+    }
+  }).withFailureHandler(function(err){
+    if(kad)kad.style.opacity='1';
+    alert('Ralat sistem: '+err.message);
+    muatSenarai();
+  }).kemasKiniPengesahanCheckIn(id,tindakan,penyeliaLogin.noBadan);
+}
+
+
+function bukaModalTukar(idCheckIn){
+  if(!penyeliaLogin)return;
+  rekodPertukaran=semuaRekod.find(function(r){return String(r.idCheckIn)===String(idCheckIn);});
+
+  if(!rekodPertukaran){
+    alert(
+      'Rekod asal tidak dijumpai. Rekod mungkin telah direset oleh Pentadbir atau telah diproses.'
+    );
+    muatSenarai();
+    return;
+  }
+
+  const statusSemasa=statusRekod(rekodPertukaran);
+
+  if(
+    statusSemasa!=='' &&
+    statusSemasa!=='MENUNGGU PENGESAHAN PENYELIA'
+  ){
+    alert(
+      'Pertukaran tidak dibenarkan kerana status rekod kini ' +
+      statusSemasa +
+      '.'
+    );
+    muatSenarai();
+    return;
+  }
+  petugasGantiDipilih=null;
+  pilihModPetugas('CARI');
+  document.getElementById('noBadanGanti').value='';
+  ['daftarNoBadan','daftarPangkat','daftarNama','daftarPassword','daftarTelefon','daftarBahagian','daftarDaerah'].forEach(function(id){
+    document.getElementById(id).value='';
+  });
+  document.getElementById('sebabPertukaran').value='';
+  document.getElementById('catatanPertukaran').value='';
+  document.getElementById('btnSimpanTukar').disabled=true;
+  document.getElementById('petugasGantiPreview').classList.add('hidden');
+  document.getElementById('statusPertukaran').className='';
+  document.getElementById('statusPertukaran').textContent='';
+  document.getElementById('petugasAsalPreview').innerHTML=
+    '<strong>Petugas Asal</strong><br>'+
+    escapeHtml((rekodPertukaran.pangkat||'')+' '+(rekodPertukaran.nama||'-'))+
+    '<br>No Badan: '+escapeHtml(rekodPertukaran.noBadan||'-')+
+    '<br>Tugas: '+escapeHtml(rekodPertukaran.jenisTugas||'-')+
+    '<br>Tempat: '+escapeHtml(rekodPertukaran.tempatTugas||'-');
+  document.getElementById('modalTukar').classList.remove('hidden');
+  setTimeout(function(){document.getElementById('noBadanGanti').focus();},100);
+}
+
+function tutupModalTukar(){
+  document.getElementById('modalTukar').classList.add('hidden');
+  rekodPertukaran=null;
+  petugasGantiDipilih=null;
+}
+
+
+function pilihModPetugas(mod){
+  modPetugasGanti=mod;
+  petugasGantiDipilih=null;
+  document.getElementById('modCari').classList.toggle('hidden',mod!=='CARI');
+  document.getElementById('modDaftar').classList.toggle('hidden',mod!=='DAFTAR');
+  document.getElementById('tabCari').classList.toggle('active',mod==='CARI');
+  document.getElementById('tabDaftar').classList.toggle('active',mod==='DAFTAR');
+  document.getElementById('petugasGantiPreview').classList.add('hidden');
+  document.getElementById('statusPertukaran').className='';
+  document.getElementById('statusPertukaran').textContent='';
+  document.getElementById('btnSimpanTukar').disabled=(mod==='CARI');
+  document.getElementById('btnSimpanTukar').textContent=
+    mod==='DAFTAR' ? 'DAFTAR DAN GANTIKAN' : 'SIMPAN PERTUKARAN';
+}
+
+function cariGanti(){
+  if(!rekodPertukaran||!penyeliaLogin)return;
+  const no=document.getElementById('noBadanGanti').value.trim();
+  const status=document.getElementById('statusPertukaran');
+  const btn=document.getElementById('btnCariGanti');
+  if(!no){status.className='status error';status.textContent='Sila masukkan No Badan petugas ganti.';return;}
+  btn.disabled=true;
+  status.className='status warning';
+  status.textContent='Sedang menyemak petugas ganti...';
+  petugasGantiDipilih=null;
+  document.getElementById('btnSimpanTukar').disabled=true;
+  document.getElementById('petugasGantiPreview').classList.add('hidden');
+  google.script.run.withSuccessHandler(function(res){
+    btn.disabled=false;
+    if(res&&res.status===true){
+      petugasGantiDipilih=res.petugas;
+      const p=document.getElementById('petugasGantiPreview');
+      p.innerHTML='<strong>Petugas Ganti</strong><br>'+
+        escapeHtml((res.petugas.pangkat||'')+' '+(res.petugas.nama||'-'))+
+        '<br>No Badan: '+escapeHtml(res.petugas.noBadan||'-');
+      p.classList.remove('hidden');
+      status.className='status success';
+      status.textContent=res.mesej||'Petugas ganti boleh digunakan.';
+      document.getElementById('btnSimpanTukar').disabled=false;
+    }else{
+      status.className='status error';
+      status.textContent=(res&&res.mesej)||'Petugas ganti tidak boleh digunakan.';
+    }
+  }).withFailureHandler(function(err){
+    btn.disabled=false;
+    status.className='status error';
+    status.textContent='Ralat sistem: '+err.message;
+  }).cariPetugasGanti(no,rekodPertukaran.idCheckIn,penyeliaLogin.noBadan);
+}
+
+function simpanPertukaran(){
+  if(!rekodPertukaran||!penyeliaLogin)return;
+
+  const sebab=document.getElementById('sebabPertukaran').value;
+  const catatan=document.getElementById('catatanPertukaran').value.trim();
+  const status=document.getElementById('statusPertukaran');
+  const btn=document.getElementById('btnSimpanTukar');
+
+  if(!sebab){
+    status.className='status error';
+    status.textContent='Sila pilih sebab pertukaran.';
+    return;
+  }
+
+  if(modPetugasGanti==='CARI'){
+    if(!petugasGantiDipilih)return;
+
+    if(!confirm('Sahkan pertukaran '+rekodPertukaran.noBadan+' kepada '+petugasGantiDipilih.noBadan+'?'))return;
+
+    btn.disabled=true;
+    status.className='status warning';
+    status.textContent='Sedang menyimpan pertukaran...';
+
+    google.script.run.withSuccessHandler(function(res){
+      if(res&&res.status===true){
+        status.className='status success';
+        status.textContent=res.mesej||'Pertukaran berjaya.';
+        setTimeout(function(){tutupModalTukar();muatSenarai();},1000);
+      }else{
+        btn.disabled=false;
+        status.className='status error';
+        status.textContent=(res&&res.mesej)||'Pertukaran tidak berjaya.';
+      }
+    }).withFailureHandler(function(err){
+      btn.disabled=false;
+      status.className='status error';
+      status.textContent='Ralat sistem: '+err.message;
+    }).tukarPetugasOlehPenyelia(
+      rekodPertukaran.idCheckIn,
+      petugasGantiDipilih.noBadan,
+      sebab,
+      catatan,
+      penyeliaLogin.noBadan
+    );
+
+    return;
+  }
+
+  const dataBaharu={
+    noBadan:document.getElementById('daftarNoBadan').value.trim(),
+    pangkat:document.getElementById('daftarPangkat').value.trim(),
+    nama:document.getElementById('daftarNama').value.trim(),
+    password:document.getElementById('daftarPassword').value.trim(),
+    telefon:document.getElementById('daftarTelefon').value.trim(),
+    bahagian:document.getElementById('daftarBahagian').value.trim(),
+    daerah:document.getElementById('daftarDaerah').value.trim()
+  };
+
+  if(!dataBaharu.noBadan||!dataBaharu.pangkat||!dataBaharu.nama||!dataBaharu.password){
+    status.className='status error';
+    status.textContent='No Badan, pangkat, nama dan kata laluan wajib diisi.';
+    return;
+  }
+
+  if(!confirm(
+    'Daftar '+dataBaharu.noBadan+' sebagai petugas baharu dan gantikan '+rekodPertukaran.noBadan+'?'
+  ))return;
+
+  btn.disabled=true;
+  status.className='status warning';
+  status.textContent='Sedang mendaftar dan menggantikan petugas...';
+
+  google.script.run.withSuccessHandler(function(res){
+    if(res&&res.status===true){
+      status.className='status success';
+      status.textContent=res.mesej||'Petugas baharu berjaya didaftarkan.';
+      setTimeout(function(){tutupModalTukar();muatSenarai();},1200);
+    }else{
+      btn.disabled=false;
+      status.className='status error';
+      status.textContent=(res&&res.mesej)||'Pendaftaran tidak berjaya.';
+    }
+  }).withFailureHandler(function(err){
+    btn.disabled=false;
+    status.className='status error';
+    status.textContent='Ralat sistem: '+err.message;
+  }).daftarDanTukarPetugasOlehPenyelia(
+    rekodPertukaran.idCheckIn,
+    dataBaharu,
+    sebab,
+    catatan,
+    penyeliaLogin.noBadan
+  );
+}
+
+document.getElementById('noBadanGanti').addEventListener('input',function(){
+  petugasGantiDipilih=null;
+  document.getElementById('btnSimpanTukar').disabled=true;
+  document.getElementById('petugasGantiPreview').classList.add('hidden');
+});
+document.getElementById('modalTukar').addEventListener('click',function(e){
+  if(e.target===this)tutupModalTukar();
+});
+
+function statusRekod(rekod){
+
+  return String(
+    rekod && (
+      rekod.status ||
+      rekod.statusCheckIn ||
+      rekod.statusPenugasan ||
+      rekod.statusPetugas
+    ) || ''
+  )
+    .trim()
+    .toUpperCase();
+
+}
+
+function logoutPenyelia(){
+  if(timerRefresh)clearInterval(timerRefresh);timerRefresh=null;sessionStorage.removeItem('skpoPenyelia');penyeliaLogin=null;semuaRekod=[];semuaLaporan=[];
+  document.getElementById('dashboardSection').classList.add('hidden');document.getElementById('loginSection').classList.remove('hidden');document.getElementById('password').value='';document.getElementById('loginStatus').className='';document.getElementById('loginStatus').textContent='';
+}
+function baris(label,nilai){return '<div class="label">'+escapeHtml(label)+':</div><div>'+escapeHtml(nilai||'-')+'</div>';}
+function escapeHtml(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');}
+function escapeAttr(v){return String(v||'').replace(/[^A-Za-z0-9_-]/g,'_');}
+function escapeJs(v){return String(v||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
+document.getElementById('password').addEventListener('keydown',function(e){if(e.key==='Enter')loginPenyeliaUI();});
+(function pulihSesi(){try{const simpan=sessionStorage.getItem('skpoPenyelia');if(simpan){penyeliaLogin=JSON.parse(simpan);if(penyeliaLogin&&penyeliaLogin.noBadan)bukaDashboard();}}catch(e){sessionStorage.removeItem('skpoPenyelia');}})();
+</script>
+</body>
+</html>
