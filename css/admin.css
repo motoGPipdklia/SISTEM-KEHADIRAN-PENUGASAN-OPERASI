@@ -641,6 +641,25 @@ tbody tr:hover{
   margin:15px 0;
 }
 
+.import-user-summary{
+  grid-template-columns:repeat(5,minmax(130px,1fr));
+}
+
+.security-note{
+  margin:14px 0;
+  padding:13px 15px;
+  border:1px solid #765f24;
+  border-radius:10px;
+  color:#ffe29a;
+  background:#332a12;
+  font-size:13px;
+  line-height:1.6;
+}
+
+.import-user-table{
+  min-width:1300px;
+}
+
 .import-summary > div{
   min-width:0;
   padding:13px;
