@@ -237,127 +237,53 @@
         <div class="progress-text" id="progressText">0 / 0 Petugas Hadir</div>
       </section>
 
-      <!-- ===============================================
-           IMPORT PENGGUNA CSV
+       <!-- ===============================================
+           JADUAL PETUGAS
       ================================================ -->
-      <section class="card import-assignment import-users" id="modulImportPengguna">
-        <div class="section-heading">
+      <section class="table-card" aria-labelledby="tajukJadual">
+        <div class="tools">
           <div>
-            <h2>Import Pengguna CSV</h2>
-            <p class="muted">
-              Daftarkan ratusan pengguna ke Supabase Authentication dan jadual
-              profiles. Akaun yang sudah wujud akan dilangkau dengan selamat.
-            </p>
-          </div>
-
-          <div class="section-heading-actions">
-            <button
-              class="gold compact-button"
-              type="button"
-              onclick="muatTurunTemplatPengguna()"
-            >
-              MUAT TURUN TEMPLAT PENGGUNA
-            </button>
-
-            <button
-              class="gray compact-button"
-              id="btnToggleImportPengguna"
-              type="button"
-              onclick="toggleImportPengguna()"
-              aria-expanded="true"
-              aria-controls="kandunganImportPengguna"
-            >
-              SEMBUNYIKAN IMPORT
-            </button>
-          </div>
-        </div>
-
-        <div id="kandunganImportPengguna">
-
-        <div class="import-guide">
-          <span><strong>1.</strong> Isi maklumat dan kata laluan</span>
-          <span><strong>2.</strong> Simpan sebagai CSV UTF-8</span>
-          <span><strong>3.</strong> Semak pratonton</span>
-          <span><strong>4.</strong> Import pengguna</span>
-        </div>
-
-        <div class="security-note">
-          <strong>Keselamatan:</strong> gunakan kata laluan berbeza bagi setiap
-          pengguna. Kata laluan tidak dipaparkan dalam pratonton dan tidak
-          disimpan dalam jadual profiles.
-        </div>
-
-        <div class="import-file-row">
-          <div class="form-group">
-            <label for="failPenggunaCsv">Fail pengguna (.csv)</label>
+            <label class="sr-only" for="carian">Carian petugas</label>
             <input
-              id="failPenggunaCsv"
-              type="file"
-              accept=".csv,text/csv"
-              onchange="bacaFailPenggunaCsv(event)"
+              id="carian"
+              type="search"
+              oninput="papar()"
+              placeholder="Cari nama, No Badan, Call Sign, tugas atau lokasi..."
             >
           </div>
 
-          <button
-            class="gray"
-            id="btnKosongkanImportPengguna"
-            type="button"
-            onclick="kosongkanImportPengguna()"
-          >
-            KOSONGKAN
-          </button>
+          <div id="status" role="status" aria-live="polite"></div>
         </div>
 
-        <div class="import-summary import-user-summary" aria-label="Ringkasan pengguna CSV">
-          <div><strong id="importPenggunaJumlah">0</strong><span>Jumlah Baris</span></div>
-          <div><strong id="importPenggunaBaharu">0</strong><span>Pengguna Baharu</span></div>
-          <div><strong id="importPenggunaSediaAda">0</strong><span>Sedia Ada / Siap</span></div>
-          <div><strong id="importPenggunaGagal">0</strong><span>Bermasalah</span></div>
-          <div><strong id="importPenggunaFail">-</strong><span>Nama Fail</span></div>
-        </div>
+        <h2 class="sr-only" id="tajukJadual">Senarai Kehadiran Petugas</h2>
 
-        <div
-          class="status-box"
-          id="statusImportPengguna"
-          role="status"
-          aria-live="polite"
-        ></div>
+        <div class="wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Bil.</th>
+                <th scope="col">No Badan</th>
+                <th scope="col">Pangkat / Nama</th>
+                <th scope="col">Call Sign</th>
+                <th scope="col">Jenis Tugas</th>
+                <th scope="col">Tempat Tugas</th>
+                <th scope="col">Pemegang Set</th>
+                <th scope="col">Check-In</th>
+                <th scope="col">Status</th>
+                <th scope="col">Check-Out</th>
+                <th scope="col">Tempoh</th>
+                <th scope="col">Keadaan</th>
+                <th scope="col">Status Device</th>
+                <th scope="col">Tindakan</th>
+              </tr>
+            </thead>
 
-        <div class="import-preview" id="ruangPratontonImportPengguna" hidden>
-          <p class="muted" id="notaPratontonImportPengguna">
-            Pratonton memaparkan sehingga 100 baris pertama. Kata laluan disembunyikan.
-          </p>
-
-          <div class="wrap import-table-wrap">
-            <table class="import-table import-user-table">
-              <thead>
-                <tr>
-                  <th>Baris</th>
-                  <th>No Badan</th>
-                  <th>Pangkat</th>
-                  <th>Nama</th>
-                  <th>Peranan</th>
-                  <th>Telefon</th>
-                  <th>Bahagian</th>
-                  <th>Daerah</th>
-                  <th>Aktif</th>
-                  <th>Semakan</th>
-                </tr>
-              </thead>
-              <tbody id="tbodyImportPengguna"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <button
-          class="green-button import-button"
-          id="btnImportPengguna"
-          type="button"
-          onclick="importPenggunaCsv()"
-          disabled
-        >
-          IMPORT PENGGUNA KE SUPABASE
-        </button>
+            <tbody id="tbody">
+              <tr>
+                <td colspan="14" class="empty-row">Belum ada data dipaparkan.</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </section>
 
@@ -500,6 +426,130 @@
       </section>
 
       <!-- ===============================================
+           IMPORT PENGGUNA CSV
+      ================================================ -->
+      <section class="card import-assignment import-users" id="modulImportPengguna">
+        <div class="section-heading">
+          <div>
+            <h2>Import Pengguna CSV</h2>
+            <p class="muted">
+              Daftarkan ratusan pengguna ke Supabase Authentication dan jadual
+              profiles. Akaun yang sudah wujud akan dilangkau dengan selamat.
+            </p>
+          </div>
+
+          <div class="section-heading-actions">
+            <button
+              class="gold compact-button"
+              type="button"
+              onclick="muatTurunTemplatPengguna()"
+            >
+              MUAT TURUN TEMPLAT PENGGUNA
+            </button>
+
+            <button
+              class="gray compact-button"
+              id="btnToggleImportPengguna"
+              type="button"
+              onclick="toggleImportPengguna()"
+              aria-expanded="true"
+              aria-controls="kandunganImportPengguna"
+            >
+              SEMBUNYIKAN IMPORT
+            </button>
+          </div>
+        </div>
+
+        <div id="kandunganImportPengguna">
+
+        <div class="import-guide">
+          <span><strong>1.</strong> Isi maklumat dan kata laluan</span>
+          <span><strong>2.</strong> Simpan sebagai CSV UTF-8</span>
+          <span><strong>3.</strong> Semak pratonton</span>
+          <span><strong>4.</strong> Import pengguna</span>
+        </div>
+
+        <div class="security-note">
+          <strong>Keselamatan:</strong> gunakan kata laluan berbeza bagi setiap
+          pengguna. Kata laluan tidak dipaparkan dalam pratonton dan tidak
+          disimpan dalam jadual profiles.
+        </div>
+
+        <div class="import-file-row">
+          <div class="form-group">
+            <label for="failPenggunaCsv">Fail pengguna (.csv)</label>
+            <input
+              id="failPenggunaCsv"
+              type="file"
+              accept=".csv,text/csv"
+              onchange="bacaFailPenggunaCsv(event)"
+            >
+          </div>
+
+          <button
+            class="gray"
+            id="btnKosongkanImportPengguna"
+            type="button"
+            onclick="kosongkanImportPengguna()"
+          >
+            KOSONGKAN
+          </button>
+        </div>
+
+        <div class="import-summary import-user-summary" aria-label="Ringkasan pengguna CSV">
+          <div><strong id="importPenggunaJumlah">0</strong><span>Jumlah Baris</span></div>
+          <div><strong id="importPenggunaBaharu">0</strong><span>Pengguna Baharu</span></div>
+          <div><strong id="importPenggunaSediaAda">0</strong><span>Sedia Ada / Siap</span></div>
+          <div><strong id="importPenggunaGagal">0</strong><span>Bermasalah</span></div>
+          <div><strong id="importPenggunaFail">-</strong><span>Nama Fail</span></div>
+        </div>
+
+        <div
+          class="status-box"
+          id="statusImportPengguna"
+          role="status"
+          aria-live="polite"
+        ></div>
+
+        <div class="import-preview" id="ruangPratontonImportPengguna" hidden>
+          <p class="muted" id="notaPratontonImportPengguna">
+            Pratonton memaparkan sehingga 100 baris pertama. Kata laluan disembunyikan.
+          </p>
+
+          <div class="wrap import-table-wrap">
+            <table class="import-table import-user-table">
+              <thead>
+                <tr>
+                  <th>Baris</th>
+                  <th>No Badan</th>
+                  <th>Pangkat</th>
+                  <th>Nama</th>
+                  <th>Peranan</th>
+                  <th>Telefon</th>
+                  <th>Bahagian</th>
+                  <th>Daerah</th>
+                  <th>Aktif</th>
+                  <th>Semakan</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyImportPengguna"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <button
+          class="green-button import-button"
+          id="btnImportPengguna"
+          type="button"
+          onclick="importPenggunaCsv()"
+          disabled
+        >
+          IMPORT PENGGUNA KE SUPABASE
+        </button>
+        </div>
+      </section>
+      
+      <!-- ===============================================
            IMPORT PENUGASAN CSV
       ================================================ -->
       <section class="card import-assignment" id="modulImportPenugasan">
@@ -615,56 +665,6 @@
         >
           IMPORT PENUGASAN KE SUPABASE
         </button>
-        </div>
-      </section>
-
-      <!-- ===============================================
-           JADUAL PETUGAS
-      ================================================ -->
-      <section class="table-card" aria-labelledby="tajukJadual">
-        <div class="tools">
-          <div>
-            <label class="sr-only" for="carian">Carian petugas</label>
-            <input
-              id="carian"
-              type="search"
-              oninput="papar()"
-              placeholder="Cari nama, No Badan, Call Sign, tugas atau lokasi..."
-            >
-          </div>
-
-          <div id="status" role="status" aria-live="polite"></div>
-        </div>
-
-        <h2 class="sr-only" id="tajukJadual">Senarai Kehadiran Petugas</h2>
-
-        <div class="wrap">
-          <table>
-            <thead>
-              <tr>
-                <th scope="col">Bil.</th>
-                <th scope="col">No Badan</th>
-                <th scope="col">Pangkat / Nama</th>
-                <th scope="col">Call Sign</th>
-                <th scope="col">Jenis Tugas</th>
-                <th scope="col">Tempat Tugas</th>
-                <th scope="col">Pemegang Set</th>
-                <th scope="col">Check-In</th>
-                <th scope="col">Status</th>
-                <th scope="col">Check-Out</th>
-                <th scope="col">Tempoh</th>
-                <th scope="col">Keadaan</th>
-                <th scope="col">Status Device</th>
-                <th scope="col">Tindakan</th>
-              </tr>
-            </thead>
-
-            <tbody id="tbody">
-              <tr>
-                <td colspan="14" class="empty-row">Belum ada data dipaparkan.</td>
-              </tr>
-            </tbody>
-          </table>
         </div>
       </section>
     </main>
