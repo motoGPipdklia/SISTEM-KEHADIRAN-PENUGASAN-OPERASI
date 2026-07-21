@@ -556,6 +556,240 @@ tbody tr:hover{
 
 @media print{
 
+  /* ==========================================================
+   NOTIFICATION CENTER
+========================================================== */
+
+.notification-wrapper{
+  position:relative;
+}
+
+.notification-button{
+  position:relative;
+  width:48px;
+  height:48px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:none;
+  border-radius:12px;
+  cursor:pointer;
+  background:#2b2b2b;
+  color:#fff;
+  transition:.25s;
+}
+
+.notification-button:hover{
+  background:#3a3a3a;
+}
+
+.notification-icon{
+  font-size:22px;
+}
+
+.notification-count{
+  position:absolute;
+  top:-5px;
+  right:-5px;
+  min-width:22px;
+  height:22px;
+  padding:0 6px;
+  border-radius:999px;
+  background:#ff3b30;
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:11px;
+  font-weight:700;
+  box-shadow:0 0 8px rgba(255,0,0,.45);
+}
+
+.notification-panel{
+  position:absolute;
+  top:60px;
+  right:0;
+  width:420px;
+  max-height:550px;
+  overflow:auto;
+  border:1px solid #404040;
+  border-radius:14px;
+  background:#1d1d1d;
+  box-shadow:0 15px 35px rgba(0,0,0,.55);
+  z-index:9999;
+}
+
+.notification-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  padding:15px;
+  border-bottom:1px solid #333;
+}
+
+.notification-header h2{
+  margin:0;
+  color:var(--gold);
+  font-size:18px;
+}
+
+.notification-header p{
+  margin:5px 0 0;
+  color:#bdbdbd;
+  font-size:12px;
+}
+
+.notification-close{
+  width:34px;
+  height:34px;
+  border:none;
+  border-radius:8px;
+  background:#333;
+  color:#fff;
+  cursor:pointer;
+}
+
+.notification-actions{
+  padding:10px 15px;
+  border-bottom:1px solid #333;
+}
+
+.notification-read-all{
+  width:100%;
+  background:var(--gold);
+  color:#111;
+  border:none;
+  border-radius:8px;
+  padding:10px;
+  font-weight:700;
+  cursor:pointer;
+}
+
+.notification-list{
+  display:flex;
+  flex-direction:column;
+}
+
+.notification-item{
+  padding:14px 15px;
+  border-bottom:1px solid #303030;
+  cursor:pointer;
+  transition:.2s;
+}
+
+.notification-item:hover{
+  background:#262626;
+}
+
+.notification-item.unread{
+  border-left:5px solid var(--gold);
+  background:#252015;
+}
+
+.notification-title{
+  font-weight:700;
+  color:#fff;
+}
+
+.notification-message{
+  margin-top:6px;
+  color:#d4d4d4;
+  font-size:13px;
+  line-height:1.5;
+}
+
+.notification-time{
+  margin-top:8px;
+  color:#999;
+  font-size:11px;
+}
+
+.notification-empty{
+  padding:35px 20px;
+  text-align:center;
+  color:#999;
+}
+
+/* ==========================================================
+   REALTIME ALERT
+========================================================== */
+
+.realtime-alert{
+  display:flex;
+  align-items:center;
+  gap:15px;
+  margin-bottom:18px;
+  padding:16px;
+  border-left:6px solid var(--gold);
+  border-radius:12px;
+  background:#2c2413;
+  animation:slideNotification .35s ease;
+}
+
+.realtime-alert-icon{
+  font-size:28px;
+}
+
+.realtime-alert-content{
+  flex:1;
+}
+
+.realtime-alert-content strong{
+  display:block;
+  color:#fff;
+}
+
+.realtime-alert-content span{
+  display:block;
+  margin-top:5px;
+  color:#ddd;
+  font-size:14px;
+}
+
+.realtime-alert-close{
+  width:36px;
+  height:36px;
+  border:none;
+  border-radius:8px;
+  background:#444;
+  color:#fff;
+  cursor:pointer;
+}
+
+@keyframes slideNotification{
+
+  from{
+
+    opacity:0;
+    transform:translateY(-18px);
+
+  }
+
+  to{
+
+    opacity:1;
+    transform:translateY(0);
+
+  }
+
+}
+
+/* ==========================================================
+   MOBILE
+========================================================== */
+
+@media(max-width:700px){
+
+  .notification-panel{
+
+    width:100%;
+    right:0;
+    left:0;
+
+  }
+
+}
+  
   .topbar-actions,
   .toolbar,
   .filters,
