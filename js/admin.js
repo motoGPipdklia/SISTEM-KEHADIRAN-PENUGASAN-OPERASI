@@ -13,6 +13,8 @@ let adminLogin = null;
 let dataDashboard = [];
 let dataPaparan = [];
 let rekodResetDevice = null;
+let rekodImportPenugasan = [];
+let importSedangBerjalan = false;
 
 function el(id) {
   return document.getElementById(id);
@@ -82,6 +84,14 @@ function formatTempoh(minit) {
 
   const selamat = Math.max(0, jumlah);
   return `${Math.floor(selamat / 60)} jam ${Math.round(selamat % 60)} minit`;
+}
+
+function bahagiKumpulan(senarai, saiz) {
+  const hasil = [];
+  for (let i = 0; i < senarai.length; i += saiz) {
+    hasil.push(senarai.slice(i, i + saiz));
+  }
+  return hasil;
 }
 
 function paparMesej(id, mesej, jenis = "warning") {
@@ -787,6 +797,441 @@ async function daftarPenggunaBaharu() {
   } finally {
     butang.disabled = false;
     butang.textContent = "DAFTAR PENGGUNA";
+  }
+}
+
+/* ================================================================
+   IMPORT PENUGASAN CSV
+================================================================ */
+
+function normalisasiHeaderCsv(nilai) {
+  return atas(nilai)
+    .replace(/^\uFEFF/, "")
+    .replace(/[^A-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+function kesanPemisahCsv(kandungan) {
+  const barisPertama = String(kandungan || "").split(/\r?\n/, 1)[0] || "";
+  const calon = [",", ";", "\t"];
+  let terbaik = ",";
+  let jumlahTerbaik = -1;
+
+  calon.forEach(pemisah => {
+    let dalamPetikan = false;
+    let jumlah = 0;
+
+    for (let i = 0; i < barisPertama.length; i += 1) {
+      const aksara = barisPertama[i];
+      if (aksara === '"') dalamPetikan = !dalamPetikan;
+      if (!dalamPetikan && aksara === pemisah) jumlah += 1;
+    }
+
+    if (jumlah > jumlahTerbaik) {
+      terbaik = pemisah;
+      jumlahTerbaik = jumlah;
+    }
+  });
+
+  return terbaik;
+}
+
+function parseCsv(kandungan) {
+  const teksCsv = String(kandungan || "").replace(/^\uFEFF/, "");
+  const pemisah = kesanPemisahCsv(teksCsv);
+  const baris = [];
+  let rekod = [];
+  let sel = "";
+  let dalamPetikan = false;
+
+  for (let i = 0; i < teksCsv.length; i += 1) {
+    const aksara = teksCsv[i];
+
+    if (aksara === '"') {
+      if (dalamPetikan && teksCsv[i + 1] === '"') {
+        sel += '"';
+        i += 1;
+      } else {
+        dalamPetikan = !dalamPetikan;
+      }
+      continue;
+    }
+
+    if (!dalamPetikan && aksara === pemisah) {
+      rekod.push(sel);
+      sel = "";
+      continue;
+    }
+
+    if (!dalamPetikan && (aksara === "\n" || aksara === "\r")) {
+      if (aksara === "\r" && teksCsv[i + 1] === "\n") i += 1;
+      rekod.push(sel);
+      sel = "";
+
+      if (rekod.some(item => teks(item) !== "")) baris.push(rekod);
+      rekod = [];
+      continue;
+    }
+
+    sel += aksara;
+  }
+
+  if (dalamPetikan) {
+    throw new Error("Terdapat tanda petikan yang tidak ditutup dalam fail CSV.");
+  }
+
+  rekod.push(sel);
+  if (rekod.some(item => teks(item) !== "")) baris.push(rekod);
+
+  return baris;
+}
+
+function tarikhCsv(nilai) {
+  const asal = teks(nilai);
+  let tahun;
+  let bulan;
+  let hari;
+  let padanan = asal.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+
+  if (padanan) {
+    tahun = Number(padanan[1]);
+    bulan = Number(padanan[2]);
+    hari = Number(padanan[3]);
+  } else {
+    padanan = asal.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+    if (!padanan) return null;
+    hari = Number(padanan[1]);
+    bulan = Number(padanan[2]);
+    tahun = Number(padanan[3]);
+  }
+
+  const semakan = new Date(Date.UTC(tahun, bulan - 1, hari));
+  if (
+    semakan.getUTCFullYear() !== tahun ||
+    semakan.getUTCMonth() !== bulan - 1 ||
+    semakan.getUTCDate() !== hari
+  ) return null;
+
+  return `${String(tahun).padStart(4, "0")}-${String(bulan).padStart(2, "0")}-${String(hari).padStart(2, "0")}`;
+}
+
+function booleanCsv(nilai, nilaiAsal = false) {
+  const bersih = atas(nilai);
+  if (!bersih) return nilaiAsal;
+  if (["YA", "YES", "Y", "1", "TRUE", "BENAR"].includes(bersih)) return true;
+  if (["TIDAK", "NO", "N", "0", "FALSE", "PALSU"].includes(bersih)) return false;
+  return null;
+}
+
+function nomborCsv(nilai) {
+  const bersih = teks(nilai).replace(",", ".");
+  if (!bersih) return null;
+  const nombor = Number(bersih);
+  return Number.isFinite(nombor) ? nombor : null;
+}
+
+function binaRekodImportCsv(barisCsv) {
+  if (barisCsv.length < 2) {
+    throw new Error("Fail CSV tidak mempunyai rekod penugasan.");
+  }
+
+  const alias = {
+    TARIKH: ["TARIKH", "TARIKH_TUGAS", "DATE"],
+    NO_BADAN: ["NO_BADAN", "NOBADAN", "NO_POLIS", "BODY_NO"],
+    CALL_SIGN: ["CALL_SIGN", "CALLSIGN"],
+    JENIS_TUGAS: ["JENIS_TUGAS", "TUGAS"],
+    TEMPAT_TUGAS: ["TEMPAT_TUGAS", "LOKASI", "LOKASI_TUGAS"],
+    PENYELIA: ["PENYELIA", "SUPERVISOR"],
+    PEMEGANG_SET: ["PEMEGANG_SET", "PEMEGANGSET", "RADIO_HOLDER"],
+    LATITUDE: ["LATITUDE", "LAT"],
+    LONGITUDE: ["LONGITUDE", "LONG", "LNG"],
+    RADIUS_METER: ["RADIUS_METER", "RADIUS", "RADIUS_METERS"],
+    STATUS: ["STATUS", "STATUS_PENUGASAN"]
+  };
+
+  const header = barisCsv[0].map(normalisasiHeaderCsv);
+  const indeks = {};
+
+  Object.entries(alias).forEach(([nama, pilihan]) => {
+    indeks[nama] = header.findIndex(item => pilihan.includes(item));
+  });
+
+  const wajib = [
+    "TARIKH", "NO_BADAN", "JENIS_TUGAS", "TEMPAT_TUGAS",
+    "LATITUDE", "LONGITUDE", "RADIUS_METER"
+  ];
+  const tiada = wajib.filter(nama => indeks[nama] < 0);
+
+  if (tiada.length) {
+    throw new Error(`Kolum wajib tidak dijumpai: ${tiada.join(", ")}. Gunakan templat yang disediakan.`);
+  }
+
+  const ambil = (baris, nama) => indeks[nama] >= 0 ? teks(baris[indeks[nama]]) : "";
+  const rekod = barisCsv.slice(1).map((baris, kedudukan) => {
+    const nomborBaris = kedudukan + 2;
+    const ralat = [];
+    const tarikh = tarikhCsv(ambil(baris, "TARIKH"));
+    const noBadan = atas(ambil(baris, "NO_BADAN"));
+    const jenisTugas = atas(ambil(baris, "JENIS_TUGAS"));
+    const tempatTugas = atas(ambil(baris, "TEMPAT_TUGAS"));
+    const penyelia = booleanCsv(ambil(baris, "PENYELIA"), false);
+    const pemegangSet = booleanCsv(ambil(baris, "PEMEGANG_SET"), false);
+    const latitude = nomborCsv(ambil(baris, "LATITUDE"));
+    const longitude = nomborCsv(ambil(baris, "LONGITUDE"));
+    const radius = nomborCsv(ambil(baris, "RADIUS_METER"));
+    const status = atas(ambil(baris, "STATUS") || "AKTIF");
+
+    if (!tarikh) ralat.push("Tarikh tidak sah");
+    if (!noBadan) ralat.push("No Badan kosong");
+    if (!jenisTugas) ralat.push("Jenis Tugas kosong");
+    if (!tempatTugas) ralat.push("Tempat Tugas kosong");
+    if (penyelia === null) ralat.push("Penyelia mesti YA atau TIDAK");
+    if (pemegangSet === null) ralat.push("Pemegang Set mesti YA atau TIDAK");
+    if (latitude === null || latitude < -90 || latitude > 90) ralat.push("Latitude tidak sah");
+    if (longitude === null || longitude < -180 || longitude > 180) ralat.push("Longitude tidak sah");
+    if (radius === null || !Number.isInteger(radius) || radius < 1 || radius > 5000) {
+      ralat.push("Radius mesti nombor bulat 1 hingga 5000");
+    }
+    if (!["AKTIF", "DIGANTI"].includes(status)) ralat.push("Status mesti AKTIF atau DIGANTI");
+
+    return {
+      baris: nomborBaris,
+      ralat,
+      data: {
+        baris: nomborBaris,
+        tarikh,
+        no_badan: noBadan,
+        call_sign: atas(ambil(baris, "CALL_SIGN")) || null,
+        jenis_tugas: jenisTugas,
+        tempat_tugas: tempatTugas,
+        penyelia: penyelia === true,
+        pemegang_set: pemegangSet === true,
+        latitude,
+        longitude,
+        radius_meter: radius,
+        status
+      }
+    };
+  });
+
+  const kekerapan = new Map();
+  rekod.forEach(item => {
+    if (!item.data.tarikh || !item.data.no_badan) return;
+    const kunci = `${item.data.tarikh}|${item.data.no_badan}`;
+    kekerapan.set(kunci, (kekerapan.get(kunci) || 0) + 1);
+  });
+
+  rekod.forEach(item => {
+    const kunci = `${item.data.tarikh}|${item.data.no_badan}`;
+    if (kekerapan.get(kunci) > 1) item.ralat.push("No Badan dan tarikh berganda dalam fail");
+  });
+
+  return rekod;
+}
+
+async function semakPetugasUntukImport(rekod) {
+  const noBadan = [...new Set(
+    rekod.filter(item => item.ralat.length === 0).map(item => item.data.no_badan)
+  )];
+  const profil = new Map();
+
+  for (const kumpulan of bahagiKumpulan(noBadan, 100)) {
+    const { data, error } = await denganHadMasa(
+      db.from("profiles").select("no_badan,aktif").in("no_badan", kumpulan)
+    );
+    if (error) throw error;
+    (data || []).forEach(item => profil.set(atas(item.no_badan), item.aktif === true));
+  }
+
+  rekod.forEach(item => {
+    if (item.ralat.length > 0) return;
+    if (!profil.has(item.data.no_badan)) {
+      item.ralat.push("No Badan belum didaftarkan");
+    } else if (profil.get(item.data.no_badan) !== true) {
+      item.ralat.push("Akaun petugas tidak aktif");
+    }
+  });
+}
+
+function paparPratontonImport() {
+  const jumlah = rekodImportPenugasan.length;
+  const sah = rekodImportPenugasan.filter(item => item.ralat.length === 0).length;
+  const gagal = jumlah - sah;
+
+  el("importJumlah").textContent = String(jumlah);
+  el("importSah").textContent = String(sah);
+  el("importGagal").textContent = String(gagal);
+  el("btnImportPenugasan").disabled = sah === 0 || importSedangBerjalan;
+  el("ruangPratontonImport").hidden = jumlah === 0;
+
+  el("tbodyImportPenugasan").innerHTML = rekodImportPenugasan
+    .slice(0, 100)
+    .map(item => {
+      const d = item.data;
+      const semakan = item.ralat.length
+        ? `<span class="badge badge-red" title="${escapeHtml(item.ralat.join("; "))}">RALAT: ${escapeHtml(item.ralat.join("; "))}</span>`
+        : '<span class="badge badge-green">SAH</span>';
+
+      return `<tr>
+        <td>${item.baris}</td>
+        <td>${escapeHtml(d.tarikh || "-")}</td>
+        <td>${escapeHtml(d.no_badan || "-")}</td>
+        <td>${escapeHtml(d.call_sign || "-")}</td>
+        <td>${escapeHtml(d.jenis_tugas || "-")}</td>
+        <td>${escapeHtml(d.tempat_tugas || "-")}</td>
+        <td>${d.penyelia ? "YA" : "TIDAK"}</td>
+        <td>${d.pemegang_set ? "YA" : "TIDAK"}</td>
+        <td>${d.latitude ?? "-"}</td>
+        <td>${d.longitude ?? "-"}</td>
+        <td>${d.radius_meter ?? "-"}</td>
+        <td>${semakan}</td>
+      </tr>`;
+    })
+    .join("");
+
+  el("notaPratontonImport").textContent = jumlah > 100
+    ? `Memaparkan 100 daripada ${jumlah} baris. Semua baris tetap akan diproses.`
+    : `Memaparkan semua ${jumlah} baris.`;
+}
+
+async function bacaFailPenugasanCsv(event) {
+  const fail = event?.target?.files?.[0];
+  if (!fail) return;
+
+  rekodImportPenugasan = [];
+  el("importFail").textContent = fail.name;
+  el("btnImportPenugasan").disabled = true;
+  paparMesej("statusImportPenugasan", "Sedang membaca dan menyemak fail CSV...", "warning");
+
+  try {
+    if (!/\.csv$/i.test(fail.name)) throw new Error("Sila pilih fail berformat .csv.");
+    if (fail.size > 5 * 1024 * 1024) throw new Error("Saiz fail melebihi had 5 MB.");
+
+    const kandungan = await fail.text();
+    rekodImportPenugasan = binaRekodImportCsv(parseCsv(kandungan));
+    await semakPetugasUntukImport(rekodImportPenugasan);
+    paparPratontonImport();
+
+    const sah = rekodImportPenugasan.filter(item => item.ralat.length === 0).length;
+    const gagal = rekodImportPenugasan.length - sah;
+    paparMesej(
+      "statusImportPenugasan",
+      gagal
+        ? `${sah} baris sah. ${gagal} baris bermasalah dan tidak akan diimport.`
+        : `Semua ${sah} baris sah dan sedia untuk diimport.`,
+      gagal ? "warning" : "success"
+    );
+  } catch (error) {
+    console.error("Bacaan CSV gagal:", error);
+    rekodImportPenugasan = [];
+    paparPratontonImport();
+    paparMesej("statusImportPenugasan", escapeHtml(error.message), "error");
+  }
+}
+
+function kosongkanImportPenugasan() {
+  if (importSedangBerjalan) return;
+  rekodImportPenugasan = [];
+  el("failPenugasanCsv").value = "";
+  el("importFail").textContent = "-";
+  el("statusImportPenugasan").className = "status-box";
+  el("statusImportPenugasan").innerHTML = "";
+  paparPratontonImport();
+}
+
+function muatTurunTemplatPenugasan() {
+  const tarikh = el("tarikh")?.value || hariIniMalaysia();
+  const kandungan = [
+    "TARIKH,NO_BADAN,CALL_SIGN,JENIS_TUGAS,TEMPAT_TUGAS,PENYELIA,PEMEGANG_SET,LATITUDE,LONGITUDE,RADIUS_METER,STATUS",
+    `${tarikh},197898,VCC,URUSETIA,SUBTEK,YA,YA,2.7585826,101.7096481,30,AKTIF`,
+    `${tarikh},199898,BRAVO 01,KAWALAN KESELAMATAN,PINTU UTAMA,TIDAK,YA,2.7591000,101.7102000,30,AKTIF`
+  ].join("\r\n");
+
+  const blob = new Blob(["\uFEFF", kandungan], { type: "text/csv;charset=utf-8" });
+  const pautan = document.createElement("a");
+  pautan.href = URL.createObjectURL(blob);
+  pautan.download = `TEMPLAT_PENUGASAN_${tarikh}.csv`;
+  document.body.appendChild(pautan);
+  pautan.click();
+  pautan.remove();
+  setTimeout(() => URL.revokeObjectURL(pautan.href), 1000);
+}
+
+async function importPenugasanCsv() {
+  if (importSedangBerjalan) return;
+
+  const sah = rekodImportPenugasan.filter(item => item.ralat.length === 0);
+  if (!sah.length) {
+    paparMesej("statusImportPenugasan", "Tiada baris sah untuk diimport.", "error");
+    return;
+  }
+
+  if (!confirm(`Import ${sah.length} rekod penugasan ke Supabase? Rekod tarikh dan No Badan yang sama akan dikemas kini.`)) return;
+
+  importSedangBerjalan = true;
+  const butang = el("btnImportPenugasan");
+  butang.disabled = true;
+  let diproses = 0;
+  let berjaya = 0;
+  let baharu = 0;
+  let dikemasKini = 0;
+  let gagal = 0;
+  const semuaRalat = [];
+
+  try {
+    const kumpulan = bahagiKumpulan(sah, 200);
+
+    for (let i = 0; i < kumpulan.length; i += 1) {
+      butang.textContent = `MENGIMPORT ${diproses} / ${sah.length}...`;
+      paparMesej(
+        "statusImportPenugasan",
+        `Sedang memproses kumpulan ${i + 1} daripada ${kumpulan.length}...`,
+        "warning"
+      );
+
+      const { data, error } = await denganHadMasa(
+        db.rpc("import_penugasan_csv", {
+          p_rekod: kumpulan[i].map(item => item.data)
+        }),
+        60000
+      );
+
+      if (error) {
+        const mesej = `${error.code || ""} ${error.message || ""}`;
+        if (/PGRST202|does not exist|schema cache|Could not find/i.test(mesej)) {
+          throw new Error("Fungsi import belum dipasang. Jalankan fail 03_import_penugasan_csv.sql dalam Supabase SQL Editor, kemudian cuba semula.");
+        }
+        throw error;
+      }
+
+      const hasil = typeof data === "string" ? JSON.parse(data) : (data || {});
+      berjaya += Number(hasil.berjaya || 0);
+      baharu += Number(hasil.baharu || 0);
+      dikemasKini += Number(hasil.dikemas_kini || 0);
+      gagal += Number(hasil.gagal || 0);
+      if (Array.isArray(hasil.ralat)) semuaRalat.push(...hasil.ralat);
+      diproses += kumpulan[i].length;
+    }
+
+    const butiranRalat = semuaRalat.length
+      ? `<br><details><summary>Lihat ${semuaRalat.length} ralat import</summary><ul>${semuaRalat.slice(0, 100).map(item => `<li>Baris ${escapeHtml(item.baris || "-")}: ${escapeHtml(item.mesej || "Ralat")}</li>`).join("")}</ul></details>`
+      : "";
+
+    paparMesej(
+      "statusImportPenugasan",
+      `<strong>IMPORT SELESAI</strong><br>Berjaya: ${berjaya} (Baharu: ${baharu}, Dikemas kini: ${dikemasKini})<br>Gagal: ${gagal}${butiranRalat}`,
+      gagal ? "warning" : "success"
+    );
+
+    if (sah[0]?.data?.tarikh) el("tarikh").value = sah[0].data.tarikh;
+    await muatData(true);
+  } catch (error) {
+    console.error("Import penugasan gagal:", error);
+    paparMesej("statusImportPenugasan", `Import gagal: ${escapeHtml(error.message)}`, "error");
+  } finally {
+    importSedangBerjalan = false;
+    butang.textContent = "IMPORT PENUGASAN KE SUPABASE";
+    butang.disabled = sah.length === 0;
   }
 }
 
