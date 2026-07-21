@@ -1627,50 +1627,61 @@ async function hantarResetDevice() {
    NAVIGASI MODUL PENTADBIR
 ================================================================ */
 
+/*
+  Menutup semua modul tambahan supaya hanya satu modul
+  dipaparkan pada satu masa.
+*/
 function tutupSemuaModulPentadbir() {
   const senaraiModul = [
     {
-      modul: "modulImportPengguna",
-      kandungan: "kandunganImportPengguna",
-      butang: "btnToggleImportPengguna",
-      teks: "PAPARKAN IMPORT"
+      idModul: "modulImportPengguna",
+      idKandungan: "kandunganImportPengguna",
+      idButang: "btnToggleImportPengguna",
+      teksButang: "PAPARKAN IMPORT"
     },
     {
-      modul: "modulImportPenugasan",
-      kandungan: "kandunganImportPenugasan",
-      butang: "btnToggleImportPenugasan",
-      teks: "PAPARKAN IMPORT"
+      idModul: "modulImportPenugasan",
+      idKandungan: "kandunganImportPenugasan",
+      idButang: "btnToggleImportPenugasan",
+      teksButang: "PAPARKAN IMPORT"
     },
     {
-      modul: "modulDaftarPengguna",
-      kandungan: "borangDaftarPengguna",
-      butang: "btnToggleDaftarPengguna",
-      teks: "PAPARKAN BORANG"
+      idModul: "modulDaftarPengguna",
+      idKandungan: "borangDaftarPengguna",
+      idButang: "btnToggleDaftarPengguna",
+      teksButang: "PAPARKAN BORANG"
     }
   ];
 
   senaraiModul.forEach(item => {
-    const modul = el(item.modul);
-    const kandungan = el(item.kandungan);
-    const butang = el(item.butang);
+    const modul = el(item.idModul);
+    const kandungan = el(item.idKandungan);
+    const butang = el(item.idButang);
 
     if (modul) {
       modul.hidden = true;
+      modul.setAttribute("hidden", "");
+      modul.style.display = "none";
       modul.classList.remove("modul-disorot");
     }
 
     if (kandungan) {
       kandungan.hidden = true;
+      kandungan.setAttribute("hidden", "");
     }
 
     if (butang) {
       butang.setAttribute("aria-expanded", "false");
-      butang.textContent = item.teks;
+      butang.textContent = item.teksButang;
     }
   });
 }
 
 
+/*
+  Membuka modul yang dipilih dan membawa paparan
+  ke bahagian modul tersebut.
+*/
 function bukaDanSkrolModul(
   idModul,
   idKandungan,
@@ -1682,57 +1693,61 @@ function bukaDanSkrolModul(
   const butangToggle = el(idButangToggle);
 
   if (!modul) {
-    alert("Modul tidak ditemui.");
+    console.error(`Modul tidak ditemui: ${idModul}`);
+    alert("Modul tidak ditemui. Sila semak ID modul dalam admin.html.");
     return;
   }
 
   /*
-    Hanya satu modul dipaparkan pada satu masa.
+    Tutup modul lain terlebih dahulu.
   */
   tutupSemuaModulPentadbir();
 
+  /*
+    Paparkan section utama.
+  */
   modul.hidden = false;
+  modul.removeAttribute("hidden");
+  modul.style.removeProperty("display");
 
+  /*
+    Paparkan kandungan di dalam section.
+  */
   if (kandungan) {
     kandungan.hidden = false;
-  }
-
-  if (butangToggle) {
-    butangToggle.setAttribute(
-      "aria-expanded",
-      "true"
-    );
-
-    butangToggle.textContent =
-      teksButangBuka;
+    kandungan.removeAttribute("hidden");
+    kandungan.style.removeProperty("display");
   }
 
   /*
-    Tunggu browser memaparkan modul dahulu,
-    kemudian scroll ke kedudukannya.
+    Kemas kini butang Paparkan/Sembunyikan.
   */
-  window.requestAnimationFrame(() => {
+  if (butangToggle) {
+    butangToggle.setAttribute("aria-expanded", "true");
+    butangToggle.textContent = teksButangBuka;
+  }
+
+  /*
+    Beri masa kepada browser untuk melukis modul,
+    kemudian scroll ke modul.
+  */
+  window.setTimeout(() => {
     modul.scrollIntoView({
       behavior: "smooth",
-      block: "start"
+      block: "start",
+      inline: "nearest"
     });
 
-    modul.classList.remove(
-      "modul-disorot"
-    );
+    modul.classList.remove("modul-disorot");
 
     void modul.offsetWidth;
 
-    modul.classList.add(
-      "modul-disorot"
-    );
+    modul.classList.add("modul-disorot");
 
     window.setTimeout(() => {
-      modul.classList.remove(
-        "modul-disorot"
-      );
+      modul.classList.remove("modul-disorot");
     }, 1800);
-  });
+  }, 100);
 }
 
 
@@ -1765,16 +1780,122 @@ function bukaDaftarPengguna() {
   );
 }
 
+
+/* ================================================================
+   TOGGLE MODUL
+================================================================ */
+
+function toggleDaftarPengguna() {
+  const modul = el("modulDaftarPengguna");
+  const kandungan = el("borangDaftarPengguna");
+  const butang = el("btnToggleDaftarPengguna");
+
+  if (!modul || !kandungan || !butang) return;
+
+  const sedangTerbuka = !kandungan.hidden;
+
+  if (sedangTerbuka) {
+    kandungan.hidden = true;
+    kandungan.setAttribute("hidden", "");
+
+    modul.hidden = true;
+    modul.setAttribute("hidden", "");
+    modul.style.display = "none";
+
+    butang.setAttribute("aria-expanded", "false");
+    butang.textContent = "PAPARKAN BORANG";
+  } else {
+    modul.hidden = false;
+    modul.removeAttribute("hidden");
+    modul.style.removeProperty("display");
+
+    kandungan.hidden = false;
+    kandungan.removeAttribute("hidden");
+
+    butang.setAttribute("aria-expanded", "true");
+    butang.textContent = "SEMBUNYIKAN BORANG";
+  }
+}
+
+
+function toggleBahagianImport(
+  idModul,
+  idKandungan,
+  idButang
+) {
+  const modul = el(idModul);
+  const kandungan = el(idKandungan);
+  const butang = el(idButang);
+
+  if (!modul || !kandungan || !butang) return;
+
+  const sedangTerbuka = !kandungan.hidden;
+
+  if (sedangTerbuka) {
+    kandungan.hidden = true;
+    kandungan.setAttribute("hidden", "");
+
+    modul.hidden = true;
+    modul.setAttribute("hidden", "");
+    modul.style.display = "none";
+
+    butang.setAttribute("aria-expanded", "false");
+    butang.textContent = "PAPARKAN IMPORT";
+  } else {
+    modul.hidden = false;
+    modul.removeAttribute("hidden");
+    modul.style.removeProperty("display");
+
+    kandungan.hidden = false;
+    kandungan.removeAttribute("hidden");
+
+    butang.setAttribute("aria-expanded", "true");
+    butang.textContent = "SEMBUNYIKAN IMPORT";
+  }
+}
+
+
+function toggleImportPengguna() {
+  toggleBahagianImport(
+    "modulImportPengguna",
+    "kandunganImportPengguna",
+    "btnToggleImportPengguna"
+  );
+}
+
+
+function toggleImportPenugasan() {
+  toggleBahagianImport(
+    "modulImportPenugasan",
+    "kandunganImportPenugasan",
+    "btnToggleImportPenugasan"
+  );
+}
+
+
 /* ================================================================
    PERMULAAN HALAMAN
 ================================================================ */
 
 document.addEventListener("DOMContentLoaded", () => {
-  el("tarikh").value = hariIniMalaysia();
+  const inputTarikh = el("tarikh");
+
+  if (inputTarikh) {
+    inputTarikh.value = hariIniMalaysia();
+  }
 
   el("password")?.addEventListener("keydown", event => {
-    if (event.key === "Enter") login();
+    if (event.key === "Enter") {
+      login();
+    }
   });
+
+  /*
+    Pastikan ketiga-tiga modul ditutup
+    apabila halaman mula dibuka.
+  */
+  tutupSemuaModulPentadbir();
 
   pulihkanSesiPentadbir();
 });
+
