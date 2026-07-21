@@ -461,6 +461,117 @@
 
   </div>
 
+  <!-- ===========================================================
+     MODAL PENGGANTIAN PETUGAS
+=========================================================== -->
+
+<div
+  id="modalPengganti"
+  class="modal hidden">
+
+  <div
+    class="modal-backdrop"
+    onclick="tutupModalPengganti()">
+  </div>
+
+  <div class="modal-box">
+
+    <h2>GANTI PETUGAS</h2>
+
+    <div
+      id="petugasAsal"
+      class="petugas-preview">
+    </div>
+
+    <label>No Badan Pengganti</label>
+
+    <div class="toolbar">
+
+      <input
+        id="noBadanPengganti"
+        type="text"
+        placeholder="Masukkan No Badan">
+
+      <button
+        class="btn-main"
+        type="button"
+        onclick="semakPetugasPengganti()">
+        SEMAK
+      </button>
+
+    </div>
+
+    <div
+      id="previewPengganti"
+      class="petugas-preview hidden">
+    </div>
+
+    <div
+      id="borangPengganti"
+      class="hidden">
+
+      <div class="form-grid">
+
+        <input
+          id="namaPengganti"
+          placeholder="Nama">
+
+        <input
+          id="pangkatPengganti"
+          placeholder="Pangkat">
+
+        <input
+          id="telefonPengganti"
+          placeholder="Telefon">
+
+        <input
+          id="bahagianPengganti"
+          placeholder="Bahagian">
+
+        <input
+          id="passwordPengganti"
+          placeholder="Kata Laluan">
+
+      </div>
+
+    </div>
+
+    <label>Catatan</label>
+
+    <textarea
+      id="catatanPenggantian"
+      placeholder="Contoh : Cuti kecemasan">
+    </textarea>
+
+    <div
+      id="statusPertukaran"
+      class="status hidden">
+    </div>
+
+    <div class="modal-actions">
+
+      <button
+        class="btn-secondary"
+        onclick="tutupModalPengganti()">
+
+        TUTUP
+
+      </button>
+
+      <button
+        class="btn-change"
+        id="btnSimpanPengganti"
+        onclick="gantiPetugas()">
+
+        SIMPAN
+
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
 
   <!-- ===========================================================
        JAVASCRIPT
