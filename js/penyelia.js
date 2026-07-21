@@ -954,9 +954,6 @@ function paparSenarai() {
     `
     : ""
 }
-              `
-              : ""
-          }
 
         </article>
       `;
