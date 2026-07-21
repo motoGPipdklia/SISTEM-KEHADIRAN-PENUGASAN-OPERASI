@@ -788,6 +788,7 @@ function paparSenarai() {
         Boolean(item.checkin) &&
         item.status ===
           "MENUNGGU";
+       
        const bolehGanti =
      item.status === "BELUM HADIR";
 
