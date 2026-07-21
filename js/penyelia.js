@@ -14,6 +14,7 @@ let penggunaPenyelia = null;
 let dataPenyelia = [];
 let dataLaporanPenyelia = [];
 let laporanAktif = null;
+let penugasanDipilih = null;
 
 
 /* ================================================================
@@ -2152,6 +2153,80 @@ document.addEventListener(
 /* ================================================================
    SISTEM DIMULAKAN
 ================================================================ */
+
+/* ================================================================
+   MODAL PENGGANTIAN
+================================================================ */
+
+function bukaModalPengganti(idPenugasan){
+
+  penugasanDipilih =
+    dataPenyelia.find(
+      x => String(x.idPenugasan) === String(idPenugasan)
+    );
+
+  if(!penugasanDipilih){
+    return;
+  }
+
+  elemenPenyelia("petugasAsal").innerHTML = `
+    <strong>Petugas Asal</strong><br><br>
+
+    ${htmlPenyelia(
+      penugasanDipilih.profil?.pangkat || ""
+    )}
+
+    ${htmlPenyelia(
+      penugasanDipilih.profil?.nama || ""
+    )}
+
+    <br>
+
+    ${htmlPenyelia(
+      penugasanDipilih.profil?.no_badan || "-"
+    )}
+  `;
+
+  elemenPenyelia("noBadanPengganti").value="";
+  elemenPenyelia("catatanPenggantian").value="";
+
+  elemenPenyelia("previewPengganti").innerHTML="";
+  elemenPenyelia("previewPengganti").classList.add("hidden");
+
+  elemenPenyelia("borangPengganti").classList.add("hidden");
+
+  elemenPenyelia("statusPertukaran").className="status hidden";
+
+  elemenPenyelia("modalPengganti").classList.remove("hidden");
+
+  document.body.classList.add("modal-open");
+
+}
+
+function tutupModalPengganti(){
+
+  elemenPenyelia("modalPengganti")
+    ?.classList.add("hidden");
+
+  document.body.classList.remove("modal-open");
+
+}
+
+function semakPetugasPengganti(){
+
+  alert(
+    "PATCH 2 akan menghubungkan carian ke Supabase."
+  );
+
+}
+
+function gantiPetugas(){
+
+  alert(
+    "PATCH 3 akan menyimpan penggantian ke pangkalan data."
+  );
+
+}
 
 document.addEventListener(
   "DOMContentLoaded",
