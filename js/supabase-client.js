@@ -15,9 +15,32 @@
   try {
     const konfigurasi = window.SKPO_CONFIG || {};
 
-    const projectUrl = String(
+    const projectUrlInput = String(
       konfigurasi.SUPABASE_URL || ""
     ).trim();
+
+    /*
+      Ambil origin projek sahaja. Ini turut membetulkan konfigurasi yang
+      tersilap ditampal sebagai /functions/v1/... atau /auth/v1/....
+    */
+    let projectUrl = "";
+
+    try {
+      const url = new URL(projectUrlInput);
+
+      if (
+        url.protocol !== "https:" ||
+        !url.hostname.endsWith(".supabase.co")
+      ) {
+        throw new Error("Domain Supabase tidak sah.");
+      }
+
+      projectUrl = url.origin;
+    } catch (_) {
+      throw new Error(
+        "SUPABASE_URL tidak sah. Gunakan URL projek seperti https://PROJECT-ID.supabase.co"
+      );
+    }
 
     /*
       Menyokong kedua-dua nama kerana projek Supabase lama mungkin
