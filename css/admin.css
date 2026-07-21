@@ -375,6 +375,18 @@ button:disabled{
   color:var(--gold);
 }
 
+.section-heading-actions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+[id^="kandunganImport"][hidden]{
+  display:none !important;
+}
+
 .muted{
   margin:0;
   color:var(--muted);
@@ -784,6 +796,12 @@ tbody tr:hover{
 
   .compact-button{
     width:100%;
+  }
+
+  .section-heading-actions{
+    width:100%;
+    display:grid;
+    grid-template-columns:1fr;
   }
 
   .card,
