@@ -64,7 +64,15 @@ async function loginTSM() {
     const profil = await ambilProfilTSM(data.user.id);
     if (!profil) throw new Error("Profil TSM tidak ditemui.");
     if (profil.aktif === false) throw new Error("Akaun telah dinyahaktifkan.");
-    if (!perananTSM(profil.peranan)) throw new Error(`Akses ditolak. Peranan akaun ialah ${atasTSM(profil.peranan)}.`);
+    const peranan = atasTSM(profil.peranan);
+if (!perananTSM(peranan)) {
+
+    await dbTSM.auth.signOut().catch(() => {});
+
+    window.location.replace("index.html");
+    return;
+
+}
     penggunaTSM = { ...profil, authUserId: data.user.id };
     paparDashboardTSM(); await muatDataTSM();
   } catch (error) {
@@ -85,7 +93,23 @@ async function pulihkanSesiTSM() {
     const { data } = await dbTSM.auth.getSession();
     if (!data.session?.user) return;
     const profil = await ambilProfilTSM(data.session.user.id);
-    if (!profil || profil.aktif === false || !perananTSM(profil.peranan)) return;
+    if (!profil || profil.aktif === false) {
+
+    await dbTSM.auth.signOut().catch(() => {});
+    window.location.replace("index.html");
+    return;
+
+}
+
+const peranan = atasTSM(profil.peranan);
+
+if (!perananTSM(peranan)) {
+
+    await dbTSM.auth.signOut().catch(() => {});
+    window.location.replace("index.html");
+    return;
+
+}
     penggunaTSM = { ...profil, authUserId: data.session.user.id };
     paparDashboardTSM(); await muatDataTSM();
   } catch (error) { paparStatusTSM("loginStatus", htmlTSM(error.message), "error"); }
