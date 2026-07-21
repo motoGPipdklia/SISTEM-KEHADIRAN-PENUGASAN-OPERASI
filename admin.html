@@ -163,9 +163,14 @@
 
         <button class="gray" type="button" onclick="window.print()">CETAK</button>
 
-        <button class="tsm-button" type="button" onclick="bukaModulTSM()">
-          MODUL TSM / SET WALKIE-TALKIE
-        </button>
+        <select
+  id="pangkatPenapis"
+  class="tsm-button"
+  onchange="papar()"
+  aria-label="Carian mengikut pangkat"
+>
+  <option value="">SEMUA PANGKAT</option>
+</select>
       </section>
 
       <!-- ===============================================
