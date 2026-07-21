@@ -5,7 +5,9 @@
 ================================================================ */
 
 const dbPenyelia = window.supabaseClient;
+
 const ZON_MASA_PENYELIA = "Asia/Kuala_Lumpur";
+
 const JADUAL_LAPORAN = "pelaporan";
 
 let penggunaPenyelia = null;
@@ -61,7 +63,9 @@ function hariIniPenyelia() {
 
 
 function formatMasaPenyelia(nilai) {
-  if (!nilai) return "-";
+  if (!nilai) {
+    return "-";
+  }
 
   const tarikh = new Date(nilai);
 
@@ -82,17 +86,27 @@ function formatMasaPenyelia(nilai) {
 }
 
 
-function statusPenyelia(id, mesej, jenis = "warning") {
+function statusPenyelia(
+  id,
+  mesej,
+  jenis = "warning"
+) {
   const elemen = elemenPenyelia(id);
 
-  if (!elemen) return;
+  if (!elemen) {
+    return;
+  }
 
   elemen.className = `status ${jenis}`;
   elemen.innerHTML = mesej;
 }
 
 
-function nilaiPertama(objek, senaraiKunci, nilaiAsal = "") {
+function nilaiPertama(
+  objek,
+  senaraiKunci,
+  nilaiAsal = ""
+) {
   for (const kunci of senaraiKunci) {
     const nilai = objek?.[kunci];
 
@@ -110,7 +124,9 @@ function nilaiPertama(objek, senaraiKunci, nilaiAsal = "") {
 
 
 function tarikhDaripadaNilai(nilai) {
-  if (!nilai) return "";
+  if (!nilai) {
+    return "";
+  }
 
   const teks = teksPenyelia(nilai);
 
@@ -144,15 +160,38 @@ async function profilPenyelia(userId) {
     .eq("id", userId)
     .maybeSingle();
 
+  /*
+    Jika profiles.id tidak sama dengan auth.users.id,
+    cuba cari menggunakan auth_user_id.
+  */
   if (
+    (!hasil.data || hasil.error) &&
     hasil.error &&
-    /auth_user_id/i.test(hasil.error.message || "")
+    /auth_user_id/i.test(
+      hasil.error.message || ""
+    )
   ) {
     hasil = await dbPenyelia
       .from("profiles")
       .select("*")
       .eq("auth_user_id", userId)
       .maybeSingle();
+  }
+
+  /*
+    Jika tiada ralat tetapi data masih tidak ditemui,
+    cuba auth_user_id.
+  */
+  if (!hasil.error && !hasil.data) {
+    const cubaanAuthId = await dbPenyelia
+      .from("profiles")
+      .select("*")
+      .eq("auth_user_id", userId)
+      .maybeSingle();
+
+    if (!cubaanAuthId.error) {
+      hasil = cubaanAuthId;
+    }
   }
 
   if (hasil.error) {
@@ -169,17 +208,28 @@ function perananPenyeliaDibenarkan(peranan) {
     "PENYELIA",
     "PENTADBIR",
     "ADMIN"
-  ].includes(atasPenyelia(peranan));
+  ].includes(
+    atasPenyelia(peranan)
+  );
 }
 
 
 async function loginPenyelia() {
+  const inputNoBadan =
+    elemenPenyelia("noBadan");
+
+  const inputPassword =
+    elemenPenyelia("password");
+
+  const butang =
+    elemenPenyelia("btnLogin");
+
   const noBadan = atasPenyelia(
-    elemenPenyelia("noBadan").value
+    inputNoBadan?.value || ""
   );
 
-  const password = elemenPenyelia("password").value;
-  const butang = elemenPenyelia("btnLogin");
+  const password =
+    inputPassword?.value || "";
 
   if (!noBadan || !password) {
     statusPenyelia(
@@ -191,8 +241,11 @@ async function loginPenyelia() {
     return;
   }
 
-  butang.disabled = true;
-  butang.textContent = "SEDANG MENYEMAK...";
+  if (butang) {
+    butang.disabled = true;
+    butang.textContent =
+      "SEDANG MENYEMAK...";
+  }
 
   statusPenyelia(
     "loginStatus",
@@ -209,18 +262,21 @@ async function loginPenyelia() {
     }
 
     const { data, error } =
-      await dbPenyelia.auth.signInWithPassword({
-        email: emailPenyelia(noBadan),
-        password
-      });
+      await dbPenyelia.auth
+        .signInWithPassword({
+          email: emailPenyelia(noBadan),
+          password
+        });
 
-    if (error || !data.user) {
+    if (error || !data?.user) {
       throw new Error(
         "No Badan atau kata laluan tidak sah."
       );
     }
 
-    const profil = await profilPenyelia(data.user.id);
+    const profil = await profilPenyelia(
+      data.user.id
+    );
 
     if (!profil) {
       throw new Error(
@@ -234,7 +290,11 @@ async function loginPenyelia() {
       );
     }
 
-    if (!perananPenyeliaDibenarkan(profil.peranan)) {
+    if (
+      !perananPenyeliaDibenarkan(
+        profil.peranan
+      )
+    ) {
       throw new Error(
         `Akses ditolak. Peranan akaun ialah ${
           atasPenyelia(profil.peranan) ||
@@ -253,17 +313,25 @@ async function loginPenyelia() {
     await muatSemuaDataPenyelia();
 
   } catch (error) {
-    await dbPenyelia?.auth?.signOut().catch(() => {});
+    await dbPenyelia?.auth
+      ?.signOut()
+      .catch(() => {});
 
     statusPenyelia(
       "loginStatus",
-      htmlPenyelia(error.message),
+      htmlPenyelia(
+        error.message ||
+        "Login gagal."
+      ),
       "error"
     );
 
   } finally {
-    butang.disabled = false;
-    butang.textContent = "LOGIN URUSETIA";
+    if (butang) {
+      butang.disabled = false;
+      butang.textContent =
+        "LOGIN URUSETIA";
+    }
   }
 }
 
@@ -274,31 +342,42 @@ async function loginPenyelia() {
 
 function paparDashboardPenyelia() {
   elemenPenyelia("loginSection")
-    .classList.add("hidden");
+    ?.classList.add("hidden");
 
   elemenPenyelia("dashboardSection")
-    .classList.remove("hidden");
+    ?.classList.remove("hidden");
 
-  elemenPenyelia("profilPenyelia").innerHTML = `
+  const profilElemen =
+    elemenPenyelia("profilPenyelia");
+
+  if (!profilElemen) {
+    return;
+  }
+
+  profilElemen.innerHTML = `
     <strong>
       ${htmlPenyelia(
-        penggunaPenyelia.pangkat || ""
+        penggunaPenyelia?.pangkat || ""
       )}
       ${htmlPenyelia(
-        penggunaPenyelia.nama || "-"
+        penggunaPenyelia?.nama || "-"
       )}
     </strong>
+
     <br>
 
     No Badan:
     ${htmlPenyelia(
-      penggunaPenyelia.no_badan || "-"
+      penggunaPenyelia?.no_badan || "-"
     )}
+
     <br>
 
     Peranan:
     ${htmlPenyelia(
-      atasPenyelia(penggunaPenyelia.peranan)
+      atasPenyelia(
+        penggunaPenyelia?.peranan
+      )
     )}
   `;
 }
@@ -323,8 +402,13 @@ async function pulihkanSesiPenyelia() {
       return;
     }
 
-    const { data } =
-      await dbPenyelia.auth.getSession();
+    const { data, error } =
+      await dbPenyelia.auth
+        .getSession();
+
+    if (error) {
+      throw error;
+    }
 
     if (!data.session?.user) {
       return;
@@ -337,14 +421,21 @@ async function pulihkanSesiPenyelia() {
     if (
       !profil ||
       profil.aktif === false ||
-      !perananPenyeliaDibenarkan(profil.peranan)
+      !perananPenyeliaDibenarkan(
+        profil.peranan
+      )
     ) {
+      await dbPenyelia.auth
+        .signOut()
+        .catch(() => {});
+
       return;
     }
 
     penggunaPenyelia = {
       ...profil,
-      authUserId: data.session.user.id
+      authUserId:
+        data.session.user.id
     };
 
     paparDashboardPenyelia();
@@ -354,7 +445,10 @@ async function pulihkanSesiPenyelia() {
   } catch (error) {
     statusPenyelia(
       "loginStatus",
-      htmlPenyelia(error.message),
+      htmlPenyelia(
+        error.message ||
+        "Gagal memulihkan sesi."
+      ),
       "error"
     );
   }
@@ -378,13 +472,20 @@ async function muatSemuaDataPenyelia() {
 ================================================================ */
 
 async function muatDataPenyelia() {
-  if (!penggunaPenyelia) return;
+  if (!penggunaPenyelia) {
+    return;
+  }
+
+  const inputTarikh =
+    elemenPenyelia("tarikh");
 
   const tarikh =
-    elemenPenyelia("tarikh").value ||
+    inputTarikh?.value ||
     hariIniPenyelia();
 
-  elemenPenyelia("tarikh").value = tarikh;
+  if (inputTarikh) {
+    inputTarikh.value = tarikh;
+  }
 
   statusPenyelia(
     "statusData",
@@ -393,16 +494,18 @@ async function muatDataPenyelia() {
   );
 
   try {
-    const tugasanRes = await dbPenyelia
-      .from("penugasan")
-      .select("*")
-      .eq("tarikh", tarikh);
+    const tugasanRes =
+      await dbPenyelia
+        .from("penugasan")
+        .select("*")
+        .eq("tarikh", tarikh);
 
     if (tugasanRes.error) {
       throw tugasanRes.error;
     }
 
-    const tugasan = tugasanRes.data || [];
+    const tugasan =
+      tugasanRes.data || [];
 
     const petugasIds = [
       ...new Set(
@@ -418,22 +521,25 @@ async function muatDataPenyelia() {
     let profil = [];
 
     if (petugasIds.length) {
-      const profilRes = await dbPenyelia
-        .from("profiles")
-        .select("*")
-        .in("id", petugasIds);
+      const profilRes =
+        await dbPenyelia
+          .from("profiles")
+          .select("*")
+          .in("id", petugasIds);
 
       if (profilRes.error) {
         throw profilRes.error;
       }
 
-      profil = profilRes.data || [];
+      profil =
+        profilRes.data || [];
     }
 
-    const checkinRes = await dbPenyelia
-      .from("checkin")
-      .select("*")
-      .eq("tarikh", tarikh);
+    const checkinRes =
+      await dbPenyelia
+        .from("checkin")
+        .select("*")
+        .eq("tarikh", tarikh);
 
     if (checkinRes.error) {
       throw checkinRes.error;
@@ -447,56 +553,64 @@ async function muatDataPenyelia() {
     );
 
     const checkinMap = new Map(
-      (checkinRes.data || []).map(item => [
-        item.penugasan_id,
-        item
-      ])
+      (checkinRes.data || [])
+        .map(item => [
+          item.penugasan_id,
+          item
+        ])
     );
 
-    dataPenyelia = tugasan.map(item => {
-      const petugas =
-        profilMap.get(
+    dataPenyelia =
+      tugasan.map(item => {
+        const idPetugas =
           item.petugas_id ||
-          item.profile_id
-        ) || {};
+          item.profile_id;
 
-      const checkin =
-        checkinMap.get(item.id) ||
-        null;
+        const petugas =
+          profilMap.get(idPetugas) ||
+          {};
 
-      const statusCheckin =
-        atasPenyelia(checkin?.status);
+        const checkin =
+          checkinMap.get(item.id) ||
+          null;
 
-      let status = "BELUM HADIR";
+        const statusCheckin =
+          atasPenyelia(
+            checkin?.status
+          );
 
-      if (
-        atasPenyelia(item.status) ===
-        "DIGANTI"
-      ) {
-        status = "DIGANTI";
+        let status =
+          "BELUM HADIR";
 
-      } else if (checkin) {
         if (
-          statusCheckin === "MENUNGGU" ||
-          statusCheckin ===
-            "MENUNGGU PENGESAHAN" ||
-          !statusCheckin
+          atasPenyelia(item.status) ===
+          "DIGANTI"
         ) {
-          status = "MENUNGGU";
+          status = "DIGANTI";
 
-        } else {
-          status = statusCheckin;
+        } else if (checkin) {
+          if (
+            statusCheckin ===
+              "MENUNGGU" ||
+            statusCheckin ===
+              "MENUNGGU PENGESAHAN" ||
+            !statusCheckin
+          ) {
+            status = "MENUNGGU";
+
+          } else {
+            status = statusCheckin;
+          }
         }
-      }
 
-      return {
-        idPenugasan: item.id,
-        profil: petugas,
-        tugas: item,
-        checkin,
-        status
-      };
-    });
+        return {
+          idPenugasan: item.id,
+          profil: petugas,
+          tugas: item,
+          checkin,
+          status
+        };
+      });
 
     paparSenarai();
 
@@ -507,6 +621,11 @@ async function muatDataPenyelia() {
     );
 
   } catch (error) {
+    console.error(
+      "Ralat muat kehadiran:",
+      error
+    );
+
     dataPenyelia = [];
 
     paparSenarai();
@@ -514,7 +633,8 @@ async function muatDataPenyelia() {
     statusPenyelia(
       "statusData",
       `Ralat: ${htmlPenyelia(
-        error.message
+        error.message ||
+        "Gagal memuatkan rekod."
       )}`,
       "error"
     );
@@ -528,13 +648,18 @@ async function muatDataPenyelia() {
 
 function tetapPenapisStatus(status) {
   const penapis =
-    elemenPenyelia("penapisStatus");
+    elemenPenyelia(
+      "penapisStatus"
+    );
 
   if (penapis) {
     penapis.value = status;
   }
 
-  tukarTabPenyelia("kehadiran");
+  tukarTabPenyelia(
+    "kehadiran"
+  );
+
   paparSenarai();
 }
 
@@ -545,12 +670,14 @@ function tetapPenapisStatus(status) {
 
 function paparSenarai() {
   const carian = atasPenyelia(
-    elemenPenyelia("carian")?.value || ""
+    elemenPenyelia("carian")
+      ?.value || ""
   );
 
   const penapis = atasPenyelia(
-    elemenPenyelia("penapisStatus")?.value ||
-    "SEMUA"
+    elemenPenyelia(
+      "penapisStatus"
+    )?.value || "SEMUA"
   );
 
   const jumlahSemua =
@@ -559,40 +686,55 @@ function paparSenarai() {
   const jumlahBelumHadir =
     dataPenyelia.filter(
       item =>
-        item.status === "BELUM HADIR"
+        item.status ===
+        "BELUM HADIR"
     ).length;
 
   const jumlahMenunggu =
     dataPenyelia.filter(
       item =>
-        item.status === "MENUNGGU"
+        item.status ===
+        "MENUNGGU"
     ).length;
 
-  if (elemenPenyelia("jumlahRekod")) {
-    elemenPenyelia("jumlahRekod")
-      .textContent = jumlahSemua;
+  const elemenJumlahRekod =
+    elemenPenyelia("jumlahRekod");
+
+  const elemenBelumHadir =
+    elemenPenyelia(
+      "jumlahBelumHadir"
+    );
+
+  const elemenMenunggu =
+    elemenPenyelia(
+      "jumlahMenunggu"
+    );
+
+  if (elemenJumlahRekod) {
+    elemenJumlahRekod.textContent =
+      jumlahSemua;
   }
 
-  if (elemenPenyelia("jumlahBelumHadir")) {
-    elemenPenyelia("jumlahBelumHadir")
-      .textContent = jumlahBelumHadir;
+  if (elemenBelumHadir) {
+    elemenBelumHadir.textContent =
+      jumlahBelumHadir;
   }
 
-  if (elemenPenyelia("jumlahMenunggu")) {
-    elemenPenyelia("jumlahMenunggu")
-      .textContent = jumlahMenunggu;
+  if (elemenMenunggu) {
+    elemenMenunggu.textContent =
+      jumlahMenunggu;
   }
 
-  const senarai = dataPenyelia.filter(
-    item => {
+  const senarai =
+    dataPenyelia.filter(item => {
       const gabung = atasPenyelia([
-        item.profil.no_badan,
-        item.profil.pangkat,
-        item.profil.nama,
-        item.tugas.call_sign,
-        item.tugas.jenis_tugas,
-        item.tugas.tempat_tugas ||
-          item.tugas.lokasi,
+        item.profil?.no_badan,
+        item.profil?.pangkat,
+        item.profil?.nama,
+        item.tugas?.call_sign,
+        item.tugas?.jenis_tugas,
+        item.tugas?.tempat_tugas ||
+          item.tugas?.lokasi,
         item.status
       ].join(" "));
 
@@ -608,13 +750,16 @@ function paparSenarai() {
         padanCarian &&
         padanStatus
       );
-    }
-  );
+    });
 
   const bekas =
-    elemenPenyelia("senaraiPetugas");
+    elemenPenyelia(
+      "senaraiPetugas"
+    );
 
-  if (!bekas) return;
+  if (!bekas) {
+    return;
+  }
 
   if (!senarai.length) {
     bekas.innerHTML = `
@@ -626,11 +771,12 @@ function paparSenarai() {
     return;
   }
 
-  bekas.innerHTML = senarai
-    .map(item => {
+  bekas.innerHTML =
+    senarai.map(item => {
       const bolehTindak =
-        item.checkin &&
-        item.status === "MENUNGGU";
+        Boolean(item.checkin) &&
+        item.status ===
+          "MENUNGGU";
 
       const statusPaparan =
         item.status === "MENUNGGU"
@@ -638,7 +784,7 @@ function paparSenarai() {
           : item.status;
 
       const kelasStatus =
-        item.status
+        atasPenyelia(item.status)
           .toLowerCase()
           .replace(/\s+/g, "-");
 
@@ -649,7 +795,7 @@ function paparSenarai() {
 
             <h3>
               ${htmlPenyelia(
-                item.tugas.call_sign ||
+                item.tugas?.call_sign ||
                 "TIADA CALL SIGN"
               )}
             </h3>
@@ -674,11 +820,11 @@ function paparSenarai() {
 
             <div>
               ${htmlPenyelia(
-                item.profil.pangkat ||
+                item.profil?.pangkat ||
                 "-"
               )}
               ${htmlPenyelia(
-                item.profil.nama ||
+                item.profil?.nama ||
                 "-"
               )}
             </div>
@@ -689,7 +835,7 @@ function paparSenarai() {
 
             <div>
               ${htmlPenyelia(
-                item.profil.no_badan ||
+                item.profil?.no_badan ||
                 "-"
               )}
             </div>
@@ -700,7 +846,7 @@ function paparSenarai() {
 
             <div>
               ${htmlPenyelia(
-                item.tugas.jenis_tugas ||
+                item.tugas?.jenis_tugas ||
                 "-"
               )}
             </div>
@@ -711,8 +857,8 @@ function paparSenarai() {
 
             <div>
               ${htmlPenyelia(
-                item.tugas.tempat_tugas ||
-                item.tugas.lokasi ||
+                item.tugas?.tempat_tugas ||
+                item.tugas?.lokasi ||
                 "-"
               )}
             </div>
@@ -724,7 +870,8 @@ function paparSenarai() {
             <div>
               ${htmlPenyelia(
                 formatMasaPenyelia(
-                  item.checkin?.masa_checkin
+                  item.checkin
+                    ?.masa_checkin
                 )
               )}
             </div>
@@ -775,8 +922,7 @@ function paparSenarai() {
 
         </article>
       `;
-    })
-    .join("");
+    }).join("");
 }
 
 
@@ -784,12 +930,16 @@ function paparSenarai() {
    SAHKAN KEHADIRAN
 ================================================================ */
 
-async function sahkanKehadiran(checkinId) {
+async function sahkanKehadiran(
+  checkinId
+) {
   const pasti = confirm(
     "Sahkan kehadiran petugas ini?"
   );
 
-  if (!pasti) return;
+  if (!pasti) {
+    return;
+  }
 
   await ubahStatusKehadiran(
     checkinId,
@@ -803,12 +953,16 @@ async function sahkanKehadiran(checkinId) {
    TOLAK KEHADIRAN
 ================================================================ */
 
-async function tolakKehadiran(checkinId) {
+async function tolakKehadiran(
+  checkinId
+) {
   const sebab = prompt(
     "Nyatakan sebab penolakan:"
   );
 
-  if (sebab === null) return;
+  if (sebab === null) {
+    return;
+  }
 
   if (!teksPenyelia(sebab)) {
     alert(
@@ -835,18 +989,32 @@ async function ubahStatusKehadiran(
   status,
   sebab
 ) {
+  if (!penggunaPenyelia) {
+    alert(
+      "Sesi Urusetia tidak ditemui. Sila login semula."
+    );
+
+    return;
+  }
+
   try {
-    const { error } = await dbPenyelia
-      .from("checkin")
-      .update({
-        status,
-        disahkan_oleh:
-          penggunaPenyelia.authUserId,
-        masa_pengesahan:
-          new Date().toISOString(),
-        sebab_ditolak: sebab
-      })
-      .eq("id", checkinId);
+    const idPengesah =
+      penggunaPenyelia.id ||
+      penggunaPenyelia.authUserId;
+
+    const { error } =
+      await dbPenyelia
+        .from("checkin")
+        .update({
+          status,
+          disahkan_oleh:
+            idPengesah,
+          masa_pengesahan:
+            new Date().toISOString(),
+          sebab_ditolak:
+            sebab
+        })
+        .eq("id", checkinId);
 
     if (error) {
       throw error;
@@ -855,8 +1023,16 @@ async function ubahStatusKehadiran(
     await muatDataPenyelia();
 
   } catch (error) {
+    console.error(
+      "Ralat ubah status kehadiran:",
+      error
+    );
+
     alert(
-      `Tindakan gagal: ${error.message}`
+      `Tindakan gagal: ${
+        error.message ||
+        "Ralat tidak diketahui."
+      }`
     );
   }
 }
@@ -867,10 +1043,13 @@ async function ubahStatusKehadiran(
 ================================================================ */
 
 async function muatLaporanPenyelia() {
-  if (!penggunaPenyelia) return;
+  if (!penggunaPenyelia) {
+    return;
+  }
 
   const tarikh =
-    elemenPenyelia("tarikh")?.value ||
+    elemenPenyelia("tarikh")
+      ?.value ||
     hariIniPenyelia();
 
   statusPenyelia(
@@ -880,75 +1059,92 @@ async function muatLaporanPenyelia() {
   );
 
   try {
-    const laporanRes = await dbPenyelia
-  .from(JADUAL_LAPORAN)
-  .select("*");
+    /*
+      Struktur sebenar jadual pelaporan:
 
-if (laporanRes.error) {
-  throw laporanRes.error;
-}
+      id
+      penugasan_id
+      petugas_id
+      tarikh_masa
+      jumlah_pengunjung
+      jumlah_kenderaan
+      vvip_vip
+      perkara_menarik
+      dibaca
+      dibaca_pada
+      dibaca_oleh
+    */
+    const laporanRes =
+      await dbPenyelia
+        .from(JADUAL_LAPORAN)
+        .select(`
+          id,
+          penugasan_id,
+          petugas_id,
+          tarikh_masa,
+          jumlah_pengunjung,
+          jumlah_kenderaan,
+          vvip_vip,
+          perkara_menarik,
+          dibaca,
+          dibaca_pada,
+          dibaca_oleh
+        `)
+        .order(
+          "tarikh_masa",
+          {
+            ascending: false
+          }
+        );
 
-const semuaLaporan = [
-  ...(laporanRes.data || [])
-].sort((a, b) => {
+    if (laporanRes.error) {
+      throw laporanRes.error;
+    }
 
-  const nilaiMasaA = nilaiPertama(a, [
-    "tarikh_masa",
-    "masa_laporan",
-    "tarikh_laporan",
-    "tarikh",
-    "created_at"
-  ]);
-
-  const nilaiMasaB = nilaiPertama(b, [
-    "tarikh_masa",
-    "masa_laporan",
-    "tarikh_laporan",
-    "tarikh",
-    "created_at"
-  ]);
-
-  return (Date.parse(nilaiMasaB) || 0) - (Date.parse(nilaiMasaA) || 0);
-
-});
+    const semuaLaporan =
+      laporanRes.data || [];
 
     const laporanTarikh =
       semuaLaporan.filter(item => {
         const tarikhItem =
           tarikhDaripadaNilai(
-            nilaiPertama(item, [
-              "tarikh",
-              "tarikh_laporan",
-              "tarikh_masa",
-              "masa_laporan",
-              "created_at"
-            ])
+            item.tarikh_masa
           );
 
-        return tarikhItem === tarikh;
+        return (
+          tarikhItem === tarikh
+        );
       });
 
     const petugasIds = [
       ...new Set(
         laporanTarikh
           .map(item =>
-            nilaiPertama(item, [
-              "petugas_id",
-              "profile_id",
-              "user_id"
-            ])
+            item.petugas_id
+          )
+          .filter(Boolean)
+      )
+    ];
+
+    const penugasanIds = [
+      ...new Set(
+        laporanTarikh
+          .map(item =>
+            item.penugasan_id
           )
           .filter(Boolean)
       )
     ];
 
     let profiles = [];
+    let penugasan = [];
 
     if (petugasIds.length) {
-      const profilRes = await dbPenyelia
-        .from("profiles")
-        .select("*")
-        .in("id", petugasIds);
+      const profilRes =
+        await dbPenyelia
+          .from("profiles")
+          .select("*")
+          .in("id", petugasIds);
 
       if (profilRes.error) {
         throw profilRes.error;
@@ -958,36 +1154,53 @@ const semuaLaporan = [
         profilRes.data || [];
     }
 
+    if (penugasanIds.length) {
+      const penugasanRes =
+        await dbPenyelia
+          .from("penugasan")
+          .select("*")
+          .in("id", penugasanIds);
+
+      if (penugasanRes.error) {
+        throw penugasanRes.error;
+      }
+
+      penugasan =
+        penugasanRes.data || [];
+    }
+
     const profilMap = new Map(
       profiles.map(item => [
-        item.id,
+        String(item.id),
         item
       ])
     );
 
+    const penugasanMap =
+      new Map(
+        penugasan.map(item => [
+          String(item.id),
+          item
+        ])
+      );
+
     dataLaporanPenyelia =
       laporanTarikh.map(item => {
-        const petugasId =
-          nilaiPertama(item, [
-            "petugas_id",
-            "profile_id",
-            "user_id"
-          ]);
-
         const profil =
-          profilMap.get(petugasId) ||
-          {};
+          profilMap.get(
+            String(item.petugas_id)
+          ) || {};
+
+        const tugas =
+          penugasanMap.get(
+            String(
+              item.penugasan_id
+            )
+          ) || {};
 
         const telahDibaca =
-          item.telah_dibaca === true ||
-          atasPenyelia(
-            item.status_bacaan
-          ) === "TELAH DIBACA" ||
-          atasPenyelia(
-            item.status_laporan
-          ) === "TELAH DIBACA" ||
+          item.dibaca === true ||
           Boolean(
-            item.masa_dibaca ||
             item.dibaca_pada
           );
 
@@ -995,91 +1208,45 @@ const semuaLaporan = [
           asal: item,
           id: item.id,
           profil,
-          petugasId,
+          tugas,
+          petugasId:
+            item.petugas_id,
+          penugasanId:
+            item.penugasan_id,
 
           tarikhMasa:
-            nilaiPertama(item, [
-              "tarikh_masa",
-              "masa_laporan",
-              "created_at",
-              "tarikh"
-            ]),
+            item.tarikh_masa,
 
           callSign:
-            nilaiPertama(
-              item,
-              [
-                "call_sign",
-                "callsign"
-              ],
-              "-"
-            ),
+            tugas.call_sign ||
+            tugas.callsign ||
+            "-",
 
           jumlahPengunjung:
-            nilaiPertama(
-              item,
-              [
-                "jumlah_pengunjung",
-                "pengunjung"
-              ],
-              0
-            ),
+            item.jumlah_pengunjung ??
+            0,
 
           jumlahKenderaan:
-            nilaiPertama(
-              item,
-              [
-                "jumlah_kenderaan",
-                "kenderaan"
-              ],
-              0
-            ),
+            item.jumlah_kenderaan ??
+            0,
 
           vvipVip:
-            nilaiPertama(
-              item,
-              [
-                "vvip_vip",
-                "vvip",
-                "vip"
-              ],
-              "-"
-            ),
+            item.vvip_vip ||
+            "TIADA",
 
           perkaraMenarik:
-            nilaiPertama(
-              item,
-              [
-                "perkara_menarik",
-                "catatan",
-                "laporan",
-                "butiran"
-              ],
-              "-"
-            ),
+            item.perkara_menarik ||
+            "TIADA",
 
           telahDibaca,
 
           dibacaOleh:
-            nilaiPertama(
-              item,
-              [
-                "dibaca_oleh",
-                "disemak_oleh"
-              ],
-              ""
-            ),
+            item.dibaca_oleh ||
+            "",
 
           masaDibaca:
-            nilaiPertama(
-              item,
-              [
-                "masa_dibaca",
-                "dibaca_pada",
-                "updated_at"
-              ],
-              ""
-            )
+            item.dibaca_pada ||
+            ""
         };
       });
 
@@ -1092,6 +1259,11 @@ const semuaLaporan = [
     );
 
   } catch (error) {
+    console.error(
+      "Ralat muat laporan:",
+      error
+    );
+
     dataLaporanPenyelia = [];
 
     paparSenaraiLaporan();
@@ -1099,7 +1271,8 @@ const semuaLaporan = [
     statusPenyelia(
       "statusLaporan",
       `Ralat laporan: ${htmlPenyelia(
-        error.message
+        error.message ||
+        "Gagal memuatkan laporan."
       )}`,
       "error"
     );
@@ -1113,18 +1286,21 @@ const semuaLaporan = [
 
 function paparSenaraiLaporan() {
   const carian = atasPenyelia(
-    elemenPenyelia("carianLaporan")
-      ?.value || ""
+    elemenPenyelia(
+      "carianLaporan"
+    )?.value || ""
   );
 
   const penapis = atasPenyelia(
-    elemenPenyelia("penapisLaporan")
-      ?.value || "SEMUA"
+    elemenPenyelia(
+      "penapisLaporan"
+    )?.value || "SEMUA"
   );
 
   const belumDibaca =
     dataLaporanPenyelia.filter(
-      item => !item.telahDibaca
+      item =>
+        !item.telahDibaca
     ).length;
 
   const jumlahBelumDibaca =
@@ -1138,10 +1314,13 @@ function paparSenaraiLaporan() {
   }
 
   const badge =
-    elemenPenyelia("badgeLaporan");
+    elemenPenyelia(
+      "badgeLaporan"
+    );
 
   if (badge) {
-    badge.textContent = belumDibaca;
+    badge.textContent =
+      belumDibaca;
 
     badge.classList.toggle(
       "hidden",
@@ -1150,39 +1329,49 @@ function paparSenaraiLaporan() {
   }
 
   const senarai =
-    dataLaporanPenyelia.filter(item => {
-      const statusBacaan =
-        item.telahDibaca
-          ? "TELAH DIBACA"
-          : "BELUM DIBACA";
+    dataLaporanPenyelia.filter(
+      item => {
+        const statusBacaan =
+          item.telahDibaca
+            ? "TELAH DIBACA"
+            : "BELUM DIBACA";
 
-      const gabung = atasPenyelia([
-        item.profil.no_badan,
-        item.profil.pangkat,
-        item.profil.nama,
-        item.callSign,
-        item.perkaraMenarik,
-        statusBacaan
-      ].join(" "));
+        const gabung =
+          atasPenyelia([
+            item.profil?.no_badan,
+            item.profil?.pangkat,
+            item.profil?.nama,
+            item.callSign,
+            item.perkaraMenarik,
+            statusBacaan
+          ].join(" "));
 
-      const padanCarian =
-        !carian ||
-        gabung.includes(carian);
+        const padanCarian =
+          !carian ||
+          gabung.includes(
+            carian
+          );
 
-      const padanStatus =
-        penapis === "SEMUA" ||
-        penapis === statusBacaan;
+        const padanStatus =
+          penapis === "SEMUA" ||
+          penapis ===
+            statusBacaan;
 
-      return (
-        padanCarian &&
-        padanStatus
-      );
-    });
+        return (
+          padanCarian &&
+          padanStatus
+        );
+      }
+    );
 
   const bekas =
-    elemenPenyelia("senaraiLaporan");
+    elemenPenyelia(
+      "senaraiLaporan"
+    );
 
-  if (!bekas) return;
+  if (!bekas) {
+    return;
+  }
 
   if (!senarai.length) {
     bekas.innerHTML = `
@@ -1194,8 +1383,8 @@ function paparSenaraiLaporan() {
     return;
   }
 
-  bekas.innerHTML = senarai
-    .map(item => {
+  bekas.innerHTML =
+    senarai.map(item => {
       const statusBacaan =
         item.telahDibaca
           ? "TELAH DIBACA"
@@ -1213,10 +1402,13 @@ function paparSenaraiLaporan() {
           <div class="record-heading">
 
             <div>
+
               <h3>
                 ${htmlPenyelia(
-                  item.callSign ||
-                  "LAPORAN PETUGAS"
+                  item.callSign &&
+                  item.callSign !== "-"
+                    ? item.callSign
+                    : "LAPORAN PETUGAS"
                 )}
               </h3>
 
@@ -1227,6 +1419,7 @@ function paparSenaraiLaporan() {
                   )
                 )}
               </small>
+
             </div>
 
             <span
@@ -1251,11 +1444,11 @@ function paparSenaraiLaporan() {
 
             <div>
               ${htmlPenyelia(
-                item.profil.pangkat ||
+                item.profil?.pangkat ||
                 "-"
               )}
               ${htmlPenyelia(
-                item.profil.nama ||
+                item.profil?.nama ||
                 "-"
               )}
             </div>
@@ -1266,7 +1459,7 @@ function paparSenaraiLaporan() {
 
             <div>
               ${htmlPenyelia(
-                item.profil.no_badan ||
+                item.profil?.no_badan ||
                 "-"
               )}
             </div>
@@ -1298,7 +1491,7 @@ function paparSenaraiLaporan() {
             <div>
               ${htmlPenyelia(
                 item.vvipVip ||
-                "-"
+                "TIADA"
               )}
             </div>
 
@@ -1309,7 +1502,7 @@ function paparSenaraiLaporan() {
             <div class="teks-ringkas">
               ${htmlPenyelia(
                 item.perkaraMenarik ||
-                "-"
+                "TIADA"
               )}
             </div>
 
@@ -1347,8 +1540,7 @@ function paparSenaraiLaporan() {
 
         </article>
       `;
-    })
-    .join("");
+    }).join("");
 }
 
 
@@ -1357,10 +1549,14 @@ function paparSenaraiLaporan() {
 ================================================================ */
 
 function bukaBahagianLaporan() {
-  tukarTabPenyelia("laporan");
+  tukarTabPenyelia(
+    "laporan"
+  );
 
   const penapis =
-    elemenPenyelia("penapisLaporan");
+    elemenPenyelia(
+      "penapisLaporan"
+    );
 
   if (penapis) {
     penapis.value =
@@ -1400,40 +1596,48 @@ function tukarTabPenyelia(tab) {
     );
 
   if (bahagianKehadiran) {
-    bahagianKehadiran.classList.toggle(
-      "hidden",
-      !kehadiranAktif
-    );
+    bahagianKehadiran
+      .classList.toggle(
+        "hidden",
+        !kehadiranAktif
+      );
   }
 
   if (bahagianLaporan) {
-    bahagianLaporan.classList.toggle(
-      "hidden",
-      kehadiranAktif
-    );
+    bahagianLaporan
+      .classList.toggle(
+        "hidden",
+        kehadiranAktif
+      );
   }
 
   if (tabKehadiran) {
-    tabKehadiran.classList.toggle(
-      "active",
-      kehadiranAktif
-    );
+    tabKehadiran
+      .classList.toggle(
+        "active",
+        kehadiranAktif
+      );
 
     tabKehadiran.setAttribute(
       "aria-selected",
-      String(kehadiranAktif)
+      String(
+        kehadiranAktif
+      )
     );
   }
 
   if (tabLaporan) {
-    tabLaporan.classList.toggle(
-      "active",
-      !kehadiranAktif
-    );
+    tabLaporan
+      .classList.toggle(
+        "active",
+        !kehadiranAktif
+      );
 
     tabLaporan.setAttribute(
       "aria-selected",
-      String(!kehadiranAktif)
+      String(
+        !kehadiranAktif
+      )
     );
   }
 }
@@ -1443,7 +1647,9 @@ function tukarTabPenyelia(tab) {
    BUKA LAPORAN DALAM MODAL
 ================================================================ */
 
-function bukaLaporanPenyelia(laporanId) {
+function bukaLaporanPenyelia(
+  laporanId
+) {
   laporanAktif =
     dataLaporanPenyelia.find(
       item =>
@@ -1459,7 +1665,8 @@ function bukaLaporanPenyelia(laporanId) {
     return;
   }
 
-  const item = laporanAktif;
+  const item =
+    laporanAktif;
 
   const statusBacaan =
     item.telahDibaca
@@ -1494,11 +1701,11 @@ function bukaLaporanPenyelia(laporanId) {
 
         <div>
           ${htmlPenyelia(
-            item.profil.pangkat ||
+            item.profil?.pangkat ||
             "-"
           )}
           ${htmlPenyelia(
-            item.profil.nama ||
+            item.profil?.nama ||
             "-"
           )}
         </div>
@@ -1509,7 +1716,7 @@ function bukaLaporanPenyelia(laporanId) {
 
         <div>
           ${htmlPenyelia(
-            item.profil.no_badan ||
+            item.profil?.no_badan ||
             "-"
           )}
         </div>
@@ -1564,7 +1771,7 @@ function bukaLaporanPenyelia(laporanId) {
         <div>
           ${htmlPenyelia(
             item.vvipVip ||
-            "-"
+            "TIADA"
           )}
         </div>
 
@@ -1580,6 +1787,24 @@ function bukaLaporanPenyelia(laporanId) {
           </strong>
         </div>
 
+        ${
+          item.telahDibaca
+            ? `
+              <div class="label">
+                Masa Dibaca
+              </div>
+
+              <div>
+                ${htmlPenyelia(
+                  formatMasaPenyelia(
+                    item.masaDibaca
+                  )
+                )}
+              </div>
+            `
+            : ""
+        }
+
       </div>
 
       <div class="laporan-penuh">
@@ -1591,7 +1816,7 @@ function bukaLaporanPenyelia(laporanId) {
         <p>
           ${htmlPenyelia(
             item.perkaraMenarik ||
-            "-"
+            "TIADA"
           )}
         </p>
 
@@ -1686,81 +1911,118 @@ async function tandaLaporanDibaca(
   laporanId,
   tutupSelepas = false
 ) {
+  if (!penggunaPenyelia) {
+    alert(
+      "Sesi Urusetia tidak ditemui. Sila login semula."
+    );
+
+    return;
+  }
+
+  const laporan =
+    dataLaporanPenyelia.find(
+      item =>
+        String(item.id) ===
+        String(laporanId)
+    );
+
+  if (!laporan) {
+    alert(
+      "Laporan tidak ditemui."
+    );
+
+    return;
+  }
+
+  if (laporan.telahDibaca) {
+    alert(
+      "Laporan ini telah pun ditandakan sebagai telah dibaca."
+    );
+
+    return;
+  }
+
+  const pasti = confirm(
+    "Tandakan laporan ini sebagai telah dibaca?"
+  );
+
+  if (!pasti) {
+    return;
+  }
+
+  /*
+    dibaca_oleh merujuk kepada profiles.id,
+    bukan auth.users.id.
+  */
+  const penggunaId =
+    penggunaPenyelia.id;
+
+  if (!penggunaId) {
+    alert(
+      "ID profil Urusetia tidak ditemui. Sila login semula."
+    );
+
+    return;
+  }
+
   const masaSekarang =
     new Date().toISOString();
 
-  const penggunaId =
-    penggunaPenyelia.authUserId ||
-    penggunaPenyelia.id;
-
-  const cubaanPayload = [
-    {
-      telah_dibaca: true,
-      dibaca_oleh: penggunaId,
-      masa_dibaca: masaSekarang
-    },
-
-    {
-      status_bacaan:
-        "TELAH DIBACA",
-      dibaca_oleh: penggunaId,
-      masa_dibaca: masaSekarang
-    },
-
-    {
-      status_laporan:
-        "TELAH DIBACA",
-      disemak_oleh: penggunaId,
-      dibaca_pada: masaSekarang
-    }
-  ];
-
-  let ralatTerakhir = null;
-  let berjaya = false;
-
   try {
-    for (
-      const payload of cubaanPayload
-    ) {
-      const { error } =
-        await dbPenyelia
-          .from(JADUAL_LAPORAN)
-          .update(payload)
-          .eq("id", laporanId);
+    const { data, error } =
+      await dbPenyelia
+        .from(JADUAL_LAPORAN)
+        .update({
+          dibaca: true,
+          dibaca_pada:
+            masaSekarang,
+          dibaca_oleh:
+            penggunaId
+        })
+        .eq("id", laporanId)
+        .select(`
+          id,
+          dibaca,
+          dibaca_pada,
+          dibaca_oleh
+        `)
+        .maybeSingle();
 
-      if (!error) {
-        berjaya = true;
-        break;
-      }
-
-      ralatTerakhir = error;
+    if (error) {
+      throw error;
     }
 
-    if (!berjaya) {
-      throw (
-        ralatTerakhir ||
-        new Error(
-          "Struktur kolum status bacaan laporan tidak sepadan."
-        )
+    /*
+      Jika tiada rekod dikembalikan,
+      kebiasaannya disebabkan RLS tidak
+      membenarkan UPDATE atau SELECT.
+    */
+    if (!data) {
+      throw new Error(
+        "Rekod tidak dikemas kini. Semak polisi RLS jadual pelaporan."
       );
     }
 
-    const laporanTempatan =
-      dataLaporanPenyelia.find(
-        item =>
-          String(item.id) ===
-          String(laporanId)
-      );
+    laporan.telahDibaca =
+      data.dibaca === true;
 
-    if (laporanTempatan) {
-      laporanTempatan.telahDibaca =
+    laporan.dibacaOleh =
+      data.dibaca_oleh ||
+      penggunaId;
+
+    laporan.masaDibaca =
+      data.dibaca_pada ||
+      masaSekarang;
+
+    if (laporan.asal) {
+      laporan.asal.dibaca =
         true;
 
-      laporanTempatan.dibacaOleh =
-        penggunaId;
+      laporan.asal.dibaca_pada =
+        laporan.masaDibaca;
 
-      laporanTempatan.masaDibaca =
-        masaSekarang;
+      laporan.asal.dibaca_oleh =
+        laporan.dibacaOleh;
     }
 
     paparSenaraiLaporan();
@@ -1776,10 +2038,31 @@ async function tandaLaporanDibaca(
     );
 
   } catch (error) {
+    console.error(
+      "Ralat tanda laporan dibaca:",
+      error
+    );
+
     alert(
-      `Gagal menandakan laporan sebagai telah dibaca: ${error.message}`
+      `Gagal menandakan laporan sebagai telah dibaca: ${
+        error.message ||
+        "Ralat tidak diketahui."
+      }`
     );
   }
+}
+
+
+/* ================================================================
+   MUAT SEMULA APABILA TARIKH BERUBAH
+================================================================ */
+
+async function tarikhPenyeliaBerubah() {
+  if (!penggunaPenyelia) {
+    return;
+  }
+
+  await muatSemuaDataPenyelia();
 }
 
 
@@ -1799,17 +2082,30 @@ async function logoutPenyelia() {
 
   elemenPenyelia(
     "dashboardSection"
-  )?.classList.add("hidden");
+  )?.classList.add(
+    "hidden"
+  );
 
   elemenPenyelia(
     "loginSection"
-  )?.classList.remove("hidden");
+  )?.classList.remove(
+    "hidden"
+  );
 
-  if (elemenPenyelia("password")) {
+  const inputPassword =
     elemenPenyelia(
       "password"
-    ).value = "";
+    );
+
+  if (inputPassword) {
+    inputPassword.value = "";
   }
+
+  statusPenyelia(
+    "loginStatus",
+    "Anda telah log keluar.",
+    "success"
+  );
 }
 
 
@@ -1835,15 +2131,40 @@ document.addEventListener(
   "DOMContentLoaded",
   () => {
     const inputTarikh =
-      elemenPenyelia("tarikh");
+      elemenPenyelia(
+        "tarikh"
+      );
 
     if (inputTarikh) {
       inputTarikh.value =
         hariIniPenyelia();
+
+      inputTarikh.addEventListener(
+        "change",
+        tarikhPenyeliaBerubah
+      );
     }
 
+    const inputNoBadan =
+      elemenPenyelia(
+        "noBadan"
+      );
+
     const inputPassword =
-      elemenPenyelia("password");
+      elemenPenyelia(
+        "password"
+      );
+
+    if (inputNoBadan) {
+      inputNoBadan.addEventListener(
+        "keydown",
+        event => {
+          if (event.key === "Enter") {
+            loginPenyelia();
+          }
+        }
+      );
+    }
 
     if (inputPassword) {
       inputPassword.addEventListener(
