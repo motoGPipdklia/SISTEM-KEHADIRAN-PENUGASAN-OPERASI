@@ -178,8 +178,20 @@ async function login() {
       })
     );
 
-    if (error || !data?.user) {
-      throw new Error("No Badan atau kata laluan tidak sah.");
+    if (error) {
+      const mesejSupabase = String(
+        error.message || "Ralat pengesahan tidak diketahui."
+      ).trim();
+
+      throw new Error(
+        "Login Supabase gagal: " + mesejSupabase
+      );
+    }
+
+    if (!data?.user) {
+      throw new Error(
+        "Login Supabase tidak memulangkan maklumat pengguna."
+      );
     }
 
     const profil = await dapatkanProfil(data.user.id);
@@ -642,7 +654,7 @@ async function daftarPenggunaBaharu() {
 
   try {
     const { data, error } = await denganHadMasa(
-      db.functions.invoke("tambah-petugas", {
+      db.functions.invoke("tambah_petugas", {
         body: {
           no_badan: noBadan,
           noBadan,
