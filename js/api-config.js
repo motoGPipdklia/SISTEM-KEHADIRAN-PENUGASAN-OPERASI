@@ -10,7 +10,7 @@
 
 window.SKPO_CONFIG = {
   SUPABASE_URL:
-    "https://ukapxshyhqtsseraphnn.supabase.co/rest/v1/",
+    "https://ukapxshyhqtsseraphnn.supabase.co",
 
   /* Tampalkan Publishable Key projek Supabase anda di bawah. */
   SUPABASE_PUBLISHABLE_KEY:
