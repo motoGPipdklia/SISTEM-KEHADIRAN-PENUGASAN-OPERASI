@@ -2167,91 +2167,27 @@ document.addEventListener(
    MODAL PENGGANTIAN
 ================================================================ */
 
-function bukaModalPengganti(idPenugasan){
-
+function bukaModalPengganti(idPenugasan) {
   penugasanDipilih =
     dataPenyelia.find(
-      x => String(x.idPenugasan) === String(idPenugasan)
-    );
-penugasanDipilih.petugasBaru = null;
-penugasanDipilih.modPengganti = null;
-   
-  if(!penugasanDipilih){
-    return;
-  }
-
-  elemenPenyelia("petugasAsal").innerHTML = `
-    <strong>Petugas Asal</strong><br><br>
-
-    ${htmlPenyelia(
-      penugasanDipilih.profil?.pangkat || ""
-    )}
-
-    ${htmlPenyelia(
-      penugasanDipilih.profil?.nama || ""
-    )}
-
-    <br>
-
-    ${htmlPenyelia(
-      penugasanDipilih.profil?.no_badan || "-"
-    )}
-  `;
-
-  elemenPenyelia("noBadanPengganti").value="";
-  elemenPenyelia("catatanPenggantian").value="";
-
-  elemenPenyelia("previewPengganti").innerHTML="";
-  elemenPenyelia("previewPengganti").classList.add("hidden");
-
-  elemenPenyelia("borangPengganti").classList.add("hidden");
-
-  elemenPenyelia("statusPertukaran").className="status hidden";
-
-  elemenPenyelia("modalPengganti").classList.remove("hidden");
-
-  document.body.classList.add("modal-open");
-
-}
-
-function tutupModalPengganti(){
-
-  elemenPenyelia("modalPengganti")
-    ?.classList.add("hidden");
-
-  document.body.classList.remove("modal-open");
-
-}
-
-async function semakPetugasPengganti() {
-  const inputNoBadan =
-    elemenPenyelia("noBadanPengganti");
-
-  const noBadan =
-    atasPenyelia(inputNoBadan?.value || "");
-
-  const preview =
-    elemenPenyelia("previewPengganti");
-
-  const borang =
-    elemenPenyelia("borangPengganti");
-
-  if (!noBadan) {
-    statusPenyelia(
-      "statusPertukaran",
-      "Sila masukkan No Badan pengganti.",
-      "error"
-    );
-
-    inputNoBadan?.focus();
-    return;
-  }
+      item =>
+        String(item.idPenugasan) ===
+        String(idPenugasan)
+    ) || null;
 
   if (!penugasanDipilih) {
-    statusPenyelia(
-      "statusPertukaran",
-      "Maklumat penugasan asal tidak ditemui.",
-      "error"
+    alert(
+      "Maklumat penugasan tidak ditemui."
+    );
+    return;
+  }
+
+  if (
+    penugasanDipilih.status !==
+    "BELUM HADIR"
+  ) {
+    alert(
+      "Hanya petugas berstatus BELUM HADIR boleh diganti."
     );
     return;
   }
@@ -2259,26 +2195,131 @@ async function semakPetugasPengganti() {
   penugasanDipilih.petugasBaru = null;
   penugasanDipilih.modPengganti = null;
 
-  preview?.classList.add("hidden");
-  borang?.classList.add("hidden");
+  const petugasAsal =
+    elemenPenyelia("petugasAsal");
 
-  statusPenyelia(
-    "statusPertukaran",
-    "Sedang menyemak petugas...",
-    "warning"
+  if (petugasAsal) {
+    petugasAsal.innerHTML = `
+      <strong>Petugas Asal</strong>
+
+      <br><br>
+
+      <div class="grid">
+
+        <div class="label">
+          Nama
+        </div>
+
+        <div>
+          ${htmlPenyelia(
+            penugasanDipilih.profil?.pangkat ||
+            ""
+          )}
+          ${htmlPenyelia(
+            penugasanDipilih.profil?.nama ||
+            "-"
+          )}
+        </div>
+
+        <div class="label">
+          No Badan
+        </div>
+
+        <div>
+          ${htmlPenyelia(
+            penugasanDipilih.profil?.no_badan ||
+            "-"
+          )}
+        </div>
+
+        <div class="label">
+          Call Sign
+        </div>
+
+        <div>
+          ${htmlPenyelia(
+            penugasanDipilih.tugas?.call_sign ||
+            "-"
+          )}
+        </div>
+
+        <div class="label">
+          Tugas
+        </div>
+
+        <div>
+          ${htmlPenyelia(
+            penugasanDipilih.tugas?.jenis_tugas ||
+            "-"
+          )}
+        </div>
+
+      </div>
+    `;
+  }
+
+  const noBadan =
+    elemenPenyelia("noBadanPengganti");
+
+  const catatan =
+    elemenPenyelia("catatanPenggantian");
+
+  const preview =
+    elemenPenyelia("previewPengganti");
+
+  const borang =
+    elemenPenyelia("borangPengganti");
+
+  const status =
+    elemenPenyelia("statusPertukaran");
+
+  if (noBadan) {
+    noBadan.value = "";
+  }
+
+  if (catatan) {
+    catatan.value = "";
+  }
+
+  if (preview) {
+    preview.innerHTML = "";
+    preview.classList.add("hidden");
+  }
+
+  if (borang) {
+    borang.classList.add("hidden");
+  }
+
+  [
+    "namaPengganti",
+    "pangkatPengganti",
+    "telefonPengganti",
+    "bahagianPengganti",
+    "passwordPengganti"
+  ].forEach(id => {
+    const input = elemenPenyelia(id);
+
+    if (input) {
+      input.value = "";
+    }
+  });
+
+  if (status) {
+    status.innerHTML = "";
+    status.className = "status hidden";
+  }
+
+  elemenPenyelia("modalPengganti")
+    ?.classList.remove("hidden");
+
+  document.body.classList.add(
+    "modal-open"
   );
 
-  try {
-    const { data, error } =
-      await dbPenyelia
-        .from("profiles")
-        .select("*")
-        .eq("no_badan", noBadan)
-        .maybeSingle();
-
-    if (error) {
-      throw error;
-    }
+  setTimeout(() => {
+    noBadan?.focus();
+  }, 50);
+}
 
     /* ============================================================
        PETUGAS TIDAK DITEMUI — PAPAR BORANG DAFTAR BAHARU
