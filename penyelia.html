@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0d0d0d">
+  <title>SKPO Urusetia</title>
+
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/penyelia.css">
+</head>
+
+<body>
+  <main class="container">
+    <header>
+      <div class="logo">SKPO URUSETIA</div>
+      <p class="sub">Pengesahan Kehadiran Petugas</p>
+    </header>
+
+    <section class="card" id="loginSection">
+      <h1>Login Urusetia</h1>
+      <label class="sr-only" for="noBadan">No Badan</label>
+      <input id="noBadan" type="text" placeholder="No Badan" autocomplete="username">
+      <label class="sr-only" for="password">Kata Laluan</label>
+      <input id="password" type="password" placeholder="Kata Laluan" autocomplete="current-password">
+      <button class="btn-main" id="btnLogin" type="button" onclick="loginPenyelia()">LOGIN URUSETIA</button>
+      <div class="status hidden" id="loginStatus" role="status" aria-live="polite"></div>
+      <a class="btn-secondary link" href="index.html">KEMBALI KE LOGIN PETUGAS</a>
+    </section>
+
+    <section class="hidden" id="dashboardSection">
+      <div class="card">
+        <div class="topbar">
+          <div class="profile" id="profilPenyelia">-</div>
+          <button class="btn-secondary" type="button" onclick="logoutPenyelia()">LOG KELUAR</button>
+        </div>
+
+        <div class="toolbar">
+          <input id="carian" type="search" placeholder="Cari No Badan, nama, Call Sign atau tugas..." oninput="paparSenarai()">
+          <input id="tarikh" type="date" onchange="muatDataPenyelia()">
+          <button class="btn-refresh" type="button" onclick="muatDataPenyelia()">SEMAK SEMULA</button>
+        </div>
+
+        <p>
+          Jumlah rekod: <span class="count" id="jumlahRekod">0</span>
+          &nbsp;|&nbsp;
+          Menunggu: <span class="count" id="jumlahMenunggu">0</span>
+        </p>
+
+        <div class="status hidden" id="statusData" role="status" aria-live="polite"></div>
+        <div class="list" id="senaraiPetugas"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/api-config.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/penyelia.js"></script>
+</body>
+</html>

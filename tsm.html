@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0d0d0d">
+  <title>SKPO TSM</title>
+
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/tsm.css">
+</head>
+
+<body>
+  <main class="login" id="loginSection">
+    <section class="card">
+      <div class="logo">SKPO TSM</div>
+      <p>Pengurusan Set Walkie-Talkie</p>
+      <label class="sr-only" for="noBadan">No Badan TSM</label>
+      <input id="noBadan" type="text" placeholder="No Badan TSM" autocomplete="username">
+      <label class="sr-only" for="password">Kata Laluan</label>
+      <input id="password" type="password" placeholder="Kata Laluan" autocomplete="current-password">
+      <button class="primary" id="btnLogin" type="button" onclick="loginTSM()">LOGIN TSM</button>
+      <div class="status hidden" id="loginStatus" role="status" aria-live="polite"></div>
+      <a class="link" href="index.html">KEMBALI KE LOGIN PETUGAS</a>
+    </section>
+  </main>
+
+  <div class="dashboard" id="dashboardSection">
+    <header class="topbar">
+      <div>
+        <div class="brand">SKPO DASHBOARD TSM</div>
+        <div id="profilTSM">-</div>
+      </div>
+      <div class="topbar-actions">
+        <a class="gray nav-button" href="admin.html">PENTADBIR</a>
+        <button class="logout" type="button" onclick="logoutTSM()">LOG KELUAR</button>
+      </div>
+    </header>
+
+    <main class="content">
+      <section class="stats-grid">
+        <article class="stat-card"><div class="stat-title">Jumlah</div><div class="stat-number" id="statJumlah">0</div></article>
+        <article class="stat-card"><div class="stat-title">Menunggu</div><div class="stat-number" id="statMenunggu">0</div></article>
+        <article class="stat-card"><div class="stat-title">Dilepaskan</div><div class="stat-number" id="statDilepaskan">0</div></article>
+        <article class="stat-card"><div class="stat-title">Menunggu Pemulangan</div><div class="stat-number" id="statPemulangan">0</div></article>
+        <article class="stat-card"><div class="stat-title">Dipulangkan</div><div class="stat-number" id="statDipulangkan">0</div></article>
+      </section>
+
+      <section class="toolbar">
+        <div>
+          <label for="tarikh">Tarikh Penugasan</label>
+          <input id="tarikh" type="date" onchange="muatDataTSM()">
+        </div>
+        <div>
+          <label for="statusFilter">Status</label>
+          <select id="statusFilter" onchange="paparDataTSM()">
+            <option value="">SEMUA STATUS</option>
+            <option value="MENUNGGU">MENUNGGU</option>
+            <option value="DILEPASKAN">DILEPASKAN</option>
+            <option value="MENUNGGU_PEMULANGAN">MENUNGGU PEMULANGAN</option>
+            <option value="DIPULANGKAN">DIPULANGKAN</option>
+            <option value="DITOLAK">DITOLAK</option>
+          </select>
+        </div>
+        <div>
+          <label for="carian">Carian</label>
+          <input id="carian" type="search" placeholder="Nama, No Badan, Call Sign atau No Siri..." oninput="paparDataTSM()">
+        </div>
+        <div class="toolbar-actions">
+          <button class="btn-refresh" type="button" onclick="muatDataTSM()">SEMAK SEMULA</button>
+        </div>
+      </section>
+
+      <div class="status hidden" id="statusData" role="status" aria-live="polite"></div>
+
+      <section class="table-card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Bil.</th>
+                <th>Masa Permohonan</th>
+                <th>No Badan</th>
+                <th>Pangkat / Nama</th>
+                <th>Call Sign</th>
+                <th>Tugas / Lokasi</th>
+                <th>No Siri Set</th>
+                <th>Bateri</th>
+                <th>Charger</th>
+                <th>Aksesori</th>
+                <th>Status</th>
+                <th>Tindakan</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyTSM">
+              <tr><td colspan="12" class="empty">Belum ada data.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- MODAL PELEPASAN -->
+  <div class="modal hidden" id="modalPelepasan" role="dialog" aria-modal="true">
+    <section class="modal-box">
+      <h2>Sahkan &amp; Lepaskan Set</h2>
+      <div class="info-box" id="infoPelepasan"></div>
+      <label for="noSiriSet">No Siri Set *</label>
+      <input id="noSiriSet" type="text" placeholder="Contoh: WT-001">
+      <label for="noSiriBateri">No Siri Bateri</label>
+      <input id="noSiriBateri" type="text" placeholder="Contoh: BAT-001">
+      <label for="noSiriCharger">No Siri Charger</label>
+      <input id="noSiriCharger" type="text" placeholder="Contoh: CHG-001">
+      <label>Aksesori</label>
+      <div class="checkbox-grid">
+        <label class="check-option"><input name="aksesoriTSM" type="checkbox" value="BATERI"> Bateri</label>
+        <label class="check-option"><input name="aksesoriTSM" type="checkbox" value="CHARGER"> Charger</label>
+        <label class="check-option"><input name="aksesoriTSM" type="checkbox" value="EARPIECE"> Earpiece</label>
+        <label class="check-option"><input name="aksesoriTSM" type="checkbox" value="ANTENA"> Antena</label>
+        <label class="check-option"><input name="aksesoriTSM" type="checkbox" value="BELT CLIP"> Belt Clip</label>
+      </div>
+      <label for="catatanTSM">Catatan TSM</label>
+      <textarea id="catatanTSM" placeholder="Jika tiada, boleh dikosongkan."></textarea>
+      <div class="status hidden" id="statusPelepasan"></div>
+      <div class="modal-actions">
+        <button class="btn-ok" id="btnSahkanPelepasan" type="button" onclick="sahkanPelepasan()">SAHKAN &amp; LEPASKAN</button>
+        <button class="btn-secondary" type="button" onclick="tutupModalPelepasan()">BATAL</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- MODAL PEMULANGAN -->
+  <div class="modal hidden" id="modalPemulangan" role="dialog" aria-modal="true">
+    <section class="modal-box">
+      <h2>Sahkan Pemulangan Set</h2>
+      <div class="info-box" id="infoPemulangan"></div>
+      <label for="keadaanSet">Keadaan Set *</label>
+      <select id="keadaanSet">
+        <option value="BAIK">BAIK</option>
+        <option value="ROSAK">ROSAK</option>
+        <option value="TIDAK LENGKAP">TIDAK LENGKAP</option>
+      </select>
+      <label for="kerosakan">Kerosakan / Kekurangan</label>
+      <textarea id="kerosakan" placeholder="Jika tiada, masukkan TIADA."></textarea>
+      <label for="catatanPemulangan">Catatan TSM</label>
+      <textarea id="catatanPemulangan" placeholder="Catatan pemulangan."></textarea>
+      <div class="status hidden" id="statusPemulangan"></div>
+      <div class="modal-actions">
+        <button class="btn-ok" id="btnSahkanPemulangan" type="button" onclick="sahkanPemulangan()">SAHKAN PEMULANGAN</button>
+        <button class="btn-secondary" type="button" onclick="tutupModalPemulangan()">BATAL</button>
+      </div>
+    </section>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/api-config.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/tsm.js"></script>
+</body>
+</html>

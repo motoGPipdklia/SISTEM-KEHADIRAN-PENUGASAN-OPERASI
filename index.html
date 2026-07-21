@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0d0d0d">
+  <title>SKPO</title>
+
+  <!-- Gaya global mesti dimuatkan dahulu. -->
+  <link rel="stylesheet" href="css/style.css">
+  <!-- Gaya khusus halaman Petugas dimuatkan selepas gaya global. -->
+  <link rel="stylesheet" href="css/index.css">
+</head>
+
+<body>
+  <!-- LOGIN PETUGAS -->
+  <main class="container" id="loginBox">
+    <div class="logo">OPS LITAR (MOTOGP 2026)</div>
+    <p>Sistem Kehadiran &amp; Penugasan Operasi</p>
+
+    <label class="sr-only" for="noBadan">No Badan</label>
+    <input id="noBadan" type="text" placeholder="No Badan" autocomplete="username">
+
+    <label class="sr-only" for="password">Kata Laluan</label>
+    <input id="password" type="password" placeholder="Password" autocomplete="current-password">
+
+    <button id="btnLogin" type="button" onclick="login()">LOGIN</button>
+    <div id="status" role="status" aria-live="polite"></div>
+
+    <a class="supervisor-link" href="admin.html">LOGIN PENTADBIR</a>
+    <a class="supervisor-link" href="penyelia.html">LOGIN URUSETIA</a>
+    <a class="supervisor-link" href="tsm.html">LOGIN TSM</a>
+  </main>
+
+  <!-- DASHBOARD PETUGAS -->
+  <main class="dashboard" id="dashboard">
+    <section class="card">
+      <h1>Dashboard Petugas</h1>
+
+      <div class="profile-box">
+        <div class="profile-rank" id="pangkatPetugas">-</div>
+        <div class="profile-name" id="namaPetugas">-</div>
+        <div class="profile-number" id="noBadanPetugas">No Badan: -</div>
+      </div>
+
+      <hr>
+      <h2>Maklumat Tugas Hari Ini</h2>
+
+      <div class="info-box">
+        <div class="info-row">
+          <div class="info-label">Call Sign:</div>
+          <div class="info-value" id="callSignTugas">Memuatkan...</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">Jenis Tugas:</div>
+          <div class="info-value" id="jenisTugas">Memuatkan...</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">Tempat Tugas:</div>
+          <div class="info-value" id="lokasiTugas">Memuatkan...</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">Penyelia:</div>
+          <div class="info-value" id="penyeliaTugas">Memuatkan...</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">Pemegang Set:</div>
+          <div class="info-value" id="pemegangSetTugas">Memuatkan...</div>
+        </div>
+      </div>
+
+      <div id="statusTugas" role="status" aria-live="polite"></div>
+      <div class="status-box" id="statusKehadiran"></div>
+      <div class="status-box" id="statusCheckout"></div>
+
+      <button id="btnCheckin" type="button" disabled onclick="mulaCheckin()">
+        CHECK-IN KEHADIRAN
+      </button>
+      <button id="btnCheckout" type="button" disabled onclick="mulaCheckout()">
+        CHECK-OUT KEHADIRAN
+      </button>
+
+      <!-- Modul ini diurus sepenuhnya oleh js/walkie-petugas.js. -->
+      <section class="walkie-card" id="modulWalkiePetugas">
+        <div class="walkie-header">
+          <div>
+            <h2>Permohonan Set Walkie-Talkie</h2>
+            <p>Mohon dan semak status set komunikasi untuk penugasan hari ini.</p>
+          </div>
+          <button
+            class="secondary walkie-refresh-button"
+            type="button"
+            onclick="window.SKPOWalkie?.muatSemula()"
+          >
+            SEMAK STATUS SET
+          </button>
+        </div>
+        <div class="hidden" id="statusWalkiePetugas"></div>
+        <div id="kandunganWalkiePetugas">
+          <div class="walkie-loading">Sedang mendapatkan maklumat set...</div>
+        </div>
+      </section>
+
+      <button
+        class="gold-report"
+        id="btnLaporan"
+        type="button"
+        disabled
+        style="display:none"
+        onclick="bukaLaporan()"
+      >
+        HANTAR PELAPORAN
+      </button>
+
+      <button class="refresh-button" id="btnRefreshStatus" type="button" onclick="refreshDashboard()">
+        SEMAK SEMULA STATUS
+      </button>
+      <button class="secondary" type="button" onclick="logout()">LOG KELUAR</button>
+    </section>
+  </main>
+
+  <!-- CHECK-IN -->
+  <main class="checkin" id="checkin">
+    <section class="card">
+      <h1>Pengesahan Kehadiran</h1>
+      <div class="info-box"><div id="tugasCheckin"></div></div>
+      <h2 id="gpsStatus">Tekan butang untuk mendapatkan lokasi.</h2>
+      <p id="koordinat"></p>
+      <p id="jarakStatus"></p>
+      <div class="status-box" id="statusHantar"></div>
+      <button id="btnDapatGPS" type="button" onclick="dapatkanGPS()">DAPATKAN LOKASI GPS</button>
+      <button id="btnHantar" type="button" disabled onclick="hantarKehadiran()">HANTAR KEHADIRAN</button>
+      <button class="secondary" id="btnKembali" type="button" onclick="kembaliDashboard()">KEMBALI</button>
+    </section>
+  </main>
+
+  <!-- CHECK-OUT -->
+  <main class="checkout" id="checkout">
+    <section class="card">
+      <h1>Check-Out Kehadiran</h1>
+      <div class="info-box"><div id="tugasCheckout"></div></div>
+      <h2 id="gpsStatusCheckout">Tekan butang untuk mendapatkan lokasi.</h2>
+      <p id="koordinatCheckout"></p>
+      <p id="jarakStatusCheckout"></p>
+      <div class="status-box" id="statusHantarCheckout"></div>
+      <button id="btnDapatGPSCheckout" type="button" onclick="dapatkanGPSCheckout()">
+        DAPATKAN LOKASI GPS
+      </button>
+      <button id="btnHantarCheckout" type="button" disabled onclick="hantarCheckout()">
+        HANTAR CHECK-OUT
+      </button>
+      <button class="secondary" id="btnKembaliCheckout" type="button" onclick="kembaliDashboardCheckout()">
+        KEMBALI
+      </button>
+    </section>
+  </main>
+
+  <!-- PELAPORAN PETUGAS -->
+  <main class="laporan" id="laporan">
+    <section class="card">
+      <h1>Pelaporan Petugas</h1>
+      <div class="info-box"><div id="tugasLaporan"></div></div>
+      <div class="info-box">
+        <div class="info-row">
+          <div class="info-label">Tarikh / Masa:</div>
+          <div class="info-value" id="tarikhMasaLaporan">-</div>
+        </div>
+      </div>
+
+      <label for="jumlahPengunjung"><strong>Jumlah Pengunjung</strong></label>
+      <input id="jumlahPengunjung" type="number" inputmode="numeric" min="0" step="1" placeholder="Contoh: 150">
+
+      <label for="jumlahKenderaan"><strong>Jumlah Kenderaan</strong></label>
+      <input id="jumlahKenderaan" type="number" inputmode="numeric" min="0" step="1" placeholder="Contoh: 45">
+
+      <label for="vvipVip"><strong>VVIP / VIP</strong></label>
+      <textarea id="vvipVip" placeholder="Jika tiada, masukkan TIADA."></textarea>
+
+      <label for="perkaraMenarik"><strong>Perkara Menarik</strong></label>
+      <textarea id="perkaraMenarik" placeholder="Jika tiada, masukkan TIADA."></textarea>
+
+      <div class="status-box" id="statusLaporan"></div>
+      <button id="btnHantarLaporan" type="button" onclick="hantarLaporan()">
+        HANTAR LAPORAN KEPADA URUSETIA
+      </button>
+      <button class="secondary" id="btnKembaliLaporan" type="button" onclick="tutupLaporan()">
+        KEMBALI
+      </button>
+    </section>
+  </main>
+
+  <!-- Urutan JavaScript ini penting. -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/api-config.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/index.js"></script>
+  <script src="js/walkie-petugas.js"></script>
+</body>
+</html>

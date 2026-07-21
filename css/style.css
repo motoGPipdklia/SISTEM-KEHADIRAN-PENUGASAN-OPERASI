@@ -1,0 +1,591 @@
+/* ================================================================
+   SKPO — GAYA ASAS GLOBAL
+   Sistem Kehadiran & Penugasan Operasi
+
+   Susunan pautan yang betul dalam setiap halaman:
+
+   <link rel="stylesheet" href="css/style.css">
+   <link rel="stylesheet" href="css/index.css">
+
+   Tukar index.css kepada admin.css, penyelia.css atau tsm.css
+   mengikut halaman. Fail khusus halaman mesti dimuatkan terakhir.
+================================================================ */
+
+:root{
+  color-scheme:dark;
+
+  --skpo-bg:#0d0d0d;
+  --skpo-bg-soft:#121212;
+  --skpo-surface:#202020;
+  --skpo-surface-dark:#171717;
+  --skpo-surface-soft:#292929;
+  --skpo-border:#3a3a3a;
+  --skpo-border-light:#4a4a4a;
+
+  --skpo-text:#ffffff;
+  --skpo-muted:#c8c8c8;
+  --skpo-gold:#d4af37;
+  --skpo-gold-dark:#8c6f12;
+  --skpo-blue:#356da4;
+  --skpo-green:#277a49;
+  --skpo-red:#8f2e2e;
+  --skpo-gray:#4a4a4a;
+
+  --skpo-success-bg:#123a24;
+  --skpo-success-border:#2b7043;
+  --skpo-success-text:#b9f6ca;
+
+  --skpo-warning-bg:#3a3013;
+  --skpo-warning-border:#766126;
+  --skpo-warning-text:#ffe29a;
+
+  --skpo-error-bg:#401b1b;
+  --skpo-error-border:#7b3232;
+  --skpo-error-text:#ffc1c1;
+
+  --skpo-info-bg:#152a35;
+  --skpo-info-border:#2c6078;
+  --skpo-info-text:#c9efff;
+
+  --skpo-radius-small:8px;
+  --skpo-radius:12px;
+  --skpo-radius-large:16px;
+  --skpo-shadow:0 8px 25px rgba(0,0,0,.4);
+  --skpo-focus:0 0 0 3px rgba(212,175,55,.28);
+}
+
+*,
+*::before,
+*::after{
+  box-sizing:border-box;
+}
+
+html{
+  min-height:100%;
+  scroll-behavior:smooth;
+  background:var(--skpo-bg);
+  -webkit-text-size-adjust:100%;
+  text-size-adjust:100%;
+}
+
+body{
+  min-height:100vh;
+  margin:0;
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(212,175,55,.055),
+      transparent 30%
+    ),
+    var(--skpo-bg);
+  color:var(--skpo-text);
+  font-family:Arial,Helvetica,sans-serif;
+  line-height:1.5;
+  overflow-wrap:anywhere;
+}
+
+body.modal-open{
+  overflow:hidden;
+}
+
+img,
+svg,
+video,
+canvas{
+  display:block;
+  max-width:100%;
+}
+
+hr{
+  height:0;
+  margin:20px 0;
+  border:0;
+  border-top:1px solid var(--skpo-border);
+}
+
+a{
+  color:var(--skpo-gold);
+  text-underline-offset:3px;
+}
+
+a:hover{
+  color:#ebcd68;
+}
+
+button,
+input,
+select,
+textarea{
+  max-width:100%;
+  font:inherit;
+}
+
+input,
+select,
+textarea{
+  border:1px solid var(--skpo-border-light);
+  outline:0;
+  background:var(--skpo-bg-soft);
+  color:var(--skpo-text);
+}
+
+input::placeholder,
+textarea::placeholder{
+  color:#8f8f8f;
+  opacity:1;
+}
+
+select{
+  color-scheme:dark;
+}
+
+option{
+  background:var(--skpo-bg-soft);
+  color:var(--skpo-text);
+}
+
+textarea{
+  resize:vertical;
+}
+
+button,
+.link,
+.nav-button{
+  touch-action:manipulation;
+  transition:
+    transform .15s ease,
+    filter .15s ease,
+    opacity .15s ease,
+    border-color .15s ease,
+    box-shadow .15s ease;
+}
+
+button:hover:not(:disabled),
+.link:hover,
+.nav-button:hover{
+  filter:brightness(1.08);
+  transform:translateY(-1px);
+}
+
+button:active:not(:disabled),
+.link:active,
+.nav-button:active{
+  transform:translateY(0);
+}
+
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled{
+  opacity:.55;
+  cursor:not-allowed;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+a:focus-visible,
+[tabindex]:focus-visible{
+  outline:2px solid var(--skpo-gold);
+  outline-offset:2px;
+  box-shadow:var(--skpo-focus);
+}
+
+/* ================================================================
+   AKSESIBILITI DAN UTILITI
+================================================================ */
+
+.hidden,
+[hidden]{
+  display:none !important;
+}
+
+.sr-only{
+  position:absolute !important;
+  width:1px !important;
+  height:1px !important;
+  padding:0 !important;
+  margin:-1px !important;
+  overflow:hidden !important;
+  clip:rect(0,0,0,0) !important;
+  white-space:nowrap !important;
+  border:0 !important;
+}
+
+.text-center{
+  text-align:center !important;
+}
+
+.text-left{
+  text-align:left !important;
+}
+
+.muted{
+  color:var(--skpo-muted) !important;
+}
+
+.nowrap{
+  white-space:nowrap !important;
+}
+
+/* ================================================================
+   WARNA BUTANG YANG DIKONGSI
+================================================================ */
+
+.primary,
+.gold,
+.btn-main,
+.btn-primary,
+.btn-refresh{
+  background:var(--skpo-gold);
+  color:#111;
+}
+
+.secondary,
+.gray,
+.btn-secondary{
+  background:var(--skpo-gray);
+  color:#fff;
+}
+
+.blue,
+.btn-blue,
+.btn-change,
+.refresh-button{
+  background:var(--skpo-blue);
+  color:#fff;
+}
+
+.green,
+.green-button,
+.btn-ok,
+.btn-success{
+  background:var(--skpo-green);
+  color:#fff;
+}
+
+.red,
+.logout,
+.reset-device,
+.btn-no,
+.btn-danger{
+  background:var(--skpo-red);
+  color:#fff;
+}
+
+.tsm-button,
+.walkie-button{
+  background:#315f78;
+  color:#fff;
+}
+
+.gold-report{
+  background:var(--skpo-gold-dark);
+  color:#fff;
+}
+
+.return-set-button{
+  background:#7a4f1d;
+  color:#fff;
+}
+
+/* ================================================================
+   STATUS DAN MAKLUM BALAS
+================================================================ */
+
+.status,
+.status-box{
+  line-height:1.55;
+}
+
+.status.success,
+.status-box.success,
+.alert-success{
+  border:1px solid var(--skpo-success-border);
+  background:var(--skpo-success-bg);
+  color:var(--skpo-success-text);
+}
+
+.status.warning,
+.status-box.warning,
+.alert-warning{
+  border:1px solid var(--skpo-warning-border);
+  background:var(--skpo-warning-bg);
+  color:var(--skpo-warning-text);
+}
+
+.status.error,
+.status-box.error,
+.alert-error{
+  border:1px solid var(--skpo-error-border);
+  background:var(--skpo-error-bg);
+  color:var(--skpo-error-text);
+}
+
+.status.info,
+.status-box.info,
+.alert-info,
+.info-note{
+  border:1px solid var(--skpo-info-border);
+  background:var(--skpo-info-bg);
+  color:var(--skpo-info-text);
+}
+
+.status-success,
+.success-text{
+  color:#72df96;
+}
+
+.status-warning,
+.warning-text{
+  color:#ffd166;
+}
+
+.status-error,
+.error-text{
+  color:#ff8f8f;
+}
+
+/* ================================================================
+   BADGE STATUS
+================================================================ */
+
+.badge,
+.status-badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  max-width:100%;
+  padding:5px 9px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:700;
+  line-height:1.2;
+  text-align:center;
+  white-space:nowrap;
+}
+
+.badge-green,
+.badge-success,
+.badge-hadir,
+.status-dilepaskan{
+  background:#245f3b;
+  color:#d8ffe5;
+}
+
+.badge-blue,
+.badge-info,
+.badge-selesai,
+.status-dipulangkan{
+  background:#285b88;
+  color:#e1f2ff;
+}
+
+.badge-yellow,
+.badge-warning,
+.badge-belum,
+.status-menunggu{
+  background:#6f5519;
+  color:#fff1bf;
+}
+
+.badge-red,
+.badge-danger,
+.badge-ditolak,
+.status-ditolak{
+  background:#7d2e2e;
+  color:#ffe2e2;
+}
+
+.badge-gray{
+  background:#505050;
+  color:#fff;
+}
+
+/* ================================================================
+   JADUAL DAN SKROL
+================================================================ */
+
+table{
+  border-spacing:0;
+}
+
+th{
+  text-align:left;
+}
+
+.wrap,
+.table-wrap,
+.table-wrapper,
+.table-container{
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:thin;
+  scrollbar-color:#666 #1b1b1b;
+}
+
+.wrap::-webkit-scrollbar,
+.table-wrap::-webkit-scrollbar,
+.table-wrapper::-webkit-scrollbar,
+.table-container::-webkit-scrollbar{
+  width:9px;
+  height:9px;
+}
+
+.wrap::-webkit-scrollbar-track,
+.table-wrap::-webkit-scrollbar-track,
+.table-wrapper::-webkit-scrollbar-track,
+.table-container::-webkit-scrollbar-track{
+  background:#1b1b1b;
+}
+
+.wrap::-webkit-scrollbar-thumb,
+.table-wrap::-webkit-scrollbar-thumb,
+.table-wrapper::-webkit-scrollbar-thumb,
+.table-container::-webkit-scrollbar-thumb{
+  border-radius:999px;
+  background:#666;
+}
+
+.wrap::-webkit-scrollbar-thumb:hover,
+.table-wrap::-webkit-scrollbar-thumb:hover,
+.table-wrapper::-webkit-scrollbar-thumb:hover,
+.table-container::-webkit-scrollbar-thumb:hover{
+  background:#858585;
+}
+
+/* ================================================================
+   MODAL ASAS
+================================================================ */
+
+.modal{
+  overscroll-behavior:contain;
+}
+
+.modal-card,
+.modal-box,
+.modal-content{
+  border:1px solid var(--skpo-border-light);
+  background:var(--skpo-surface);
+  box-shadow:0 14px 40px rgba(0,0,0,.58);
+}
+
+/* ================================================================
+   PAPARAN MUDAH ALIH
+================================================================ */
+
+@media(max-width:720px){
+
+  body{
+    background:var(--skpo-bg);
+  }
+
+  button,
+  .link,
+  .nav-button{
+    min-height:44px;
+  }
+
+  .badge,
+  .status-badge{
+    white-space:normal;
+  }
+
+}
+
+/* ================================================================
+   AKSESIBILITI GERAKAN
+================================================================ */
+
+@media(prefers-reduced-motion:reduce){
+
+  html{
+    scroll-behavior:auto;
+  }
+
+  *,
+  *::before,
+  *::after{
+    scroll-behavior:auto !important;
+    transition-duration:.01ms !important;
+    animation-duration:.01ms !important;
+    animation-iteration-count:1 !important;
+  }
+
+}
+
+/* ================================================================
+   CETAKAN
+================================================================ */
+
+@media print{
+
+  :root{
+    color-scheme:light;
+  }
+
+  html,
+  body{
+    background:#fff !important;
+    color:#000 !important;
+  }
+
+  button,
+  .link,
+  .nav-button,
+  .actions,
+  .filters,
+  .toolbar,
+  .tools,
+  .logout,
+  .topbar-actions{
+    display:none !important;
+  }
+
+  .card,
+  .panel,
+  .section,
+  .section-card,
+  .stat,
+  .stat-card,
+  .progress-card,
+  .table-card,
+  .modal-card,
+  .modal-box,
+  .modal-content{
+    border-color:#aaa !important;
+    background:#fff !important;
+    color:#000 !important;
+    box-shadow:none !important;
+  }
+
+  .wrap,
+  .table-wrap,
+  .table-wrapper,
+  .table-container{
+    max-height:none !important;
+    overflow:visible !important;
+  }
+
+  table{
+    width:100% !important;
+    min-width:0 !important;
+  }
+
+  th{
+    position:static !important;
+    background:#e8e8e8 !important;
+    color:#000 !important;
+  }
+
+  td{
+    color:#000 !important;
+  }
+
+  a{
+    color:#000 !important;
+    text-decoration:none !important;
+  }
+
+}
