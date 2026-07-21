@@ -12,8 +12,10 @@
 
 window.SKPO_CONFIG = {
   API_BASE_URL: "",
-  SUPABASE_URL: "",
-  SUPABASE_ANON_KEY: ""
+
+  SUPABASE_URL: "https://ukapxshyhqtsseraphnn.supabase.co",
+
+  SUPABASE_ANON_KEY: "sb_publishable_2Px0J5xxzhIyWu0FkGoQEw_ezyOZXvt"
 };
 
 window.SKPO_BACKEND_READY =
