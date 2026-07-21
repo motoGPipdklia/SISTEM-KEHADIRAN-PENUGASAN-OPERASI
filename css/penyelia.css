@@ -1,16 +1,23 @@
+```css
 :root{
   --bg:#0d0d0d;
   --surface:#222;
   --surface-dark:#181818;
+  --surface-soft:#292929;
   --border:#3d3d3d;
   --text:#fff;
   --muted:#ccc;
   --gold:#d4af37;
+  --gold-dark:#493b13;
   --green:#2e7d32;
+  --green-soft:#123a24;
   --red:#b3261e;
+  --red-soft:#401b1b;
   --blue:#1565c0;
+  --orange:#d47b16;
   --gray:#444;
   --shadow:0 5px 18px rgba(0,0,0,.38);
+  --shadow-large:0 15px 45px rgba(0,0,0,.65);
 }
 
 *{
@@ -30,11 +37,19 @@ body{
   font-family:Arial,sans-serif;
 }
 
+body.modal-open{
+  overflow:hidden;
+}
+
 button,
 input,
 select,
 textarea{
   font:inherit;
+}
+
+button{
+  -webkit-tap-highlight-color:transparent;
 }
 
 .container{
@@ -72,6 +87,7 @@ textarea{
   text-align:center;
 }
 
+#loginSection h1,
 #loginSection h2{
   margin-top:0;
   color:var(--gold);
@@ -82,6 +98,18 @@ label{
   margin-top:11px;
   margin-bottom:5px;
   color:#eee;
+}
+
+.sr-only{
+  position:absolute;
+  width:1px;
+  height:1px;
+  padding:0;
+  margin:-1px;
+  overflow:hidden;
+  clip:rect(0,0,0,0);
+  white-space:nowrap;
+  border:0;
 }
 
 input,
@@ -96,7 +124,10 @@ textarea{
   background:#121212;
   color:#fff;
   font-size:16px;
-  transition:border-color .2s ease,box-shadow .2s ease;
+  transition:
+    border-color .2s ease,
+    box-shadow .2s ease,
+    background .2s ease;
 }
 
 textarea{
@@ -116,13 +147,22 @@ textarea::placeholder{
   color:#929292;
 }
 
+select{
+  cursor:pointer;
+}
+
 button{
   padding:12px 16px;
   border:0;
   border-radius:8px;
   font-weight:700;
   cursor:pointer;
-  transition:filter .2s ease,transform .15s ease,opacity .2s ease;
+  transition:
+    filter .2s ease,
+    transform .15s ease,
+    opacity .2s ease,
+    border-color .2s ease,
+    background .2s ease;
 }
 
 button:hover:not(:disabled){
@@ -141,6 +181,15 @@ button:focus-visible{
 button:disabled{
   opacity:.55;
   cursor:not-allowed;
+}
+
+.link{
+  display:block;
+  margin-top:10px;
+  padding:12px 16px;
+  border-radius:8px;
+  text-align:center;
+  text-decoration:none;
 }
 
 .btn-main{
@@ -209,7 +258,9 @@ button:disabled{
 }
 
 #loginStatus,
-#statusPertukaran{
+#statusPertukaran,
+#statusData,
+#statusLaporan{
   margin-top:12px;
   line-height:1.5;
 }
@@ -227,6 +278,8 @@ button:disabled{
 }
 
 .profile{
+  flex:1;
+  min-width:240px;
   padding:14px;
   border:1px solid #303030;
   border-radius:10px;
@@ -248,8 +301,18 @@ button:disabled{
   margin:0;
 }
 
+.toolbar select{
+  width:auto;
+  min-width:190px;
+  margin:0;
+}
+
 .toolbar button{
   min-width:150px;
+}
+
+.laporan-toolbar{
+  margin-top:0;
 }
 
 .count{
@@ -260,10 +323,117 @@ button:disabled{
   min-height:30px;
   padding:3px 9px;
   border-radius:999px;
-  background:#493b13;
+  background:var(--gold-dark);
   color:#ffd166;
   font-weight:700;
 }
+
+/* ================================================================
+   KAD RINGKASAN DASHBOARD
+================================================================ */
+
+.ringkasan-grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:12px;
+  margin:18px 0;
+}
+
+.ringkasan-card{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  justify-content:center;
+  gap:8px;
+  min-height:105px;
+  padding:16px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:var(--surface-dark);
+  color:#fff;
+  text-align:left;
+  box-shadow:none;
+}
+
+.ringkasan-card:hover{
+  border-color:#696969;
+  background:#1e1e1e;
+}
+
+.ringkasan-card span{
+  color:var(--muted);
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.4px;
+}
+
+.ringkasan-card strong{
+  color:var(--gold);
+  font-size:30px;
+  line-height:1;
+}
+
+.ringkasan-card.belum strong{
+  color:#ff8f87;
+}
+
+.ringkasan-card.menunggu strong{
+  color:#ffd166;
+}
+
+.ringkasan-card.laporan strong{
+  color:#7cb7ff;
+}
+
+/* ================================================================
+   TAB KEHADIRAN DAN LAPORAN
+================================================================ */
+
+.tabbar{
+  display:flex;
+  gap:8px;
+  margin:18px 0;
+  border-bottom:1px solid var(--border);
+}
+
+.tab-button{
+  position:relative;
+  padding:13px 18px;
+  border-radius:8px 8px 0 0;
+  border-bottom:3px solid transparent;
+  background:transparent;
+  color:#aaa;
+}
+
+.tab-button:hover{
+  background:#2b2b2b;
+  color:#fff;
+}
+
+.tab-button.active{
+  border-bottom-color:var(--gold);
+  background:#2b2b2b;
+  color:var(--gold);
+}
+
+.badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:22px;
+  height:22px;
+  margin-left:6px;
+  padding:0 7px;
+  border-radius:999px;
+  background:var(--red);
+  color:#fff;
+  font-size:12px;
+  font-weight:700;
+}
+
+/* ================================================================
+   SENARAI REKOD
+================================================================ */
 
 .list{
   display:grid;
@@ -276,7 +446,10 @@ button:disabled{
   border-radius:12px;
   background:var(--surface-dark);
   text-align:left;
-  transition:border-color .2s ease,background .2s ease;
+  transition:
+    border-color .2s ease,
+    background .2s ease,
+    transform .15s ease;
 }
 
 .record:hover{
@@ -285,8 +458,23 @@ button:disabled{
 }
 
 .record h3{
-  margin:0 0 12px;
+  margin:0;
   color:var(--gold);
+}
+
+.record small{
+  display:block;
+  margin-top:5px;
+  color:var(--muted);
+  line-height:1.4;
+}
+
+.record-heading{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:14px;
 }
 
 .grid{
@@ -324,6 +512,102 @@ button:disabled{
   text-align:center;
 }
 
+/* ================================================================
+   BADGE STATUS KEHADIRAN
+================================================================ */
+
+.status-badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  max-width:100%;
+  padding:7px 11px;
+  border:1px solid transparent;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:700;
+  line-height:1.2;
+  text-align:center;
+  white-space:nowrap;
+}
+
+.status-belum-hadir{
+  border-color:#7b3232;
+  background:var(--red-soft);
+  color:#ffc1c1;
+}
+
+.status-menunggu{
+  border-color:#766126;
+  background:#3a3013;
+  color:#ffe29a;
+}
+
+.status-hadir{
+  border-color:#2b7043;
+  background:var(--green-soft);
+  color:#b9f6ca;
+}
+
+.status-selesai-tugas{
+  border-color:#2b7043;
+  background:var(--green-soft);
+  color:#b9f6ca;
+}
+
+.status-ditolak{
+  border-color:#7b3232;
+  background:var(--red-soft);
+  color:#ffc1c1;
+}
+
+.status-diganti{
+  border-color:#555;
+  background:#303030;
+  color:#ddd;
+}
+
+/* ================================================================
+   MODUL LAPORAN
+================================================================ */
+
+.laporan-record{
+  position:relative;
+}
+
+.laporan-record.belum-dibaca{
+  border-left:4px solid var(--red);
+}
+
+.laporan-record.dibaca{
+  border-left:4px solid var(--green);
+  opacity:.88;
+}
+
+.status-belum-dibaca{
+  border-color:#7b3232;
+  background:var(--red-soft);
+  color:#ffc1c1;
+}
+
+.status-telah-dibaca{
+  border-color:#2b7043;
+  background:var(--green-soft);
+  color:#b9f6ca;
+}
+
+.teks-ringkas{
+  display:-webkit-box;
+  overflow:hidden;
+  line-height:1.5;
+  -webkit-line-clamp:3;
+  -webkit-box-orient:vertical;
+}
+
+/* ================================================================
+   MODAL LAPORAN
+================================================================ */
+
 .modal{
   position:fixed;
   inset:0;
@@ -332,13 +616,84 @@ button:disabled{
   align-items:center;
   justify-content:center;
   padding:18px;
-  overflow:auto;
-  background:rgba(0,0,0,.8);
 }
 
 .modal.hidden{
-  display:none;
+  display:none !important;
 }
+
+.modal-backdrop{
+  position:absolute;
+  inset:0;
+  background:rgba(0,0,0,.82);
+  backdrop-filter:blur(2px);
+}
+
+.modal-panel{
+  position:relative;
+  z-index:1;
+  width:min(100%,720px);
+  max-height:92vh;
+  overflow:auto;
+  padding:22px;
+  border:1px solid #555;
+  border-radius:15px;
+  background:var(--surface);
+  box-shadow:var(--shadow-large);
+}
+
+.modal-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:18px;
+  padding-bottom:13px;
+  border-bottom:1px solid var(--border);
+}
+
+.modal-header h2{
+  margin:0;
+  color:var(--gold);
+}
+
+.modal-close{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:42px;
+  height:42px;
+  padding:0;
+  border-radius:50%;
+  background:#444;
+  color:#fff;
+  font-size:27px;
+  line-height:1;
+}
+
+.modal-grid{
+  margin-bottom:18px;
+}
+
+.laporan-penuh{
+  margin-top:18px;
+  padding:15px;
+  border:1px solid #414141;
+  border-radius:10px;
+  background:var(--surface-dark);
+}
+
+.laporan-penuh p{
+  margin:10px 0 0;
+  color:#eee;
+  line-height:1.7;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+}
+
+/* ================================================================
+   MODAL LAMA / PERTUKARAN PETUGAS
+================================================================ */
 
 .modal-box{
   width:min(100%,620px);
@@ -348,7 +703,7 @@ button:disabled{
   border:1px solid #555;
   border-radius:15px;
   background:var(--surface);
-  box-shadow:0 15px 45px rgba(0,0,0,.65);
+  box-shadow:var(--shadow-large);
 }
 
 .modal-box h2{
@@ -416,6 +771,25 @@ button:disabled{
   line-height:1.55;
 }
 
+/* ================================================================
+   PAPARAN TABLET
+================================================================ */
+
+@media(max-width:850px){
+  .ringkasan-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+
+  .toolbar select{
+    flex:1;
+    min-width:220px;
+  }
+}
+
+/* ================================================================
+   PAPARAN TELEFON
+================================================================ */
+
 @media(max-width:700px){
   .container{
     margin-top:15px;
@@ -445,9 +819,22 @@ button:disabled{
   }
 
   .toolbar input,
+  .toolbar select,
   .toolbar button{
     width:100%;
     min-width:0;
+  }
+
+  .record-heading{
+    flex-direction:column;
+  }
+
+  .status-badge{
+    white-space:normal;
+  }
+
+  .modal-panel{
+    padding:17px;
   }
 }
 
@@ -463,6 +850,32 @@ button:disabled{
   .mode-tabs{
     flex-direction:column;
   }
+
+  .tabbar{
+    flex-direction:column;
+    border-bottom:0;
+  }
+
+  .tab-button{
+    width:100%;
+    border:1px solid var(--border);
+    border-radius:8px;
+    text-align:left;
+  }
+
+  .tab-button.active{
+    border-color:var(--gold);
+  }
+}
+
+@media(max-width:520px){
+  .ringkasan-grid{
+    grid-template-columns:1fr;
+  }
+
+  .ringkasan-card{
+    min-height:88px;
+  }
 }
 
 @media(max-width:420px){
@@ -475,10 +888,27 @@ button:disabled{
   }
 
   .grid .label{
-    margin-top:5px;
+    margin-top:8px;
     color:var(--gold);
   }
+
+  .modal{
+    padding:10px;
+  }
+
+  .modal-panel{
+    padding:14px;
+    border-radius:12px;
+  }
+
+  .modal-header h2{
+    font-size:19px;
+  }
 }
+
+/* ================================================================
+   CETAK
+================================================================ */
 
 @media print{
   body{
@@ -490,7 +920,9 @@ button:disabled{
   .toolbar,
   .actions,
   .topbar button,
-  .modal{
+  .modal,
+  .tabbar,
+  .ringkasan-grid{
     display:none !important;
   }
 
@@ -503,7 +935,8 @@ button:disabled{
 
   .card,
   .record,
-  .profile{
+  .profile,
+  .laporan-penuh{
     border-color:#999;
     background:#fff;
     color:#000;
@@ -512,7 +945,15 @@ button:disabled{
 
   .label,
   .record h3,
-  .topbar h2{
+  .topbar h2,
+  .modal-header h2{
+    color:#000;
+  }
+
+  .status-badge{
+    border:1px solid #777;
+    background:#fff;
     color:#000;
   }
 }
+```
