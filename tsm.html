@@ -6,8 +6,8 @@
   <meta name="theme-color" content="#0d0d0d">
   <title>SKPO TSM</title>
 
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="css/tsm.css">
+  <link rel="stylesheet" href="css/style.css?v=20260722-0415">
+  <link rel="stylesheet" href="css/tsm.css?v=20260722-0415">
 </head>
 
 <body>
@@ -32,12 +32,124 @@
         <div id="profilTSM">-</div>
       </div>
       <div class="topbar-actions">
-        <a class="gray nav-button" href="admin.html">PENTADBIR</a>
-        <button class="logout" type="button" onclick="logoutTSM()">LOG KELUAR</button>
+
+  <!-- NOTIFIKASI TSM -->
+  <div class="notification-wrapper" id="notificationWrapper">
+
+    <button
+      class="notification-button"
+      id="btnNotifikasiTSM"
+      type="button"
+      onclick="togglePanelNotifikasiTSM()"
+      aria-label="Buka notifikasi"
+      aria-expanded="false"
+      aria-controls="panelNotifikasiTSM"
+    >
+      <span class="notification-icon" aria-hidden="true">🔔</span>
+
+      <span
+        class="notification-count"
+        id="jumlahNotifikasiTSM"
+        hidden
+      >
+        0
+      </span>
+    </button>
+
+    <section
+      class="notification-panel"
+      id="panelNotifikasiTSM"
+      aria-labelledby="tajukNotifikasiTSM"
+      hidden
+    >
+      <div class="notification-header">
+        <div>
+          <h2 id="tajukNotifikasiTSM">Notifikasi TSM</h2>
+          <p id="ringkasanNotifikasiTSM">Tiada notifikasi baharu</p>
+        </div>
+
+        <button
+          class="notification-close"
+          type="button"
+          onclick="tutupPanelNotifikasiTSM()"
+          aria-label="Tutup notifikasi"
+        >
+          ×
+        </button>
       </div>
+
+      <div class="notification-actions">
+        <button
+          class="notification-read-all"
+          id="btnBacaSemuaNotifikasiTSM"
+          type="button"
+          onclick="tandakanSemuaNotifikasiTSMDibaca()"
+        >
+          TANDA SEMUA DIBACA
+        </button>
+      </div>
+
+      <div
+        class="notification-list"
+        id="senaraiNotifikasiTSM"
+        role="list"
+        aria-live="polite"
+      >
+        <div class="notification-empty">
+          Tiada notifikasi untuk dipaparkan.
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <a class="gray nav-button" href="admin.html">
+    PENTADBIR
+  </a>
+
+  <button
+    class="logout"
+    type="button"
+    onclick="logoutTSM()"
+  >
+    LOG KELUAR
+  </button>
+
+</div>
     </header>
 
     <main class="content">
+      <!-- =====================================================
+     PEMBERITAHUAN LANGSUNG
+====================================================== -->
+<div
+  class="realtime-alert"
+  id="realtimeAlertTSM"
+  role="status"
+  aria-live="assertive"
+  hidden
+>
+  <div class="realtime-alert-icon" aria-hidden="true">🔔</div>
+
+  <div class="realtime-alert-content">
+    <strong id="realtimeAlertTitleTSM">
+      Notifikasi Baharu
+    </strong>
+
+    <span id="realtimeAlertMessageTSM">
+      Permohonan Walkie Talkie baharu diterima.
+    </span>
+  </div>
+
+  <button
+    class="realtime-alert-close"
+    type="button"
+    onclick="tutupPemberitahuanLangsungTSM()"
+    aria-label="Tutup pemberitahuan"
+  >
+    ×
+  </button>
+</div>
       <section class="stats-grid">
         <article class="stat-card"><div class="stat-title">Jumlah</div><div class="stat-number" id="statJumlah">0</div></article>
         <article class="stat-card"><div class="stat-title">Menunggu</div><div class="stat-number" id="statMenunggu">0</div></article>
@@ -154,8 +266,8 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/api-config.js"></script>
-  <script src="js/supabase-client.js"></script>
-  <script src="js/tsm.js"></script>
+  <script src="js/api-config.js?v=20260722-0415"></script>
+  <script src="js/supabase-client.js?v=20260722-0415"></script>
+  <script src="js/tsm.js?v=20260722-0415"></script>
 </body>
 </html>
