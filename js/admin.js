@@ -314,11 +314,20 @@ async function login() {
       throw new Error("Akaun Pentadbir telah dinyahaktifkan.");
     }
 
-    if (!semakPerananPentadbir(profil)) {
-      throw new Error(
-        `Akses ditolak. Peranan akaun ini ialah ${atas(profil.peranan) || "TIDAK DITETAPKAN"}, bukan PENTADBIR.`
-      );
-    }
+    const peranan = atas(profil.peranan);
+
+if (!semakPerananPentadbir(profil)) {
+
+  await db.auth.signOut().catch(() => {});
+
+  if (peranan === "TSM") {
+    window.location.replace("tsm.html");
+    return;
+  }
+
+  window.location.replace("index.html");
+  return;
+}
 
     adminLogin = {
       id: profil.id,
@@ -364,10 +373,29 @@ async function pulihkanSesiPentadbir() {
     if (error || !data?.session?.user) return;
 
     const profil = await dapatkanProfil(data.session.user.id);
-    if (!profil || profil.aktif === false || !semakPerananPentadbir(profil)) {
-      await db.auth.signOut();
-      return;
-    }
+    if (!profil || profil.aktif === false) {
+
+  await db.auth.signOut().catch(() => {});
+  window.location.replace("index.html");
+  return;
+
+}
+
+const peranan = atas(profil.peranan);
+
+if (!semakPerananPentadbir(profil)) {
+
+  await db.auth.signOut().catch(() => {});
+
+  if (peranan === "TSM") {
+    window.location.replace("tsm.html");
+    return;
+  }
+
+  window.location.replace("index.html");
+  return;
+
+}
 
     adminLogin = {
       id: profil.id,
