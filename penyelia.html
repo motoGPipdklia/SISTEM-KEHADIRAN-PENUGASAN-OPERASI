@@ -2,108 +2,293 @@
 <html lang="ms">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0d0d0d">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <meta
+    name="theme-color"
+    content="#0d0d0d"
+  >
+
   <title>SKPO Urusetia</title>
 
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="css/penyelia.css">
+  <link
+    rel="stylesheet"
+    href="css/style.css?v=20260721-1555"
+  >
+
+  <link
+    rel="stylesheet"
+    href="css/penyelia.css?v=20260721-1555"
+  >
 </head>
 
 <body>
+
   <main class="container">
+
     <header>
-      <div class="logo">SKPO URUSETIA</div>
-      <p class="sub">Pengesahan Kehadiran & Pelaporan Petugas</p>
+      <div class="logo">
+        SKPO URUSETIA
+      </div>
+
+      <p class="sub">
+        Pengesahan Kehadiran &amp; Pelaporan Petugas
+      </p>
     </header>
 
-    <section class="card" id="loginSection">
-      <h1>Login Urusetia</h1>
 
-      <label class="sr-only" for="noBadan">No Badan</label>
-      <input id="noBadan" type="text" placeholder="No Badan" autocomplete="username">
+    <!-- =========================================================
+         LOGIN URUSETIA
+    ========================================================== -->
 
-      <label class="sr-only" for="password">Kata Laluan</label>
-      <input id="password" type="password" placeholder="Kata Laluan" autocomplete="current-password">
+    <section
+      class="card"
+      id="loginSection"
+    >
 
-      <button class="btn-main" id="btnLogin" type="button" onclick="loginPenyelia()">
+      <h1>
+        Login Urusetia
+      </h1>
+
+      <label
+        class="sr-only"
+        for="noBadan"
+      >
+        No Badan
+      </label>
+
+      <input
+        id="noBadan"
+        type="text"
+        placeholder="No Badan"
+        autocomplete="username"
+        spellcheck="false"
+      >
+
+      <label
+        class="sr-only"
+        for="password"
+      >
+        Kata Laluan
+      </label>
+
+      <input
+        id="password"
+        type="password"
+        placeholder="Kata Laluan"
+        autocomplete="current-password"
+      >
+
+      <button
+        class="btn-main"
+        id="btnLogin"
+        type="button"
+        onclick="loginPenyelia()"
+      >
         LOGIN URUSETIA
       </button>
 
-      <div class="status hidden" id="loginStatus" role="status" aria-live="polite"></div>
+      <div
+        class="status hidden"
+        id="loginStatus"
+        role="status"
+        aria-live="polite"
+      ></div>
 
-      <a class="btn-secondary link" href="index.html">
+      <a
+        class="btn-secondary link"
+        href="index.html"
+      >
         KEMBALI KE LOGIN PETUGAS
       </a>
+
     </section>
 
-    <section class="hidden" id="dashboardSection">
+
+    <!-- =========================================================
+         DASHBOARD URUSETIA
+    ========================================================== -->
+
+    <section
+      class="hidden"
+      id="dashboardSection"
+    >
+
       <div class="card">
+
         <div class="topbar">
-          <div class="profile" id="profilPenyelia">-</div>
-          <button class="btn-secondary" type="button" onclick="logoutPenyelia()">
+
+          <div
+            class="profile"
+            id="profilPenyelia"
+          >
+            -
+          </div>
+
+          <button
+            class="btn-secondary"
+            type="button"
+            onclick="logoutPenyelia()"
+          >
             LOG KELUAR
           </button>
+
         </div>
 
+
+        <!-- TOOLBAR UTAMA -->
+
         <div class="toolbar">
+
           <input
             id="carian"
             type="search"
             placeholder="Cari No Badan, nama, Call Sign atau tugas..."
+            autocomplete="off"
             oninput="paparSenarai()"
           >
 
-          <input id="tarikh" type="date" onchange="muatSemuaDataPenyelia()">
+          <input
+            id="tarikh"
+            type="date"
+            aria-label="Tarikh rekod"
+          >
 
-          <select id="penapisStatus" onchange="paparSenarai()" aria-label="Penapis status kehadiran">
-            <option value="SEMUA">SEMUA STATUS</option>
-            <option value="BELUM HADIR">BELUM HADIR</option>
-            <option value="MENUNGGU">MENUNGGU PENGESAHAN</option>
-            <option value="HADIR">HADIR</option>
-            <option value="DITOLAK">DITOLAK</option>
-            <option value="SELESAI TUGAS">SELESAI TUGAS</option>
-            <option value="DIGANTI">DIGANTI</option>
+          <select
+            id="penapisStatus"
+            onchange="paparSenarai()"
+            aria-label="Penapis status kehadiran"
+          >
+            <option value="SEMUA">
+              SEMUA STATUS
+            </option>
+
+            <option value="BELUM HADIR">
+              BELUM HADIR
+            </option>
+
+            <option value="MENUNGGU">
+              MENUNGGU PENGESAHAN
+            </option>
+
+            <option value="HADIR">
+              HADIR
+            </option>
+
+            <option value="DITOLAK">
+              DITOLAK
+            </option>
+
+            <option value="SELESAI TUGAS">
+              SELESAI TUGAS
+            </option>
+
+            <option value="DIGANTI">
+              DIGANTI
+            </option>
           </select>
 
-          <button class="btn-refresh" type="button" onclick="muatSemuaDataPenyelia()">
+          <button
+            class="btn-refresh"
+            type="button"
+            onclick="muatSemuaDataPenyelia()"
+          >
             SEMAK SEMULA
           </button>
+
         </div>
+
+
+        <!-- RINGKASAN -->
 
         <div class="ringkasan-grid">
-          <button class="ringkasan-card" type="button" onclick="tetapPenapisStatus('SEMUA')">
-            <span>JUMLAH REKOD</span>
-            <strong id="jumlahRekod">0</strong>
+
+          <button
+            class="ringkasan-card"
+            type="button"
+            onclick="tetapPenapisStatus('SEMUA')"
+          >
+            <span>
+              JUMLAH REKOD
+            </span>
+
+            <strong id="jumlahRekod">
+              0
+            </strong>
           </button>
 
-          <button class="ringkasan-card belum" type="button" onclick="tetapPenapisStatus('BELUM HADIR')">
-            <span>BELUM HADIR</span>
-            <strong id="jumlahBelumHadir">0</strong>
+
+          <button
+            class="ringkasan-card belum"
+            type="button"
+            onclick="tetapPenapisStatus('BELUM HADIR')"
+          >
+            <span>
+              BELUM HADIR
+            </span>
+
+            <strong id="jumlahBelumHadir">
+              0
+            </strong>
           </button>
 
-          <button class="ringkasan-card menunggu" type="button" onclick="tetapPenapisStatus('MENUNGGU')">
-            <span>MENUNGGU PENGESAHAN</span>
-            <strong id="jumlahMenunggu">0</strong>
+
+          <button
+            class="ringkasan-card menunggu"
+            type="button"
+            onclick="tetapPenapisStatus('MENUNGGU')"
+          >
+            <span>
+              MENUNGGU PENGESAHAN
+            </span>
+
+            <strong id="jumlahMenunggu">
+              0
+            </strong>
           </button>
 
-          <button class="ringkasan-card laporan" type="button" onclick="bukaBahagianLaporan()">
-            <span>LAPORAN BELUM DIBACA</span>
-            <strong id="jumlahLaporanBelumDibaca">0</strong>
+
+          <button
+            class="ringkasan-card laporan"
+            type="button"
+            onclick="bukaBahagianLaporan()"
+          >
+            <span>
+              LAPORAN BELUM DIBACA
+            </span>
+
+            <strong id="jumlahLaporanBelumDibaca">
+              0
+            </strong>
           </button>
+
         </div>
 
-        <div class="tabbar" role="tablist" aria-label="Paparan Urusetia">
+
+        <!-- TAB KEHADIRAN / LAPORAN -->
+
+        <div
+          class="tabbar"
+          role="tablist"
+          aria-label="Paparan Urusetia"
+        >
+
           <button
             id="tabKehadiran"
             class="tab-button active"
             type="button"
             role="tab"
             aria-selected="true"
+            aria-controls="bahagianKehadiran"
             onclick="tukarTabPenyelia('kehadiran')"
           >
             KEHADIRAN
           </button>
+
 
           <button
             id="tabLaporan"
@@ -111,40 +296,114 @@
             type="button"
             role="tab"
             aria-selected="false"
+            aria-controls="bahagianLaporan"
             onclick="tukarTabPenyelia('laporan')"
           >
             LAPORAN PETUGAS
-            <span class="badge hidden" id="badgeLaporan">0</span>
+
+            <span
+              class="badge hidden"
+              id="badgeLaporan"
+            >
+              0
+            </span>
           </button>
+
         </div>
 
-        <section id="bahagianKehadiran">
-          <div class="status hidden" id="statusData" role="status" aria-live="polite"></div>
-          <div class="list" id="senaraiPetugas"></div>
+
+        <!-- =====================================================
+             BAHAGIAN KEHADIRAN
+        ====================================================== -->
+
+        <section
+          id="bahagianKehadiran"
+          role="tabpanel"
+          aria-labelledby="tabKehadiran"
+        >
+
+          <div
+            class="status hidden"
+            id="statusData"
+            role="status"
+            aria-live="polite"
+          ></div>
+
+          <div
+            class="list"
+            id="senaraiPetugas"
+          ></div>
+
         </section>
 
-        <section id="bahagianLaporan" class="hidden">
+
+        <!-- =====================================================
+             BAHAGIAN LAPORAN
+        ====================================================== -->
+
+        <section
+          id="bahagianLaporan"
+          class="hidden"
+          role="tabpanel"
+          aria-labelledby="tabLaporan"
+        >
+
           <div class="toolbar laporan-toolbar">
+
             <input
               id="carianLaporan"
               type="search"
               placeholder="Cari nama, No Badan, Call Sign atau perkara menarik..."
+              autocomplete="off"
               oninput="paparSenaraiLaporan()"
             >
 
-            <select id="penapisLaporan" onchange="paparSenaraiLaporan()" aria-label="Penapis laporan">
-              <option value="SEMUA">SEMUA LAPORAN</option>
-              <option value="BELUM DIBACA">BELUM DIBACA</option>
-              <option value="TELAH DIBACA">TELAH DIBACA</option>
+            <select
+              id="penapisLaporan"
+              onchange="paparSenaraiLaporan()"
+              aria-label="Penapis laporan"
+            >
+              <option value="SEMUA">
+                SEMUA LAPORAN
+              </option>
+
+              <option value="BELUM DIBACA">
+                BELUM DIBACA
+              </option>
+
+              <option value="TELAH DIBACA">
+                TELAH DIBACA
+              </option>
             </select>
+
           </div>
 
-          <div class="status hidden" id="statusLaporan" role="status" aria-live="polite"></div>
-          <div class="list" id="senaraiLaporan"></div>
+
+          <div
+            class="status hidden"
+            id="statusLaporan"
+            role="status"
+            aria-live="polite"
+          ></div>
+
+
+          <div
+            class="list"
+            id="senaraiLaporan"
+          ></div>
+
         </section>
+
       </div>
+
     </section>
+
   </main>
+
+
+  <!-- ===========================================================
+       MODAL LAPORAN
+  ============================================================ -->
 
   <div
     class="modal hidden"
@@ -153,25 +412,65 @@
     aria-modal="true"
     aria-labelledby="tajukModalLaporan"
   >
-    <div class="modal-backdrop" onclick="tutupModalLaporan()"></div>
+
+    <div
+      class="modal-backdrop"
+      onclick="tutupModalLaporan()"
+    ></div>
+
 
     <div class="modal-panel">
+
       <div class="modal-header">
-        <h2 id="tajukModalLaporan">Laporan Petugas</h2>
-        <button class="modal-close" type="button" onclick="tutupModalLaporan()" aria-label="Tutup">
-          ×
+
+        <h2 id="tajukModalLaporan">
+          Laporan Petugas
+        </h2>
+
+        <button
+          class="modal-close"
+          type="button"
+          onclick="tutupModalLaporan()"
+          aria-label="Tutup laporan"
+        >
+          &times;
         </button>
+
       </div>
+
 
       <div id="kandunganModalLaporan"></div>
 
-      <div class="actions" id="tindakanModalLaporan"></div>
+
+      <div
+        class="actions"
+        id="tindakanModalLaporan"
+      ></div>
+
     </div>
+
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/api-config.js"></script>
-  <script src="js/supabase-client.js"></script>
-  <script src="js/penyelia.js"></script>
+
+  <!-- ===========================================================
+       JAVASCRIPT
+  ============================================================ -->
+
+  <script
+    src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+  ></script>
+
+  <script
+    src="js/api-config.js?v=20260721-1555"
+  ></script>
+
+  <script
+    src="js/supabase-client.js?v=20260721-1555"
+  ></script>
+
+  <script
+    src="js/penyelia.js?v=20260721-1555"
+  ></script>
+
 </body>
 </html>
