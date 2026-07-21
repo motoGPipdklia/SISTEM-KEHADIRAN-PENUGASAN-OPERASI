@@ -903,45 +903,57 @@ function paparSenarai() {
 
           </div>
 
-          ${
-            bolehTindak
-              ? `
-                <div class="actions">
+         ${
+  bolehTindak || bolehGanti
+    ? `
+      <div class="actions">
 
-  ${
-    bolehTindak
-      ? `
-      <button
-        class="btn-ok"
-        type="button"
-        onclick="sahkanKehadiran('${htmlPenyelia(item.checkin.id)}')">
-        SAHKAN HADIR
-      </button>
+        ${
+          bolehTindak
+            ? `
+              <button
+                class="btn-ok"
+                type="button"
+                onclick="sahkanKehadiran('${htmlPenyelia(
+                  item.checkin.id
+                )}')"
+              >
+                SAHKAN HADIR
+              </button>
 
-      <button
-        class="btn-no"
-        type="button"
-        onclick="tolakKehadiran('${htmlPenyelia(item.checkin.id)}')">
-        TOLAK
-      </button>
-      `
-      : ""
-  }
+              <button
+                class="btn-no"
+                type="button"
+                onclick="tolakKehadiran('${htmlPenyelia(
+                  item.checkin.id
+                )}')"
+              >
+                TOLAK
+              </button>
+            `
+            : ""
+        }
 
-  ${
-    bolehGanti
-      ? `
-      <button
-        class="btn-change"
-        type="button"
-        onclick="bukaModalPengganti('${htmlPenyelia(item.idPenugasan)}')">
-        GANTI PETUGAS
-      </button>
-      `
-      : ""
-  }
+        ${
+          bolehGanti
+            ? `
+              <button
+                class="btn-change"
+                type="button"
+                onclick="bukaModalPengganti('${htmlPenyelia(
+                  item.idPenugasan
+                )}')"
+              >
+                GANTI PETUGAS
+              </button>
+            `
+            : ""
+        }
 
-</div>
+      </div>
+    `
+    : ""
+}
               `
               : ""
           }
