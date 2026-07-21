@@ -956,7 +956,6 @@ ${
 }
 
         </article>
-        </article>
       `;
     }).join("");
 }
