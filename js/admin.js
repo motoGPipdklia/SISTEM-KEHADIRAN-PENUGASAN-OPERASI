@@ -15,6 +15,8 @@ let dataPaparan = [];
 let rekodResetDevice = null;
 let rekodImportPenugasan = [];
 let importSedangBerjalan = false;
+let rekodImportPengguna = [];
+let importPenggunaSedangBerjalan = false;
 
 function el(id) {
   return document.getElementById(id);
@@ -128,7 +130,7 @@ function pastikanSupabase() {
   }
 }
 
-async function panggilEdgeFunction(namaFungsi, body) {
+async function panggilEdgeFunction(namaFungsi, body, masaTamat = 25000) {
   pastikanSupabase();
 
   const konfigurasi = window.SKPO_CONFIG || {};
@@ -192,7 +194,7 @@ async function panggilEdgeFunction(namaFungsi, body) {
         },
         body: JSON.stringify(body || {})
       }),
-      25000
+      masaTamat
     );
   } catch (error) {
     throw new Error(
@@ -797,6 +799,315 @@ async function daftarPenggunaBaharu() {
   } finally {
     butang.disabled = false;
     butang.textContent = "DAFTAR PENGGUNA";
+  }
+}
+
+/* ================================================================
+   IMPORT PENGGUNA CSV
+================================================================ */
+
+function binaRekodImportPenggunaCsv(barisCsv) {
+  if (barisCsv.length < 2) {
+    throw new Error("Fail CSV tidak mempunyai rekod pengguna.");
+  }
+
+  const alias = {
+    NO_BADAN: ["NO_BADAN", "NOBADAN", "NO_POLIS", "BODY_NO"],
+    PANGKAT: ["PANGKAT", "RANK"],
+    NAMA: ["NAMA", "NAMA_PENUH", "NAME"],
+    PERANAN: ["PERANAN", "ROLE"],
+    TELEFON: ["TELEFON", "NO_TELEFON", "PHONE"],
+    BAHAGIAN: ["BAHAGIAN", "BALAI", "CAWANGAN", "BAHAGIAN_BALAI_CAWANGAN"],
+    DAERAH: ["DAERAH", "DISTRICT"],
+    KATA_LALUAN: ["KATA_LALUAN", "KATALALUAN", "PASSWORD"],
+    AKTIF: ["AKTIF", "ACTIVE"]
+  };
+
+  const header = barisCsv[0].map(normalisasiHeaderCsv);
+  const indeks = {};
+  Object.entries(alias).forEach(([nama, pilihan]) => {
+    indeks[nama] = header.findIndex(item => pilihan.includes(item));
+  });
+
+  const wajib = ["NO_BADAN", "PANGKAT", "NAMA", "KATA_LALUAN"];
+  const tiada = wajib.filter(nama => indeks[nama] < 0);
+  if (tiada.length) {
+    throw new Error(`Kolum wajib tidak dijumpai: ${tiada.join(", ")}. Gunakan templat pengguna yang disediakan.`);
+  }
+
+  const perananSah = ["PETUGAS", "PENYELIA", "URUSETIA", "PENTADBIR", "TSM"];
+  const ambil = (baris, nama) => indeks[nama] >= 0 ? teks(baris[indeks[nama]]) : "";
+
+  const rekod = barisCsv.slice(1).map((baris, kedudukan) => {
+    const nomborBaris = kedudukan + 2;
+    const ralat = [];
+    const noBadan = atas(ambil(baris, "NO_BADAN"));
+    const pangkat = atas(ambil(baris, "PANGKAT"));
+    const nama = atas(ambil(baris, "NAMA"));
+    const peranan = atas(ambil(baris, "PERANAN") || "PETUGAS");
+    const password = ambil(baris, "KATA_LALUAN");
+    const aktif = booleanCsv(ambil(baris, "AKTIF"), true);
+
+    if (!noBadan) ralat.push("No Badan kosong");
+    if (noBadan && !/^[A-Z0-9_-]+$/.test(noBadan)) {
+      ralat.push("No Badan hanya boleh mengandungi huruf, nombor, _ atau -");
+    }
+    if (!pangkat) ralat.push("Pangkat kosong");
+    if (!nama) ralat.push("Nama kosong");
+    if (!perananSah.includes(peranan)) ralat.push("Peranan tidak sah");
+    if (password.length < 8) ralat.push("Kata laluan kurang daripada 8 aksara");
+    if (aktif === null) ralat.push("Aktif mesti YA atau TIDAK");
+
+    return {
+      baris: nomborBaris,
+      ralat,
+      sediaAda: false,
+      diimport: false,
+      data: {
+        baris: nomborBaris,
+        no_badan: noBadan,
+        pangkat,
+        nama,
+        peranan,
+        telefon: ambil(baris, "TELEFON") || null,
+        bahagian: atas(ambil(baris, "BAHAGIAN")) || null,
+        daerah: atas(ambil(baris, "DAERAH")) || null,
+        password,
+        aktif: aktif === true
+      }
+    };
+  });
+
+  const kekerapan = new Map();
+  rekod.forEach(item => {
+    if (!item.data.no_badan) return;
+    kekerapan.set(item.data.no_badan, (kekerapan.get(item.data.no_badan) || 0) + 1);
+  });
+  rekod.forEach(item => {
+    if (kekerapan.get(item.data.no_badan) > 1) {
+      item.ralat.push("No Badan berganda dalam fail");
+    }
+  });
+
+  return rekod;
+}
+
+async function semakPenggunaSediaAda(rekod) {
+  const noBadan = [...new Set(
+    rekod.filter(item => item.ralat.length === 0).map(item => item.data.no_badan)
+  )];
+  const sediaAda = new Set();
+
+  for (const kumpulan of bahagiKumpulan(noBadan, 100)) {
+    const { data, error } = await denganHadMasa(
+      db.from("profiles").select("no_badan").in("no_badan", kumpulan)
+    );
+    if (error) throw error;
+    (data || []).forEach(item => sediaAda.add(atas(item.no_badan)));
+  }
+
+  rekod.forEach(item => {
+    item.sediaAda = sediaAda.has(item.data.no_badan);
+    if (item.sediaAda) item.data.password = "";
+  });
+}
+
+function paparPratontonImportPengguna() {
+  const jumlah = rekodImportPengguna.length;
+  const baharu = rekodImportPengguna.filter(
+    item => item.ralat.length === 0 && !item.sediaAda && !item.diimport
+  ).length;
+  const siap = rekodImportPengguna.filter(item => item.sediaAda || item.diimport).length;
+  const gagal = rekodImportPengguna.filter(item => item.ralat.length > 0).length;
+
+  el("importPenggunaJumlah").textContent = String(jumlah);
+  el("importPenggunaBaharu").textContent = String(baharu);
+  el("importPenggunaSediaAda").textContent = String(siap);
+  el("importPenggunaGagal").textContent = String(gagal);
+  el("btnImportPengguna").disabled = baharu === 0 || importPenggunaSedangBerjalan;
+  el("ruangPratontonImportPengguna").hidden = jumlah === 0;
+
+  el("tbodyImportPengguna").innerHTML = rekodImportPengguna
+    .slice(0, 100)
+    .map(item => {
+      const d = item.data;
+      let semakan = '<span class="badge badge-green">SAH — BAHARU</span>';
+      if (item.diimport) semakan = '<span class="badge badge-green">BERJAYA DIIMPORT</span>';
+      else if (item.sediaAda) semakan = '<span class="badge badge-gray">SEDIA ADA — DILANGKAU</span>';
+      else if (item.ralat.length) {
+        semakan = `<span class="badge badge-red" title="${escapeHtml(item.ralat.join("; "))}">RALAT: ${escapeHtml(item.ralat.join("; "))}</span>`;
+      }
+
+      return `<tr>
+        <td>${item.baris}</td>
+        <td>${escapeHtml(d.no_badan || "-")}</td>
+        <td>${escapeHtml(d.pangkat || "-")}</td>
+        <td>${escapeHtml(d.nama || "-")}</td>
+        <td>${escapeHtml(d.peranan || "-")}</td>
+        <td>${escapeHtml(d.telefon || "-")}</td>
+        <td>${escapeHtml(d.bahagian || "-")}</td>
+        <td>${escapeHtml(d.daerah || "-")}</td>
+        <td>${d.aktif ? "YA" : "TIDAK"}</td>
+        <td>${semakan}</td>
+      </tr>`;
+    })
+    .join("");
+
+  el("notaPratontonImportPengguna").textContent = jumlah > 100
+    ? `Memaparkan 100 daripada ${jumlah} baris. Kata laluan disembunyikan.`
+    : `Memaparkan semua ${jumlah} baris. Kata laluan disembunyikan.`;
+}
+
+async function bacaFailPenggunaCsv(event) {
+  const fail = event?.target?.files?.[0];
+  if (!fail) return;
+
+  rekodImportPengguna = [];
+  el("importPenggunaFail").textContent = fail.name;
+  el("btnImportPengguna").disabled = true;
+  paparMesej("statusImportPengguna", "Sedang membaca dan menyemak pengguna...", "warning");
+
+  try {
+    if (!/\.csv$/i.test(fail.name)) throw new Error("Sila pilih fail berformat .csv.");
+    if (fail.size > 5 * 1024 * 1024) throw new Error("Saiz fail melebihi had 5 MB.");
+
+    rekodImportPengguna = binaRekodImportPenggunaCsv(parseCsv(await fail.text()));
+    await semakPenggunaSediaAda(rekodImportPengguna);
+    paparPratontonImportPengguna();
+
+    const baharu = rekodImportPengguna.filter(
+      item => item.ralat.length === 0 && !item.sediaAda
+    ).length;
+    const sediaAda = rekodImportPengguna.filter(item => item.sediaAda).length;
+    const gagal = rekodImportPengguna.filter(item => item.ralat.length > 0).length;
+
+    paparMesej(
+      "statusImportPengguna",
+      `${baharu} pengguna baharu sedia diimport. ${sediaAda} sedia ada akan dilangkau. ${gagal} baris bermasalah.`,
+      gagal ? "warning" : "success"
+    );
+  } catch (error) {
+    console.error("Bacaan CSV pengguna gagal:", error);
+    rekodImportPengguna = [];
+    paparPratontonImportPengguna();
+    paparMesej("statusImportPengguna", escapeHtml(error.message), "error");
+  }
+}
+
+function kosongkanImportPengguna() {
+  if (importPenggunaSedangBerjalan) return;
+  rekodImportPengguna = [];
+  el("failPenggunaCsv").value = "";
+  el("importPenggunaFail").textContent = "-";
+  el("statusImportPengguna").className = "status-box";
+  el("statusImportPengguna").innerHTML = "";
+  paparPratontonImportPengguna();
+}
+
+function muatTurunTemplatPengguna() {
+  const kandungan = [
+    "NO_BADAN,PANGKAT,NAMA,PERANAN,TELEFON,BAHAGIAN,DAERAH,KATA_LALUAN,AKTIF",
+    "197898,L/KPL,NORHISHAM BIN CHE MAT,PETUGAS,0193151615,BKDNKA,KLIA,Skpo@A7m2#1,YA",
+    "199898,SJN,AHMAD BIN ALI,PENYELIA,0123456789,IPD KLIA,SEPANG,Skpo@B9n4#2,YA"
+  ].join("\r\n");
+
+  const blob = new Blob(["\uFEFF", kandungan], { type: "text/csv;charset=utf-8" });
+  const pautan = document.createElement("a");
+  pautan.href = URL.createObjectURL(blob);
+  pautan.download = "TEMPLAT_PENGGUNA_SKPO.csv";
+  document.body.appendChild(pautan);
+  pautan.click();
+  const alamat = pautan.href;
+  pautan.remove();
+  setTimeout(() => URL.revokeObjectURL(alamat), 1000);
+}
+
+async function importPenggunaCsv() {
+  if (importPenggunaSedangBerjalan) return;
+
+  const senarai = rekodImportPengguna.filter(
+    item => item.ralat.length === 0 && !item.sediaAda && !item.diimport
+  );
+  if (!senarai.length) {
+    paparMesej("statusImportPengguna", "Tiada pengguna baharu yang sah untuk diimport.", "error");
+    return;
+  }
+
+  if (!confirm(`Import ${senarai.length} pengguna baharu? Akaun Authentication akan dicipta dan tindakan ini tidak boleh dibatalkan dari halaman ini.`)) return;
+
+  importPenggunaSedangBerjalan = true;
+  const butang = el("btnImportPengguna");
+  butang.disabled = true;
+  let diproses = 0;
+  let berjaya = 0;
+  let sediaAda = 0;
+  let gagal = 0;
+  const semuaKeputusan = [];
+
+  try {
+    const kumpulan = bahagiKumpulan(senarai, 10);
+
+    for (let i = 0; i < kumpulan.length; i += 1) {
+      butang.textContent = `MENGIMPORT ${diproses} / ${senarai.length}...`;
+      paparMesej(
+        "statusImportPengguna",
+        `Sedang mencipta akaun kumpulan ${i + 1} daripada ${kumpulan.length}. Jangan tutup halaman ini.`,
+        "warning"
+      );
+
+      const hasil = await panggilEdgeFunction(
+        "import-pengguna",
+        { pengguna: kumpulan[i].map(item => item.data) },
+        120000
+      );
+
+      if (hasil?.success === false) throw new Error(hasil.message || "Import pengguna gagal.");
+
+      berjaya += Number(hasil.berjaya || 0);
+      sediaAda += Number(hasil.sedia_ada || 0);
+      gagal += Number(hasil.gagal || 0);
+      const keputusan = Array.isArray(hasil.keputusan) ? hasil.keputusan : [];
+      semuaKeputusan.push(...keputusan);
+
+      keputusan.forEach(itemHasil => {
+        const rekod = rekodImportPengguna.find(item => item.baris === Number(itemHasil.baris));
+        if (!rekod) return;
+
+        if (itemHasil.status === "BERJAYA") {
+          rekod.diimport = true;
+          rekod.data.password = "";
+        } else if (itemHasil.status === "SEDIA_ADA") {
+          rekod.sediaAda = true;
+          rekod.data.password = "";
+        } else {
+          rekod.ralat.push(`Import: ${itemHasil.mesej || "Gagal"}`);
+        }
+      });
+
+      diproses += kumpulan[i].length;
+      paparPratontonImportPengguna();
+    }
+
+    const ralat = semuaKeputusan.filter(item => item.status === "GAGAL");
+    const butiran = ralat.length
+      ? `<br><details><summary>Lihat ${ralat.length} ralat</summary><ul>${ralat.slice(0, 100).map(item => `<li>Baris ${escapeHtml(item.baris || "-")} — ${escapeHtml(item.no_badan || "-")}: ${escapeHtml(item.mesej || "Ralat")}</li>`).join("")}</ul></details>`
+      : "";
+
+    paparMesej(
+      "statusImportPengguna",
+      `<strong>IMPORT PENGGUNA SELESAI</strong><br>Berjaya: ${berjaya}<br>Sedia ada/dilangkau: ${sediaAda}<br>Gagal: ${gagal}${butiran}`,
+      gagal ? "warning" : "success"
+    );
+  } catch (error) {
+    console.error("Import pengguna gagal:", error);
+    const mesej = /Edge Function|Failed to send|404/i.test(error.message)
+      ? `${error.message} Pastikan Edge Function bernama tepat \"import-pengguna\" telah dideploy.`
+      : error.message;
+    paparMesej("statusImportPengguna", `Import gagal: ${escapeHtml(mesej)}`, "error");
+  } finally {
+    importPenggunaSedangBerjalan = false;
+    butang.textContent = "IMPORT PENGGUNA KE SUPABASE";
+    paparPratontonImportPengguna();
   }
 }
 
