@@ -881,18 +881,36 @@ async function muatLaporanPenyelia() {
 
   try {
     const laporanRes = await dbPenyelia
-      .from(JADUAL_LAPORAN)
-      .select("*")
-      .order("created_at", {
-        ascending: false
-      });
+  .from(JADUAL_LAPORAN)
+  .select("*");
 
-    if (laporanRes.error) {
-      throw laporanRes.error;
-    }
+if (laporanRes.error) {
+  throw laporanRes.error;
+}
 
-    const semuaLaporan =
-      laporanRes.data || [];
+const semuaLaporan = [
+  ...(laporanRes.data || [])
+].sort((a, b) => {
+
+  const nilaiMasaA = nilaiPertama(a, [
+    "tarikh_masa",
+    "masa_laporan",
+    "tarikh_laporan",
+    "tarikh",
+    "created_at"
+  ]);
+
+  const nilaiMasaB = nilaiPertama(b, [
+    "tarikh_masa",
+    "masa_laporan",
+    "tarikh_laporan",
+    "tarikh",
+    "created_at"
+  ]);
+
+  return (Date.parse(nilaiMasaB) || 0) - (Date.parse(nilaiMasaA) || 0);
+
+});
 
     const laporanTarikh =
       semuaLaporan.filter(item => {
