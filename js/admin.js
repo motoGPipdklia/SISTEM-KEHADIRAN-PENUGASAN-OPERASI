@@ -1624,6 +1624,98 @@ async function hantarResetDevice() {
 }
 
 /* ================================================================
+   NAVIGASI MODUL PENTADBIR
+================================================================ */
+
+function bukaDanSkrolModul(
+  idModul,
+  idKandungan = null,
+  idButangToggle = null,
+  teksButangBuka = ""
+) {
+  const modul = el(idModul);
+
+  if (!modul) {
+    alert("Modul tidak ditemui.");
+    return;
+  }
+
+  if (idKandungan) {
+    const kandungan = el(idKandungan);
+
+    if (kandungan?.hidden) {
+      kandungan.hidden = false;
+
+      const butangToggle =
+        idButangToggle
+          ? el(idButangToggle)
+          : null;
+
+      if (butangToggle) {
+        butangToggle.setAttribute(
+          "aria-expanded",
+          "true"
+        );
+
+        butangToggle.textContent =
+          teksButangBuka;
+      }
+    }
+  }
+
+  modul.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
+
+  modul.classList.remove(
+    "modul-disorot"
+  );
+
+  void modul.offsetWidth;
+
+  modul.classList.add(
+    "modul-disorot"
+  );
+
+  window.setTimeout(() => {
+    modul.classList.remove(
+      "modul-disorot"
+    );
+  }, 1800);
+}
+
+
+function bukaImportPengguna() {
+  bukaDanSkrolModul(
+    "modulImportPengguna",
+    "kandunganImportPengguna",
+    "btnToggleImportPengguna",
+    "SEMBUNYIKAN IMPORT"
+  );
+}
+
+
+function bukaImportPenugasan() {
+  bukaDanSkrolModul(
+    "modulImportPenugasan",
+    "kandunganImportPenugasan",
+    "btnToggleImportPenugasan",
+    "SEMBUNYIKAN IMPORT"
+  );
+}
+
+
+function bukaDaftarPengguna() {
+  bukaDanSkrolModul(
+    "modulDaftarPengguna",
+    "borangDaftarPengguna",
+    "btnToggleDaftarPengguna",
+    "SEMBUNYIKAN BORANG"
+  );
+}
+
+/* ================================================================
    PERMULAAN HALAMAN
 ================================================================ */
 
