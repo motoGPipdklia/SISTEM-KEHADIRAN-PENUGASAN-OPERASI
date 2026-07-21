@@ -1,268 +1,1586 @@
-let penyeliaLogin=null;
-let semuaRekod=[];
-let timerRefresh=null;
-let rekodPertukaran=null;
-let petugasGantiDipilih=null;
-let modPetugasGanti='CARI';
-const SELANG_REFRESH=15000;
+"use strict";
 
-function loginPenyeliaUI(){
-  const noBadan=document.getElementById('noBadan').value.trim();
-  const password=document.getElementById('password').value.trim();
-  const status=document.getElementById('loginStatus');
-  const btn=document.getElementById('btnLogin');
-  if(!noBadan||!password){status.className='status error';status.textContent='Sila masukkan No Badan dan kata laluan.';return;}
-  btn.disabled=true;status.className='status warning';status.textContent='Sedang menyemak...';
-  google.script.run.withSuccessHandler(function(res){
-    btn.disabled=false;
-    if(res&&res.status===true){
-      penyeliaLogin=res;sessionStorage.setItem('skpoPenyelia',JSON.stringify(res));
-      bukaDashboard();
-    }else{status.className='status error';status.textContent=(res&&res.mesej)||'Login gagal.';}
-  }).withFailureHandler(function(err){btn.disabled=false;status.className='status error';status.textContent='Ralat sistem: '+err.message;}).loginPenyelia(noBadan,password);
-}
+/* =========================================================
+   SKPO V2 — MODUL PENYELIA
+   Backend: Supabase
+   Fail: js/penyelia.js
+========================================================= */
 
-function bukaDashboard(){
-  document.getElementById('loginSection').classList.add('hidden');
-  document.getElementById('dashboardSection').classList.remove('hidden');
-  document.getElementById('profile').innerHTML='<strong>'+escapeHtml(penyeliaLogin.pangkat||'')+' '+escapeHtml(penyeliaLogin.nama||'-')+'</strong><br>No Badan: '+escapeHtml(penyeliaLogin.noBadan||'-');
-  muatSenarai();
-  if(timerRefresh)clearInterval(timerRefresh);
-  timerRefresh=setInterval(muatSenarai,SELANG_REFRESH);
-}
 
-function muatSenarai(){
-  if(!penyeliaLogin)return;
-  const status=document.getElementById('senaraiStatus');
-  const btn=document.getElementById('btnRefresh');
-  btn.disabled=true;status.className='status warning';status.textContent='Sedang mendapatkan rekod menunggu pengesahan...';
-  google.script.run.withSuccessHandler(function(res){
-    btn.disabled=false;
-    if(res&&res.status===true){
-      semuaRekod=Array.isArray(res.rekod)?res.rekod:[];
-      status.className='status success';status.textContent=res.mesej||'Senarai dikemas kini.';
-      paparRekod();
-    }else{semuaRekod=[];status.className='status error';status.textContent=(res&&res.mesej)||'Senarai tidak dapat diperoleh.';paparRekod();}
-  }).withFailureHandler(function(err){btn.disabled=false;status.className='status error';status.textContent='Ralat sistem: '+err.message;}).dapatkanSenaraiMenungguPengesahan(penyeliaLogin.noBadan);
-}
+/* =========================================================
+   PEMBOLEH UBAH GLOBAL
+========================================================= */
 
-function paparRekod(){
-  const q=document.getElementById('carian').value.trim().toLowerCase();
-  const data=semuaRekod.filter(function(r){return !q||[r.nama,r.noBadan,r.pangkat,r.jenisTugas,r.tempatTugas,r.penyelia,r.pemegangSet].join(' ').toLowerCase().includes(q);});
-  document.getElementById('jumlah').textContent=data.length;
-  const senarai=document.getElementById('senarai');
-  if(!data.length){senarai.innerHTML='<div class="empty">Tiada rekod menunggu pengesahan.</div>';return;}
-  senarai.innerHTML=data.map(function(r){return '<div class="record" id="rekod-'+escapeAttr(r.idCheckIn)+'">'+
-    '<h3>'+escapeHtml((r.pangkat||'')+' '+(r.nama||'-'))+'</h3><div class="grid">'+
-    baris('No Badan',r.noBadan)+baris('Tarikh',r.tarikh)+baris('Masa Check-In',r.masa)+baris('Jenis Tugas',r.jenisTugas)+baris('Tempat Tugas',r.tempatTugas)+baris('Penyelia Tugas',r.penyelia)+baris('Pemegang Set',r.pemegangSet)+baris('Ketepatan GPS',r.ketepatanGPS? r.ketepatanGPS+' m':'-')+baris('Jarak',r.jarak? r.jarak+' m':'-')+
-    '</div><div class="actions"><button class="btn-ok" onclick="prosesRekod(\''+escapeJs(r.idCheckIn)+'\',\'SAHKAN\')">SAHKAN</button><button class="btn-no" onclick="prosesRekod(\''+escapeJs(r.idCheckIn)+'\',\'TOLAK\')">TOLAK</button><button class="btn-change" onclick="bukaModalTukar(\''+escapeJs(r.idCheckIn)+'\')">TUKAR PETUGAS</button></div></div>';}).join('');
-}
+const db = window.supabaseClient;
 
-function prosesRekod(id,tindakan){
-  if(!penyeliaLogin)return;
-  const teks=tindakan==='SAHKAN'?'sahkan':'tolak';
-  if(!confirm('Adakah anda pasti mahu '+teks+' rekod ini?'))return;
-  const kad=document.getElementById('rekod-'+id);if(kad)kad.style.opacity='.55';
-  google.script.run.withSuccessHandler(function(res){
-    if(res&&res.status===true){muatSenarai();}else{if(kad)kad.style.opacity='1';alert((res&&res.mesej)||'Tindakan tidak berjaya.');}
-  }).withFailureHandler(function(err){if(kad)kad.style.opacity='1';alert('Ralat sistem: '+err.message);}).kemasKiniPengesahanCheckIn(id,tindakan,penyeliaLogin.noBadan);
+let penyeliaAktif = null;
+let senaraiCheckIn = [];
+
+let rekodPertukaranAktif = null;
+let petugasGantiAktif = null;
+let modPertukaran = "CARI";
+
+
+/* =========================================================
+   UTILITI ASAS
+========================================================= */
+
+/**
+ * Bersihkan teks sebelum dipaparkan ke dalam HTML.
+ */
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
 
-function bukaModalTukar(idCheckIn){
-  if(!penyeliaLogin)return;
-  rekodPertukaran=semuaRekod.find(function(r){return String(r.idCheckIn)===String(idCheckIn);});
-  if(!rekodPertukaran){alert('Rekod asal tidak dijumpai.');return;}
-  petugasGantiDipilih=null;
-  pilihModPetugas('CARI');
-  document.getElementById('noBadanGanti').value='';
-  ['daftarNoBadan','daftarPangkat','daftarNama','daftarPassword','daftarTelefon','daftarBahagian','daftarDaerah'].forEach(function(id){
-    document.getElementById(id).value='';
-  });
-  document.getElementById('sebabPertukaran').value='';
-  document.getElementById('catatanPertukaran').value='';
-  document.getElementById('btnSimpanTukar').disabled=true;
-  document.getElementById('petugasGantiPreview').classList.add('hidden');
-  document.getElementById('statusPertukaran').className='';
-  document.getElementById('statusPertukaran').textContent='';
-  document.getElementById('petugasAsalPreview').innerHTML=
-    '<strong>Petugas Asal</strong><br>'+
-    escapeHtml((rekodPertukaran.pangkat||'')+' '+(rekodPertukaran.nama||'-'))+
-    '<br>No Badan: '+escapeHtml(rekodPertukaran.noBadan||'-')+
-    '<br>Tugas: '+escapeHtml(rekodPertukaran.jenisTugas||'-')+
-    '<br>Tempat: '+escapeHtml(rekodPertukaran.tempatTugas||'-');
-  document.getElementById('modalTukar').classList.remove('hidden');
-  setTimeout(function(){document.getElementById('noBadanGanti').focus();},100);
-}
-
-function tutupModalTukar(){
-  document.getElementById('modalTukar').classList.add('hidden');
-  rekodPertukaran=null;
-  petugasGantiDipilih=null;
+/**
+ * Normalisasikan No Badan.
+ */
+function normalisasiNoBadan(value) {
+  return String(value ?? "")
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, "");
 }
 
 
-function pilihModPetugas(mod){
-  modPetugasGanti=mod;
-  petugasGantiDipilih=null;
-  document.getElementById('modCari').classList.toggle('hidden',mod!=='CARI');
-  document.getElementById('modDaftar').classList.toggle('hidden',mod!=='DAFTAR');
-  document.getElementById('tabCari').classList.toggle('active',mod==='CARI');
-  document.getElementById('tabDaftar').classList.toggle('active',mod==='DAFTAR');
-  document.getElementById('petugasGantiPreview').classList.add('hidden');
-  document.getElementById('statusPertukaran').className='';
-  document.getElementById('statusPertukaran').textContent='';
-  document.getElementById('btnSimpanTukar').disabled=(mod==='CARI');
-  document.getElementById('btnSimpanTukar').textContent=
-    mod==='DAFTAR' ? 'DAFTAR DAN GANTIKAN' : 'SIMPAN PERTUKARAN';
+/**
+ * Tukarkan No Badan kepada email dalaman Supabase Auth.
+ *
+ * Contoh:
+ * RF12345 → rf12345@skpo.local
+ */
+function binaEmailDalaman(noBadan) {
+  const nilai = normalisasiNoBadan(noBadan).toLowerCase();
+
+  return `${nilai}@skpo.local`;
 }
 
-function cariGanti(){
-  if(!rekodPertukaran||!penyeliaLogin)return;
-  const no=document.getElementById('noBadanGanti').value.trim();
-  const status=document.getElementById('statusPertukaran');
-  const btn=document.getElementById('btnCariGanti');
-  if(!no){status.className='status error';status.textContent='Sila masukkan No Badan petugas ganti.';return;}
-  btn.disabled=true;
-  status.className='status warning';
-  status.textContent='Sedang menyemak petugas ganti...';
-  petugasGantiDipilih=null;
-  document.getElementById('btnSimpanTukar').disabled=true;
-  document.getElementById('petugasGantiPreview').classList.add('hidden');
-  google.script.run.withSuccessHandler(function(res){
-    btn.disabled=false;
-    if(res&&res.status===true){
-      petugasGantiDipilih=res.petugas;
-      const p=document.getElementById('petugasGantiPreview');
-      p.innerHTML='<strong>Petugas Ganti</strong><br>'+
-        escapeHtml((res.petugas.pangkat||'')+' '+(res.petugas.nama||'-'))+
-        '<br>No Badan: '+escapeHtml(res.petugas.noBadan||'-');
-      p.classList.remove('hidden');
-      status.className='status success';
-      status.textContent=res.mesej||'Petugas ganti boleh digunakan.';
-      document.getElementById('btnSimpanTukar').disabled=false;
-    }else{
-      status.className='status error';
-      status.textContent=(res&&res.mesej)||'Petugas ganti tidak boleh digunakan.';
-    }
-  }).withFailureHandler(function(err){
-    btn.disabled=false;
-    status.className='status error';
-    status.textContent='Ralat sistem: '+err.message;
-  }).cariPetugasGanti(no,rekodPertukaran.idCheckIn,penyeliaLogin.noBadan);
+
+/**
+ * Format tarikh dan masa untuk paparan Malaysia.
+ */
+function formatTarikhMasa(value) {
+  if (!value) {
+    return "-";
+  }
+
+  const tarikh = new Date(value);
+
+  if (Number.isNaN(tarikh.getTime())) {
+    return escapeHtml(value);
+  }
+
+  return new Intl.DateTimeFormat("ms-MY", {
+    timeZone: "Asia/Kuala_Lumpur",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false
+  }).format(tarikh);
 }
 
-function simpanPertukaran(){
-  if(!rekodPertukaran||!penyeliaLogin)return;
 
-  const sebab=document.getElementById('sebabPertukaran').value;
-  const catatan=document.getElementById('catatanPertukaran').value.trim();
-  const status=document.getElementById('statusPertukaran');
-  const btn=document.getElementById('btnSimpanTukar');
+/**
+ * Format tarikh sahaja.
+ */
+function formatTarikh(value) {
+  if (!value) {
+    return "-";
+  }
 
-  if(!sebab){
-    status.className='status error';
-    status.textContent='Sila pilih sebab pertukaran.';
+  const tarikh = new Date(`${value}T00:00:00`);
+
+  if (Number.isNaN(tarikh.getTime())) {
+    return escapeHtml(value);
+  }
+
+  return new Intl.DateTimeFormat("ms-MY", {
+    timeZone: "Asia/Kuala_Lumpur",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  }).format(tarikh);
+}
+
+
+/**
+ * Paparkan status dalam elemen tertentu.
+ */
+function paparStatus(elemenId, mesej, jenis = "warning") {
+  const elemen = document.getElementById(elemenId);
+
+  if (!elemen) {
     return;
   }
 
-  if(modPetugasGanti==='CARI'){
-    if(!petugasGantiDipilih)return;
+  elemen.className = `status ${jenis}`;
+  elemen.textContent = mesej;
+  elemen.classList.remove("hidden");
+}
 
-    if(!confirm('Sahkan pertukaran '+rekodPertukaran.noBadan+' kepada '+petugasGantiDipilih.noBadan+'?'))return;
 
-    btn.disabled=true;
-    status.className='status warning';
-    status.textContent='Sedang menyimpan pertukaran...';
+/**
+ * Sembunyikan status.
+ */
+function sembunyiStatus(elemenId) {
+  const elemen = document.getElementById(elemenId);
 
-    google.script.run.withSuccessHandler(function(res){
-      if(res&&res.status===true){
-        status.className='status success';
-        status.textContent=res.mesej||'Pertukaran berjaya.';
-        setTimeout(function(){tutupModalTukar();muatSenarai();},1000);
-      }else{
-        btn.disabled=false;
-        status.className='status error';
-        status.textContent=(res&&res.mesej)||'Pertukaran tidak berjaya.';
-      }
-    }).withFailureHandler(function(err){
-      btn.disabled=false;
-      status.className='status error';
-      status.textContent='Ralat sistem: '+err.message;
-    }).tukarPetugasOlehPenyelia(
-      rekodPertukaran.idCheckIn,
-      petugasGantiDipilih.noBadan,
-      sebab,
-      catatan,
-      penyeliaLogin.noBadan
+  if (!elemen) {
+    return;
+  }
+
+  elemen.textContent = "";
+  elemen.className = "hidden";
+}
+
+
+/**
+ * Aktif atau nyahaktif butang.
+ */
+function setButangLoading(elemenId, sedangLoading, teksLoading, teksAsal) {
+  const butang = document.getElementById(elemenId);
+
+  if (!butang) {
+    return;
+  }
+
+  butang.disabled = sedangLoading;
+  butang.textContent = sedangLoading ? teksLoading : teksAsal;
+}
+
+
+/**
+ * Ambil ID pengguna Auth daripada profil.
+ */
+function dapatkanAuthUserId(profil) {
+  return profil?.auth_user_id || profil?.id || null;
+}
+
+
+/* =========================================================
+   SEMAK SAMBUNGAN SUPABASE
+========================================================= */
+
+function semakSupabase() {
+  if (!window.supabaseClient) {
+    throw new Error(
+      "Sambungan Supabase belum tersedia. Semak api-config.js dan supabase-client.js."
+    );
+  }
+}
+
+
+/* =========================================================
+   PEMULIHAN SESI
+========================================================= */
+
+document.addEventListener("DOMContentLoaded", async () => {
+  try {
+    semakSupabase();
+
+    await pulihkanSesiPenyelia();
+  } catch (error) {
+    console.error("Ralat permulaan Penyelia:", error);
+
+    paparStatus(
+      "loginStatus",
+      error.message || "Sistem gagal dimulakan.",
+      "error"
+    );
+  }
+});
+
+
+/**
+ * Pulihkan sesi Supabase apabila halaman dimuat semula.
+ */
+async function pulihkanSesiPenyelia() {
+  const {
+    data: { session },
+    error
+  } = await db.auth.getSession();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!session?.user) {
+    paparHalamanLogin();
+    return;
+  }
+
+  const profil = await dapatkanProfilDaripadaAuth(session.user.id);
+
+  if (!profil) {
+    await db.auth.signOut();
+    paparHalamanLogin();
+
+    paparStatus(
+      "loginStatus",
+      "Profil pengguna tidak ditemui.",
+      "error"
     );
 
     return;
   }
 
-  const dataBaharu={
-    noBadan:document.getElementById('daftarNoBadan').value.trim(),
-    pangkat:document.getElementById('daftarPangkat').value.trim(),
-    nama:document.getElementById('daftarNama').value.trim(),
-    password:document.getElementById('daftarPassword').value.trim(),
-    telefon:document.getElementById('daftarTelefon').value.trim(),
-    bahagian:document.getElementById('daftarBahagian').value.trim(),
-    daerah:document.getElementById('daftarDaerah').value.trim()
-  };
+  if (!perananDibenarkan(profil.peranan)) {
+    await db.auth.signOut();
+    paparHalamanLogin();
 
-  if(!dataBaharu.noBadan||!dataBaharu.pangkat||!dataBaharu.nama||!dataBaharu.password){
-    status.className='status error';
-    status.textContent='No Badan, pangkat, nama dan kata laluan wajib diisi.';
+    paparStatus(
+      "loginStatus",
+      "Akaun ini tidak mempunyai akses sebagai Penyelia.",
+      "error"
+    );
+
     return;
   }
 
-  if(!confirm(
-    'Daftar '+dataBaharu.noBadan+' sebagai petugas baharu dan gantikan '+rekodPertukaran.noBadan+'?'
-  ))return;
+  if (profil.aktif === false) {
+    await db.auth.signOut();
+    paparHalamanLogin();
 
-  btn.disabled=true;
-  status.className='status warning';
-  status.textContent='Sedang mendaftar dan menggantikan petugas...';
+    paparStatus(
+      "loginStatus",
+      "Akaun ini telah dinyahaktifkan.",
+      "error"
+    );
 
-  google.script.run.withSuccessHandler(function(res){
-    if(res&&res.status===true){
-      status.className='status success';
-      status.textContent=res.mesej||'Petugas baharu berjaya didaftarkan.';
-      setTimeout(function(){tutupModalTukar();muatSenarai();},1200);
-    }else{
-      btn.disabled=false;
-      status.className='status error';
-      status.textContent=(res&&res.mesej)||'Pendaftaran tidak berjaya.';
-    }
-  }).withFailureHandler(function(err){
-    btn.disabled=false;
-    status.className='status error';
-    status.textContent='Ralat sistem: '+err.message;
-  }).daftarDanTukarPetugasOlehPenyelia(
-    rekodPertukaran.idCheckIn,
-    dataBaharu,
-    sebab,
-    catatan,
-    penyeliaLogin.noBadan
+    return;
+  }
+
+  penyeliaAktif = profil;
+
+  paparDashboardPenyelia();
+  await muatSenarai();
+}
+
+
+/**
+ * Dapatkan profil berdasarkan Auth User ID.
+ */
+async function dapatkanProfilDaripadaAuth(authUserId) {
+  const { data, error } = await db
+    .from("profiles")
+    .select("*")
+    .eq("auth_user_id", authUserId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+
+/**
+ * Semak peranan yang dibenarkan membuka modul Penyelia.
+ */
+function perananDibenarkan(peranan) {
+  const nilai = String(peranan ?? "").trim().toUpperCase();
+
+  return [
+    "PENYELIA",
+    "ADMIN",
+    "PENTADBIR"
+  ].includes(nilai);
+}
+
+
+/* =========================================================
+   LOGIN PENYELIA
+========================================================= */
+
+async function loginPenyeliaUI() {
+  const noBadanInput = document.getElementById("noBadan");
+  const passwordInput = document.getElementById("password");
+
+  const noBadan = normalisasiNoBadan(noBadanInput?.value);
+  const password = String(passwordInput?.value ?? "");
+
+  sembunyiStatus("loginStatus");
+
+  if (!noBadan) {
+    paparStatus(
+      "loginStatus",
+      "Sila masukkan No Badan.",
+      "warning"
+    );
+
+    noBadanInput?.focus();
+    return;
+  }
+
+  if (!password) {
+    paparStatus(
+      "loginStatus",
+      "Sila masukkan kata laluan.",
+      "warning"
+    );
+
+    passwordInput?.focus();
+    return;
+  }
+
+  setButangLoading(
+    "btnLogin",
+    true,
+    "SEDANG LOGIN...",
+    "LOGIN PENYELIA"
   );
+
+  try {
+    semakSupabase();
+
+    const email = binaEmailDalaman(noBadan);
+
+    const { data: authData, error: authError } =
+      await db.auth.signInWithPassword({
+        email,
+        password
+      });
+
+    if (authError) {
+      throw new Error(
+        "No Badan atau kata laluan tidak sah."
+      );
+    }
+
+    const profil = await dapatkanProfilDaripadaAuth(
+      authData.user.id
+    );
+
+    if (!profil) {
+      await db.auth.signOut();
+
+      throw new Error(
+        "Profil pengguna tidak ditemui dalam sistem."
+      );
+    }
+
+    if (!perananDibenarkan(profil.peranan)) {
+      await db.auth.signOut();
+
+      throw new Error(
+        "Akaun ini tidak mempunyai akses sebagai Penyelia."
+      );
+    }
+
+    if (profil.aktif === false) {
+      await db.auth.signOut();
+
+      throw new Error(
+        "Akaun ini telah dinyahaktifkan oleh Pentadbir."
+      );
+    }
+
+    penyeliaAktif = profil;
+
+    paparDashboardPenyelia();
+    await muatSenarai();
+  } catch (error) {
+    console.error("Ralat login Penyelia:", error);
+
+    paparStatus(
+      "loginStatus",
+      error.message || "Login Penyelia gagal.",
+      "error"
+    );
+  } finally {
+    setButangLoading(
+      "btnLogin",
+      false,
+      "SEDANG LOGIN...",
+      "LOGIN PENYELIA"
+    );
+  }
 }
 
-document.getElementById('noBadanGanti').addEventListener('input',function(){
-  petugasGantiDipilih=null;
-  document.getElementById('btnSimpanTukar').disabled=true;
-  document.getElementById('petugasGantiPreview').classList.add('hidden');
-});
-document.getElementById('modalTukar').addEventListener('click',function(e){
-  if(e.target===this)tutupModalTukar();
+
+/**
+ * Sokongan tekan Enter pada ruang login.
+ */
+document.addEventListener("keydown", event => {
+  const loginSection = document.getElementById("loginSection");
+
+  if (
+    event.key === "Enter" &&
+    loginSection &&
+    !loginSection.classList.contains("hidden")
+  ) {
+    loginPenyeliaUI();
+  }
 });
 
-function logoutPenyelia(){
-  if(timerRefresh)clearInterval(timerRefresh);timerRefresh=null;sessionStorage.removeItem('skpoPenyelia');penyeliaLogin=null;semuaRekod=[];
-  document.getElementById('dashboardSection').classList.add('hidden');document.getElementById('loginSection').classList.remove('hidden');document.getElementById('password').value='';document.getElementById('loginStatus').className='';document.getElementById('loginStatus').textContent='';
+
+/* =========================================================
+   PAPARAN LOGIN DAN DASHBOARD
+========================================================= */
+
+function paparHalamanLogin() {
+  document
+    .getElementById("loginSection")
+    ?.classList.remove("hidden");
+
+  document
+    .getElementById("dashboardSection")
+    ?.classList.add("hidden");
 }
-function baris(label,nilai){return '<div class="label">'+escapeHtml(label)+':</div><div>'+escapeHtml(nilai||'-')+'</div>';}
-function escapeHtml(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');}
-function escapeAttr(v){return String(v||'').replace(/[^A-Za-z0-9_-]/g,'_');}
-function escapeJs(v){return String(v||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
-document.getElementById('password').addEventListener('keydown',function(e){if(e.key==='Enter')loginPenyeliaUI();});
-(function pulihSesi(){try{const simpan=sessionStorage.getItem('skpoPenyelia');if(simpan){penyeliaLogin=JSON.parse(simpan);if(penyeliaLogin&&penyeliaLogin.noBadan)bukaDashboard();}}catch(e){sessionStorage.removeItem('skpoPenyelia');}})();
+
+
+function paparDashboardPenyelia() {
+  document
+    .getElementById("loginSection")
+    ?.classList.add("hidden");
+
+  document
+    .getElementById("dashboardSection")
+    ?.classList.remove("hidden");
+
+  const profile = document.getElementById("profile");
+
+  if (profile && penyeliaAktif) {
+    profile.innerHTML = `
+      <div>
+        <strong>${escapeHtml(penyeliaAktif.pangkat || "")}</strong>
+        ${escapeHtml(penyeliaAktif.nama || "-")}
+      </div>
+
+      <div>
+        No Badan:
+        <strong>${escapeHtml(penyeliaAktif.no_badan || "-")}</strong>
+      </div>
+
+      <div>
+        Peranan:
+        <strong>${escapeHtml(penyeliaAktif.peranan || "PENYELIA")}</strong>
+      </div>
+    `;
+  }
+}
+
+
+/* =========================================================
+   LOG KELUAR
+========================================================= */
+
+async function logoutPenyelia() {
+  const pasti = window.confirm(
+    "Adakah anda pasti mahu log keluar?"
+  );
+
+  if (!pasti) {
+    return;
+  }
+
+  try {
+    await db.auth.signOut();
+  } catch (error) {
+    console.error("Ralat log keluar:", error);
+  }
+
+  penyeliaAktif = null;
+  senaraiCheckIn = [];
+
+  document.getElementById("password").value = "";
+  document.getElementById("carian").value = "";
+
+  paparHalamanLogin();
+}
+
+
+/* =========================================================
+   MUAT SENARAI MENUNGGU PENGESAHAN
+========================================================= */
+
+async function muatSenarai() {
+  if (!penyeliaAktif) {
+    return;
+  }
+
+  setButangLoading(
+    "btnRefresh",
+    true,
+    "SEDANG MEMUAT...",
+    "SEMAK SEMULA"
+  );
+
+  paparStatus(
+    "senaraiStatus",
+    "Sedang mendapatkan rekod Check-In...",
+    "warning"
+  );
+
+  try {
+    /*
+     * Langkah 1:
+     * Ambil rekod Check-In yang masih menunggu pengesahan.
+     */
+    const { data: checkinData, error: checkinError } = await db
+      .from("checkin")
+      .select("*")
+      .eq("status_pengesahan", "MENUNGGU")
+      .order("waktu_checkin", {
+        ascending: true
+      });
+
+    if (checkinError) {
+      throw checkinError;
+    }
+
+    if (!checkinData?.length) {
+      senaraiCheckIn = [];
+
+      sembunyiStatus("senaraiStatus");
+      paparRekod();
+
+      return;
+    }
+
+    /*
+     * Langkah 2:
+     * Ambil semua ID profil dan penugasan berkaitan.
+     */
+    const profileIds = [
+      ...new Set(
+        checkinData
+          .map(item => item.profile_id)
+          .filter(Boolean)
+      )
+    ];
+
+    const penugasanIds = [
+      ...new Set(
+        checkinData
+          .map(item => item.penugasan_id)
+          .filter(Boolean)
+      )
+    ];
+
+    /*
+     * Langkah 3:
+     * Ambil maklumat petugas.
+     */
+    let profiles = [];
+
+    if (profileIds.length) {
+      const { data, error } = await db
+        .from("profiles")
+        .select(
+          "id, auth_user_id, no_badan, pangkat, nama, peranan, telefon, bahagian, daerah, aktif"
+        )
+        .in("id", profileIds);
+
+      if (error) {
+        throw error;
+      }
+
+      profiles = data || [];
+    }
+
+    /*
+     * Langkah 4:
+     * Ambil maklumat penugasan.
+     */
+    let penugasan = [];
+
+    if (penugasanIds.length) {
+      const { data, error } = await db
+        .from("penugasan")
+        .select("*")
+        .in("id", penugasanIds);
+
+      if (error) {
+        throw error;
+      }
+
+      penugasan = data || [];
+    }
+
+    const profileMap = new Map(
+      profiles.map(item => [item.id, item])
+    );
+
+    const penugasanMap = new Map(
+      penugasan.map(item => [item.id, item])
+    );
+
+    /*
+     * Langkah 5:
+     * Gabungkan semua data untuk paparan.
+     */
+    senaraiCheckIn = checkinData.map(checkin => ({
+      ...checkin,
+      profile: profileMap.get(checkin.profile_id) || null,
+      penugasan:
+        penugasanMap.get(checkin.penugasan_id) || null
+    }));
+
+    sembunyiStatus("senaraiStatus");
+    paparRekod();
+  } catch (error) {
+    console.error(
+      "Ralat mendapatkan senarai Check-In:",
+      error
+    );
+
+    senaraiCheckIn = [];
+    paparRekod();
+
+    paparStatus(
+      "senaraiStatus",
+      error.message ||
+        "Rekod Check-In gagal diperoleh daripada Supabase.",
+      "error"
+    );
+  } finally {
+    setButangLoading(
+      "btnRefresh",
+      false,
+      "SEDANG MEMUAT...",
+      "SEMAK SEMULA"
+    );
+  }
+}
+
+
+/* =========================================================
+   PAPAR SENARAI REKOD
+========================================================= */
+
+function paparRekod() {
+  const senarai = document.getElementById("senarai");
+  const jumlah = document.getElementById("jumlah");
+  const carian = String(
+    document.getElementById("carian")?.value ?? ""
+  )
+    .trim()
+    .toLowerCase();
+
+  if (!senarai || !jumlah) {
+    return;
+  }
+
+  const rekodDitapis = senaraiCheckIn.filter(item => {
+    const profile = item.profile || {};
+    const tugas = item.penugasan || {};
+
+    const teks = [
+      profile.no_badan,
+      profile.pangkat,
+      profile.nama,
+      profile.bahagian,
+      profile.daerah,
+      tugas.jenis_tugas,
+      tugas.lokasi,
+      tugas.tarikh_tugas,
+      item.status_pengesahan
+    ]
+      .join(" ")
+      .toLowerCase();
+
+    return !carian || teks.includes(carian);
+  });
+
+  jumlah.textContent = String(rekodDitapis.length);
+
+  if (!rekodDitapis.length) {
+    senarai.innerHTML = `
+      <div class="empty">
+        ${
+          carian
+            ? "Tiada rekod yang sepadan dengan carian."
+            : "Tiada Check-In sedang menunggu pengesahan."
+        }
+      </div>
+    `;
+
+    return;
+  }
+
+  senarai.innerHTML = rekodDitapis
+    .map(item => binaKadCheckIn(item))
+    .join("");
+}
+
+
+/**
+ * Bina kad rekod Check-In.
+ */
+function binaKadCheckIn(item) {
+  const profile = item.profile || {};
+  const tugas = item.penugasan || {};
+
+  const jarak =
+    item.jarak_meter === null ||
+    item.jarak_meter === undefined
+      ? "-"
+      : `${Number(item.jarak_meter).toFixed(2)} meter`;
+
+  const ketepatan =
+    item.ketepatan_gps === null ||
+    item.ketepatan_gps === undefined
+      ? "-"
+      : `${Number(item.ketepatan_gps).toFixed(2)} meter`;
+
+  return `
+    <article class="record">
+
+      <h3>
+        ${escapeHtml(profile.pangkat || "")}
+        ${escapeHtml(profile.nama || "PETUGAS")}
+      </h3>
+
+      <div class="grid">
+
+        <div class="label">No Badan</div>
+        <div>${escapeHtml(profile.no_badan || "-")}</div>
+
+        <div class="label">Tarikh Tugas</div>
+        <div>${formatTarikh(tugas.tarikh_tugas)}</div>
+
+        <div class="label">Jenis Tugas</div>
+        <div>${escapeHtml(tugas.jenis_tugas || "-")}</div>
+
+        <div class="label">Lokasi</div>
+        <div>${escapeHtml(tugas.lokasi || "-")}</div>
+
+        <div class="label">Masa Check-In</div>
+        <div>${formatTarikhMasa(item.waktu_checkin)}</div>
+
+        <div class="label">Jarak Lokasi</div>
+        <div>${escapeHtml(jarak)}</div>
+
+        <div class="label">Ketepatan GPS</div>
+        <div>${escapeHtml(ketepatan)}</div>
+
+        <div class="label">Bahagian</div>
+        <div>${escapeHtml(profile.bahagian || "-")}</div>
+
+        <div class="label">Telefon</div>
+        <div>${escapeHtml(profile.telefon || "-")}</div>
+
+      </div>
+
+      <div class="actions">
+
+        <button
+          class="btn-ok"
+          type="button"
+          onclick="sahkanCheckIn('${escapeHtml(item.id)}')"
+        >
+          SAHKAN
+        </button>
+
+        <button
+          class="btn-no"
+          type="button"
+          onclick="tolakCheckIn('${escapeHtml(item.id)}')"
+        >
+          TOLAK
+        </button>
+
+        <button
+          class="btn-change"
+          type="button"
+          onclick="bukaModalTukar('${escapeHtml(item.id)}')"
+        >
+          TUKAR PETUGAS
+        </button>
+
+      </div>
+
+    </article>
+  `;
+}
+
+
+/* =========================================================
+   SAHKAN CHECK-IN
+========================================================= */
+
+async function sahkanCheckIn(checkinId) {
+  const rekod = senaraiCheckIn.find(
+    item => String(item.id) === String(checkinId)
+  );
+
+  if (!rekod) {
+    alert("Rekod Check-In tidak ditemui.");
+    return;
+  }
+
+  const nama = rekod.profile?.nama || "petugas ini";
+
+  const pasti = window.confirm(
+    `Adakah anda pasti mahu mengesahkan Check-In ${nama}?`
+  );
+
+  if (!pasti) {
+    return;
+  }
+
+  try {
+    /*
+     * RPC ini akan dibina dalam fail SQL SKPO.
+     * Ia mengemas kini Check-In dan status penugasan secara atomik.
+     */
+    const { data, error } = await db.rpc(
+      "sahkan_checkin_penyelia",
+      {
+        p_checkin_id: checkinId,
+        p_status: "DISAHKAN",
+        p_catatan: null
+      }
+    );
+
+    if (error) {
+      throw error;
+    }
+
+    if (data?.success === false) {
+      throw new Error(
+        data.message || "Pengesahan Check-In gagal."
+      );
+    }
+
+    alert("Check-In berjaya disahkan.");
+
+    await muatSenarai();
+  } catch (error) {
+    console.error("Ralat sahkan Check-In:", error);
+
+    alert(
+      `Pengesahan gagal: ${
+        error.message || "Ralat tidak diketahui."
+      }`
+    );
+  }
+}
+
+
+/* =========================================================
+   TOLAK CHECK-IN
+========================================================= */
+
+async function tolakCheckIn(checkinId) {
+  const rekod = senaraiCheckIn.find(
+    item => String(item.id) === String(checkinId)
+  );
+
+  if (!rekod) {
+    alert("Rekod Check-In tidak ditemui.");
+    return;
+  }
+
+  const sebab = window.prompt(
+    "Masukkan sebab Check-In ditolak:"
+  );
+
+  if (sebab === null) {
+    return;
+  }
+
+  const sebabBersih = sebab.trim();
+
+  if (!sebabBersih) {
+    alert("Sebab penolakan wajib dimasukkan.");
+    return;
+  }
+
+  const pasti = window.confirm(
+    "Adakah anda pasti mahu menolak Check-In ini?"
+  );
+
+  if (!pasti) {
+    return;
+  }
+
+  try {
+    const { data, error } = await db.rpc(
+      "sahkan_checkin_penyelia",
+      {
+        p_checkin_id: checkinId,
+        p_status: "DITOLAK",
+        p_catatan: sebabBersih
+      }
+    );
+
+    if (error) {
+      throw error;
+    }
+
+    if (data?.success === false) {
+      throw new Error(
+        data.message || "Penolakan Check-In gagal."
+      );
+    }
+
+    alert("Check-In telah ditolak.");
+
+    await muatSenarai();
+  } catch (error) {
+    console.error("Ralat tolak Check-In:", error);
+
+    alert(
+      `Penolakan gagal: ${
+        error.message || "Ralat tidak diketahui."
+      }`
+    );
+  }
+}
+
+
+/* =========================================================
+   MODAL PERTUKARAN PETUGAS
+========================================================= */
+
+function bukaModalTukar(checkinId) {
+  const rekod = senaraiCheckIn.find(
+    item => String(item.id) === String(checkinId)
+  );
+
+  if (!rekod) {
+    alert("Rekod petugas asal tidak ditemui.");
+    return;
+  }
+
+  rekodPertukaranAktif = rekod;
+  petugasGantiAktif = null;
+  modPertukaran = "CARI";
+
+  resetBorangPertukaran();
+
+  const profile = rekod.profile || {};
+  const tugas = rekod.penugasan || {};
+
+  document.getElementById("petugasAsalPreview").innerHTML = `
+    <strong>PETUGAS ASAL</strong><br>
+    ${escapeHtml(profile.pangkat || "")}
+    ${escapeHtml(profile.nama || "-")}<br>
+    No Badan:
+    <strong>${escapeHtml(profile.no_badan || "-")}</strong><br>
+    Penugasan:
+    <strong>${escapeHtml(tugas.jenis_tugas || "-")}</strong><br>
+    Lokasi:
+    <strong>${escapeHtml(tugas.lokasi || "-")}</strong>
+  `;
+
+  pilihModPetugas("CARI");
+
+  document
+    .getElementById("modalTukar")
+    .classList.remove("hidden");
+}
+
+
+function tutupModalTukar() {
+  document
+    .getElementById("modalTukar")
+    .classList.add("hidden");
+
+  rekodPertukaranAktif = null;
+  petugasGantiAktif = null;
+
+  resetBorangPertukaran();
+}
+
+
+/**
+ * Tutup modal apabila klik kawasan gelap di luar kotak.
+ */
+document.addEventListener("click", event => {
+  const modal = document.getElementById("modalTukar");
+
+  if (
+    modal &&
+    !modal.classList.contains("hidden") &&
+    event.target === modal
+  ) {
+    tutupModalTukar();
+  }
+});
+
+
+function resetBorangPertukaran() {
+  const ids = [
+    "noBadanGanti",
+    "daftarNoBadan",
+    "daftarPangkat",
+    "daftarNama",
+    "daftarPassword",
+    "daftarTelefon",
+    "daftarBahagian",
+    "daftarDaerah",
+    "sebabPertukaran",
+    "catatanPertukaran"
+  ];
+
+  ids.forEach(id => {
+    const elemen = document.getElementById(id);
+
+    if (elemen) {
+      elemen.value = "";
+    }
+  });
+
+  document
+    .getElementById("petugasGantiPreview")
+    ?.classList.add("hidden");
+
+  const preview = document.getElementById(
+    "petugasGantiPreview"
+  );
+
+  if (preview) {
+    preview.innerHTML = "";
+  }
+
+  const simpan = document.getElementById(
+    "btnSimpanTukar"
+  );
+
+  if (simpan) {
+    simpan.disabled = true;
+  }
+
+  sembunyiStatus("statusPertukaran");
+}
+
+
+/* =========================================================
+   PILIH MOD CARI ATAU DAFTAR
+========================================================= */
+
+function pilihModPetugas(mod) {
+  modPertukaran =
+    String(mod).toUpperCase() === "DAFTAR"
+      ? "DAFTAR"
+      : "CARI";
+
+  petugasGantiAktif = null;
+
+  const tabCari = document.getElementById("tabCari");
+  const tabDaftar = document.getElementById("tabDaftar");
+  const modCari = document.getElementById("modCari");
+  const modDaftar = document.getElementById("modDaftar");
+  const btnSimpan = document.getElementById(
+    "btnSimpanTukar"
+  );
+
+  if (modPertukaran === "CARI") {
+    tabCari.classList.add("active");
+    tabDaftar.classList.remove("active");
+
+    modCari.classList.remove("hidden");
+    modDaftar.classList.add("hidden");
+
+    btnSimpan.disabled = true;
+  } else {
+    tabCari.classList.remove("active");
+    tabDaftar.classList.add("active");
+
+    modCari.classList.add("hidden");
+    modDaftar.classList.remove("hidden");
+
+    btnSimpan.disabled = false;
+  }
+
+  sembunyiStatus("statusPertukaran");
+}
+
+
+/* =========================================================
+   CARI PETUGAS GANTI SEDIA ADA
+========================================================= */
+
+async function cariGanti() {
+  const noBadan = normalisasiNoBadan(
+    document.getElementById("noBadanGanti")?.value
+  );
+
+  petugasGantiAktif = null;
+
+  const preview = document.getElementById(
+    "petugasGantiPreview"
+  );
+
+  preview.classList.add("hidden");
+  preview.innerHTML = "";
+
+  document.getElementById(
+    "btnSimpanTukar"
+  ).disabled = true;
+
+  if (!noBadan) {
+    paparStatus(
+      "statusPertukaran",
+      "Sila masukkan No Badan petugas ganti.",
+      "warning"
+    );
+
+    return;
+  }
+
+  if (
+    normalisasiNoBadan(
+      rekodPertukaranAktif?.profile?.no_badan
+    ) === noBadan
+  ) {
+    paparStatus(
+      "statusPertukaran",
+      "Petugas ganti tidak boleh sama dengan petugas asal.",
+      "error"
+    );
+
+    return;
+  }
+
+  setButangLoading(
+    "btnCariGanti",
+    true,
+    "SEDANG MENCARI...",
+    "CARI PETUGAS"
+  );
+
+  try {
+    const { data, error } = await db
+      .from("profiles")
+      .select("*")
+      .eq("no_badan", noBadan)
+      .eq("aktif", true)
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+
+    if (!data) {
+      paparStatus(
+        "statusPertukaran",
+        "Petugas tidak ditemui. Gunakan tab Daftar Petugas Baharu.",
+        "warning"
+      );
+
+      return;
+    }
+
+    if (
+      !["PETUGAS", "URUSETIA"].includes(
+        String(data.peranan ?? "").toUpperCase()
+      )
+    ) {
+      paparStatus(
+        "statusPertukaran",
+        "Profil yang ditemui bukan akaun Petugas.",
+        "error"
+      );
+
+      return;
+    }
+
+    petugasGantiAktif = data;
+
+    preview.innerHTML = `
+      <strong>PETUGAS GANTI DITEMUI</strong><br>
+      ${escapeHtml(data.pangkat || "")}
+      ${escapeHtml(data.nama || "-")}<br>
+      No Badan:
+      <strong>${escapeHtml(data.no_badan || "-")}</strong><br>
+      Bahagian:
+      <strong>${escapeHtml(data.bahagian || "-")}</strong><br>
+      Daerah:
+      <strong>${escapeHtml(data.daerah || "-")}</strong>
+    `;
+
+    preview.classList.remove("hidden");
+
+    document.getElementById(
+      "btnSimpanTukar"
+    ).disabled = false;
+
+    paparStatus(
+      "statusPertukaran",
+      "Petugas ganti berjaya ditemui.",
+      "success"
+    );
+  } catch (error) {
+    console.error("Ralat cari petugas:", error);
+
+    paparStatus(
+      "statusPertukaran",
+      error.message || "Carian petugas gagal.",
+      "error"
+    );
+  } finally {
+    setButangLoading(
+      "btnCariGanti",
+      false,
+      "SEDANG MENCARI...",
+      "CARI PETUGAS"
+    );
+  }
+}
+
+
+/* =========================================================
+   SIMPAN PERTUKARAN PETUGAS
+========================================================= */
+
+async function simpanPertukaran() {
+  if (!rekodPertukaranAktif?.penugasan?.id) {
+    paparStatus(
+      "statusPertukaran",
+      "Maklumat penugasan asal tidak lengkap.",
+      "error"
+    );
+
+    return;
+  }
+
+  const sebab = String(
+    document.getElementById("sebabPertukaran")?.value ?? ""
+  ).trim();
+
+  const catatan = String(
+    document.getElementById("catatanPertukaran")?.value ?? ""
+  ).trim();
+
+  if (!sebab) {
+    paparStatus(
+      "statusPertukaran",
+      "Sila pilih sebab pertukaran.",
+      "warning"
+    );
+
+    return;
+  }
+
+  let profileIdGanti = null;
+
+  try {
+    setButangLoading(
+      "btnSimpanTukar",
+      true,
+      "SEDANG MENYIMPAN...",
+      "SIMPAN PERTUKARAN"
+    );
+
+    sembunyiStatus("statusPertukaran");
+
+    if (modPertukaran === "CARI") {
+      if (!petugasGantiAktif?.id) {
+        throw new Error(
+          "Sila cari dan pilih petugas ganti terlebih dahulu."
+        );
+      }
+
+      profileIdGanti = petugasGantiAktif.id;
+    } else {
+      profileIdGanti = await daftarPetugasBaharu();
+    }
+
+    const namaGanti =
+      petugasGantiAktif?.nama ||
+      document.getElementById("daftarNama")?.value ||
+      "petugas baharu";
+
+    const pasti = window.confirm(
+      `Adakah anda pasti mahu menggantikan petugas asal dengan ${namaGanti}?`
+    );
+
+    if (!pasti) {
+      return;
+    }
+
+    /*
+     * RPC ini akan:
+     * 1. Menandakan penugasan lama sebagai DIGANTI.
+     * 2. Menyimpan petugas ganti pada rekod lama.
+     * 3. Mencipta penugasan baharu untuk petugas ganti.
+     * 4. Membatalkan Check-In lama yang sedang menunggu.
+     * 5. Menyimpan audit penyelia, sebab dan catatan.
+     */
+    const { data, error } = await db.rpc(
+      "tukar_petugas_penyelia",
+      {
+        p_penugasan_asal_id:
+          rekodPertukaranAktif.penugasan.id,
+
+        p_profile_ganti_id:
+          profileIdGanti,
+
+        p_sebab:
+          sebab,
+
+        p_catatan:
+          catatan || null
+      }
+    );
+
+    if (error) {
+      throw error;
+    }
+
+    if (data?.success === false) {
+      throw new Error(
+        data.message || "Pertukaran petugas gagal."
+      );
+    }
+
+    alert("Pertukaran petugas berjaya direkodkan.");
+
+    tutupModalTukar();
+    await muatSenarai();
+  } catch (error) {
+    console.error("Ralat pertukaran petugas:", error);
+
+    paparStatus(
+      "statusPertukaran",
+      `Ralat pertukaran petugas: ${
+        error.message || "Ralat tidak diketahui."
+      }`,
+      "error"
+    );
+  } finally {
+    const btnSimpan = document.getElementById(
+      "btnSimpanTukar"
+    );
+
+    if (btnSimpan) {
+      btnSimpan.textContent = "SIMPAN PERTUKARAN";
+
+      btnSimpan.disabled =
+        modPertukaran === "CARI"
+          ? !petugasGantiAktif
+          : false;
+    }
+  }
+}
+
+
+/* =========================================================
+   DAFTAR PETUGAS BAHARU
+========================================================= */
+
+async function daftarPetugasBaharu() {
+  const noBadan = normalisasiNoBadan(
+    document.getElementById("daftarNoBadan")?.value
+  );
+
+  const pangkat = String(
+    document.getElementById("daftarPangkat")?.value ?? ""
+  )
+    .trim()
+    .toUpperCase();
+
+  const nama = String(
+    document.getElementById("daftarNama")?.value ?? ""
+  )
+    .trim()
+    .toUpperCase();
+
+  const password = String(
+    document.getElementById("daftarPassword")?.value ?? ""
+  );
+
+  const telefon = String(
+    document.getElementById("daftarTelefon")?.value ?? ""
+  ).trim();
+
+  const bahagian = String(
+    document.getElementById("daftarBahagian")?.value ?? ""
+  )
+    .trim()
+    .toUpperCase();
+
+  const daerah = String(
+    document.getElementById("daftarDaerah")?.value ?? ""
+  )
+    .trim()
+    .toUpperCase();
+
+  if (!noBadan) {
+    throw new Error("No Badan petugas baharu diperlukan.");
+  }
+
+  if (!pangkat) {
+    throw new Error("Pangkat petugas baharu diperlukan.");
+  }
+
+  if (!nama) {
+    throw new Error("Nama petugas baharu diperlukan.");
+  }
+
+  if (password.length < 6) {
+    throw new Error(
+      "Kata laluan mestilah sekurang-kurangnya 6 aksara."
+    );
+  }
+
+  if (
+    normalisasiNoBadan(
+      rekodPertukaranAktif?.profile?.no_badan
+    ) === noBadan
+  ) {
+    throw new Error(
+      "No Badan petugas baharu sama dengan petugas asal."
+    );
+  }
+
+  /*
+   * Semak dahulu supaya No Badan tidak didaftarkan dua kali.
+   */
+  const { data: profilSediaAda, error: semakError } =
+    await db
+      .from("profiles")
+      .select("id, no_badan, nama, aktif")
+      .eq("no_badan", noBadan)
+      .maybeSingle();
+
+  if (semakError) {
+    throw semakError;
+  }
+
+  if (profilSediaAda) {
+    if (profilSediaAda.aktif === false) {
+      throw new Error(
+        "No Badan ini sudah wujud tetapi akaunnya tidak aktif. Hubungi Pentadbir."
+      );
+    }
+
+    petugasGantiAktif = profilSediaAda;
+
+    return profilSediaAda.id;
+  }
+
+  /*
+   * Pendaftaran Auth user mesti dibuat melalui Edge Function
+   * kerana service-role key tidak boleh diletakkan dalam frontend.
+   */
+  const { data, error } = await db.functions.invoke(
+    "tambah-petugas",
+    {
+      body: {
+        no_badan: noBadan,
+        pangkat,
+        nama,
+        peranan: "PETUGAS",
+        password,
+        telefon: telefon || null,
+        bahagian: bahagian || null,
+        daerah: daerah || null
+      }
+    }
+  );
+
+  if (error) {
+    throw new Error(
+      error.message || "Edge Function tambah-petugas gagal."
+    );
+  }
+
+  if (!data?.success) {
+    throw new Error(
+      data?.message ||
+        data?.error ||
+        "Petugas baharu gagal didaftarkan."
+    );
+  }
+
+  /*
+   * Edge Function disarankan memulangkan profile.
+   * Jika hanya ID dipulangkan, kod ini masih menyokongnya.
+   */
+  const profileId =
+    data.profile?.id ||
+    data.profile_id ||
+    data.id ||
+    null;
+
+  if (!profileId) {
+    /*
+     * Fallback: dapatkan profil berdasarkan No Badan.
+     */
+    const { data: profilBaru, error: profilError } =
+      await db
+        .from("profiles")
+        .select("*")
+        .eq("no_badan", noBadan)
+        .single();
+
+    if (profilError) {
+      throw profilError;
+    }
+
+    petugasGantiAktif = profilBaru;
+
+    return profilBaru.id;
+  }
+
+  petugasGantiAktif =
+    data.profile || {
+      id: profileId,
+      no_badan: noBadan,
+      pangkat,
+      nama,
+      peranan: "PETUGAS",
+      telefon,
+      bahagian,
+      daerah
+    };
+
+  return profileId;
+}
+
+
+/* =========================================================
+   PEMANTAUAN PERUBAHAN AUTH
+========================================================= */
+
+db.auth.onAuthStateChange(async (event, session) => {
+  if (event === "SIGNED_OUT") {
+    penyeliaAktif = null;
+    senaraiCheckIn = [];
+
+    paparHalamanLogin();
+  }
+
+  if (
+    event === "SIGNED_IN" &&
+    session?.user &&
+    !penyeliaAktif
+  ) {
+    try {
+      const profil = await dapatkanProfilDaripadaAuth(
+        session.user.id
+      );
+
+      if (
+        profil &&
+        perananDibenarkan(profil.peranan) &&
+        profil.aktif !== false
+      ) {
+        penyeliaAktif = profil;
+
+        paparDashboardPenyelia();
+        await muatSenarai();
+      }
+    } catch (error) {
+      console.error(
+        "Ralat perubahan sesi Supabase:",
+        error
+      );
+    }
+  }
+});
