@@ -4,29 +4,22 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
-
   <title>SKPO Pentadbir</title>
 
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="css/admin.css">
+  <link rel="stylesheet" href="css/style.css?v=20260721-1700">
+  <link rel="stylesheet" href="css/admin.css?v=20260721-1700">
 </head>
 
 <body>
-
-  <!-- ==============================
+  <!-- =====================================================
        LOGIN PENTADBIR
-  =============================== -->
+  ====================================================== -->
   <main class="login" id="loginPage">
-    <section class="card">
-
+    <section class="card" aria-labelledby="tajukLogin">
       <div class="logo">SKPO PENTADBIR</div>
+      <p id="tajukLogin">Dashboard Kehadiran dan Penugasan</p>
 
-      <p>Dashboard Kehadiran dan Penugasan</p>
-
-      <label class="sr-only" for="noBadan">
-        No Badan Pentadbir
-      </label>
-
+      <label class="sr-only" for="noBadan">No Badan Pentadbir</label>
       <input
         id="noBadan"
         type="text"
@@ -35,10 +28,7 @@
         autocapitalize="characters"
       >
 
-      <label class="sr-only" for="password">
-        Kata Laluan
-      </label>
-
+      <label class="sr-only" for="password">Kata Laluan</label>
       <input
         id="password"
         type="password"
@@ -55,121 +45,57 @@
         LOGIN PENTADBIR
       </button>
 
-      <div
-        id="loginStatus"
-        role="status"
-        aria-live="polite"
-      ></div>
+      <div id="loginStatus" role="status" aria-live="polite"></div>
 
-      <a
-        class="link"
-        href="index.html"
-        target="_top"
-      >
+      <a class="link" href="index.html" target="_top">
         KEMBALI KE LOGIN PETUGAS
       </a>
-
     </section>
   </main>
 
-
-  <!-- ==============================
+  <!-- =====================================================
        DASHBOARD PENTADBIR
-  =============================== -->
+  ====================================================== -->
   <div class="dashboard" id="dashboard">
-
     <header class="topbar">
-
       <div>
-        <div class="brand">
-          SKPO DASHBOARD PENTADBIR
-        </div>
-
-        <div id="adminName"></div>
+        <div class="brand">SKPO DASHBOARD PENTADBIR</div>
+        <div id="adminName" aria-live="polite"></div>
       </div>
 
-      <nav
-        class="topbar-actions"
-        aria-label="Tindakan Pentadbir"
-      >
-        <a
-          class="tsm-button nav-button"
-          href="tsm.html"
-        >
-          MODUL TSM
-        </a>
-
-        <button
-          class="logout"
-          type="button"
-          onclick="logout()"
-        >
-          LOG KELUAR
-        </button>
+      <nav class="topbar-actions" aria-label="Tindakan Pentadbir">
+        <a class="tsm-button nav-button" href="tsm.html">MODUL TSM</a>
+        <button class="logout" type="button" onclick="logout()">LOG KELUAR</button>
       </nav>
-
     </header>
 
-
     <main class="content">
-
-      <!-- ==========================
+      <!-- ===============================================
            PENAPIS
-      =========================== -->
-      <section
-        class="filters"
-        aria-label="Penapis dashboard"
-      >
-
+      ================================================ -->
+      <section class="filters" aria-label="Penapis dashboard">
         <div>
           <label for="tarikh">Tarikh</label>
-
-          <input
-            id="tarikh"
-            type="date"
-            onchange="muatData(true)"
-          >
+          <input id="tarikh" type="date" onchange="muatData(true)">
         </div>
 
         <div>
-          <label for="jenisTugas">
-            Jenis Tugas
-          </label>
-
-          <select
-            id="jenisTugas"
-            onchange="papar()"
-          >
-            <option value="">
-              SEMUA JENIS TUGAS
-            </option>
+          <label for="jenisTugas">Jenis Tugas</label>
+          <select id="jenisTugas" onchange="papar()">
+            <option value="">SEMUA JENIS TUGAS</option>
           </select>
         </div>
 
         <div>
-          <label for="tempatTugas">
-            Tempat Tugas
-          </label>
-
-          <select
-            id="tempatTugas"
-            onchange="papar()"
-          >
-            <option value="">
-              SEMUA TEMPAT TUGAS
-            </option>
+          <label for="tempatTugas">Tempat Tugas</label>
+          <select id="tempatTugas" onchange="papar()">
+            <option value="">SEMUA TEMPAT TUGAS</option>
           </select>
         </div>
 
         <div>
-          <label for="statusPenapis">
-            Status
-          </label>
-
-          <select
-            id="statusPenapis"
-            onchange="papar()"
-          >
+          <label for="statusPenapis">Status</label>
+          <select id="statusPenapis" onchange="papar()">
             <option value="">SEMUA STATUS</option>
             <option value="HADIR">HADIR</option>
             <option value="MENUNGGU">MENUNGGU</option>
@@ -179,71 +105,35 @@
             <option value="CHECK-OUT">CHECK-OUT</option>
           </select>
         </div>
-
       </section>
 
-
-      <!-- ==========================
+      <!-- ===============================================
            TINDAKAN
-      =========================== -->
-      <section
-        class="actions"
-        aria-label="Tindakan laporan"
-      >
-
-        <button
-          class="blue"
-          type="button"
-          onclick="muatData(true)"
-        >
+      ================================================ -->
+      <section class="actions" aria-label="Tindakan laporan">
+        <button class="blue" type="button" onclick="muatData(true)">
           PAPAR / KEMAS KINI DATA
         </button>
 
-        <button
-          class="gold"
-          id="btnPdf"
-          type="button"
-          onclick="muatLaporanPdf()"
-        >
+        <button class="gold" id="btnPdf" type="button" onclick="muatLaporanPdf()">
           MUAT LAPORAN (PDF)
         </button>
 
-        <button
-          class="green-button"
-          id="btnExcel"
-          type="button"
-          onclick="exportExcel()"
-        >
+        <button class="green-button" id="btnExcel" type="button" onclick="exportExcel()">
           EXPORT EXCEL
         </button>
 
-        <button
-          class="gray"
-          type="button"
-          onclick="window.print()"
-        >
-          CETAK
-        </button>
+        <button class="gray" type="button" onclick="window.print()">CETAK</button>
 
-        <button
-          class="tsm-button"
-          type="button"
-          onclick="bukaModulTSM()"
-        >
+        <button class="tsm-button" type="button" onclick="bukaModulTSM()">
           MODUL TSM / SET WALKIE-TALKIE
         </button>
-
       </section>
 
-
-      <!-- ==========================
+      <!-- ===============================================
            STATISTIK
-      =========================== -->
-      <section
-        class="stats"
-        aria-label="Statistik kehadiran"
-      >
-
+      ================================================ -->
+      <section class="stats" aria-label="Statistik kehadiran">
         <article class="stat">
           <div class="value" id="jumlah">0</div>
           <div class="label">Jumlah Petugas</div>
@@ -280,45 +170,18 @@
         </article>
 
         <article class="stat">
-          <div
-            class="value"
-            id="jumlahPemegangSet"
-          >
-            0
-          </div>
-
-          <div class="label">
-            Pemegang Set
-          </div>
+          <div class="value" id="jumlahPemegangSet">0</div>
+          <div class="label">Pemegang Set</div>
         </article>
-
       </section>
 
-
-      <!-- ==========================
+      <!-- ===============================================
            PROGRESS KEHADIRAN
-      =========================== -->
-      <section
-        class="progress-card"
-        aria-labelledby="tajukProgress"
-      >
-
+      ================================================ -->
+      <section class="progress-card" aria-labelledby="tajukProgress">
         <div class="progress-header">
-
-          <div
-            class="progress-title"
-            id="tajukProgress"
-          >
-            Kehadiran Hari Ini
-          </div>
-
-          <div
-            class="progress-percent"
-            id="progressPercent"
-          >
-            0%
-          </div>
-
+          <div class="progress-title" id="tajukProgress">Kehadiran Hari Ini</div>
+          <div class="progress-percent" id="progressPercent">0%</div>
         </div>
 
         <div
@@ -330,65 +193,41 @@
           aria-valuemax="100"
           aria-valuenow="0"
         >
-          <div
-            class="progress-fill"
-            id="progressFill"
-          ></div>
+          <div class="progress-fill" id="progressFill"></div>
         </div>
 
-        <div
-          class="progress-text"
-          id="progressText"
-        >
-          0 / 0 Petugas Hadir
-        </div>
-
+        <div class="progress-text" id="progressText">0 / 0 Petugas Hadir</div>
       </section>
 
-
-      <!-- ==========================
-           DAFTAR PENGGUNA
-      =========================== -->
-      <section
-        class="card user-registration"
-        id="modulDaftarPengguna"
-      >
-
+      <!-- ===============================================
+           DAFTAR PENGGUNA BAHARU
+      ================================================ -->
+      <section class="card user-registration" id="modulDaftarPengguna">
         <div class="section-heading">
-
           <div>
             <h2>Daftar Pengguna Baharu</h2>
-
             <p class="muted">
-              Akaun akan dicipta dalam Supabase
-              Authentication dan jadual profiles.
-              Pengguna login menggunakan No Badan.
+              Akaun akan dicipta dalam Supabase Authentication dan jadual profiles.
+              Pengguna tetap login menggunakan No Badan.
             </p>
           </div>
 
           <button
             class="gray compact-button"
             type="button"
+            onclick="toggleDaftarPengguna()"
             id="btnToggleDaftarPengguna"
             aria-expanded="true"
             aria-controls="borangDaftarPengguna"
-            onclick="toggleDaftarPengguna()"
           >
             SEMBUNYIKAN BORANG
           </button>
-
         </div>
 
-
         <div id="borangDaftarPengguna">
-
           <div class="form-grid">
-
             <div class="form-group">
-              <label for="penggunaNoBadan">
-                No Badan *
-              </label>
-
+              <label for="penggunaNoBadan">No Badan *</label>
               <input
                 id="penggunaNoBadan"
                 type="text"
@@ -398,12 +237,8 @@
               >
             </div>
 
-
             <div class="form-group">
-              <label for="penggunaPangkat">
-                Pangkat *
-              </label>
-
+              <label for="penggunaPangkat">Pangkat *</label>
               <input
                 id="penggunaPangkat"
                 type="text"
@@ -412,12 +247,8 @@
               >
             </div>
 
-
             <div class="form-group form-group-wide">
-              <label for="penggunaNama">
-                Nama Penuh *
-              </label>
-
+              <label for="penggunaNama">Nama Penuh *</label>
               <input
                 id="penggunaNama"
                 type="text"
@@ -426,12 +257,8 @@
               >
             </div>
 
-
             <div class="form-group">
-              <label for="penggunaPeranan">
-                Peranan *
-              </label>
-
+              <label for="penggunaPeranan">Peranan *</label>
               <select id="penggunaPeranan">
                 <option value="PETUGAS">PETUGAS</option>
                 <option value="URUSETIA">URUSETIA</option>
@@ -441,27 +268,18 @@
               </select>
             </div>
 
-
             <div class="form-group">
-              <label for="penggunaTelefon">
-                Telefon
-              </label>
-
+              <label for="penggunaTelefon">Telefon</label>
               <input
                 id="penggunaTelefon"
                 type="tel"
-                inputmode="tel"
                 placeholder="Contoh: 0123456789"
                 autocomplete="tel"
               >
             </div>
 
-
             <div class="form-group">
-              <label for="penggunaBahagian">
-                Bahagian / Balai / Cawangan
-              </label>
-
+              <label for="penggunaBahagian">Bahagian / Balai / Cawangan</label>
               <input
                 id="penggunaBahagian"
                 type="text"
@@ -470,12 +288,8 @@
               >
             </div>
 
-
             <div class="form-group">
-              <label for="penggunaDaerah">
-                Daerah
-              </label>
-
+              <label for="penggunaDaerah">Daerah</label>
               <input
                 id="penggunaDaerah"
                 type="text"
@@ -484,12 +298,8 @@
               >
             </div>
 
-
             <div class="form-group">
-              <label for="penggunaPassword">
-                Kata Laluan *
-              </label>
-
+              <label for="penggunaPassword">Kata Laluan *</label>
               <input
                 id="penggunaPassword"
                 type="password"
@@ -498,12 +308,8 @@
               >
             </div>
 
-
             <div class="form-group">
-              <label for="penggunaPasswordSah">
-                Sahkan Kata Laluan *
-              </label>
-
+              <label for="penggunaPasswordSah">Sahkan Kata Laluan *</label>
               <input
                 id="penggunaPasswordSah"
                 type="password"
@@ -511,9 +317,7 @@
                 autocomplete="new-password"
               >
             </div>
-
           </div>
-
 
           <div
             class="status-box"
@@ -521,7 +325,6 @@
             role="status"
             aria-live="polite"
           ></div>
-
 
           <button
             class="green-button registration-button"
@@ -531,30 +334,119 @@
           >
             DAFTAR PENGGUNA
           </button>
-
         </div>
-
       </section>
 
-
-      <!-- ==========================
-           JADUAL PETUGAS
-      =========================== -->
-      <section
-        class="table-card"
-        aria-labelledby="tajukJadual"
-      >
-
-        <div class="tools">
-
+      <!-- ===============================================
+           IMPORT PENUGASAN CSV
+      ================================================ -->
+      <section class="card import-assignment" id="modulImportPenugasan">
+        <div class="section-heading">
           <div>
-            <label
-              class="sr-only"
-              for="carian"
-            >
-              Carian petugas
-            </label>
+            <h2>Import Penugasan CSV</h2>
+            <p class="muted">
+              Masukkan ratusan penugasan sekaligus. Sistem akan menyemak format,
+              No Badan dan rekod berganda sebelum data dihantar ke Supabase.
+            </p>
+          </div>
 
+          <button
+            class="gold compact-button"
+            type="button"
+            onclick="muatTurunTemplatPenugasan()"
+          >
+            MUAT TURUN TEMPLAT CSV
+          </button>
+        </div>
+
+        <div class="import-guide">
+          <span><strong>1.</strong> Muat turun dan isi templat</span>
+          <span><strong>2.</strong> Pilih fail CSV</span>
+          <span><strong>3.</strong> Semak pratonton</span>
+          <span><strong>4.</strong> Tekan Import Penugasan</span>
+        </div>
+
+        <div class="import-file-row">
+          <div class="form-group">
+            <label for="failPenugasanCsv">Fail penugasan (.csv)</label>
+            <input
+              id="failPenugasanCsv"
+              type="file"
+              accept=".csv,text/csv"
+              onchange="bacaFailPenugasanCsv(event)"
+            >
+          </div>
+
+          <button
+            class="gray"
+            id="btnKosongkanImport"
+            type="button"
+            onclick="kosongkanImportPenugasan()"
+          >
+            KOSONGKAN
+          </button>
+        </div>
+
+        <div class="import-summary" aria-label="Ringkasan fail CSV">
+          <div><strong id="importJumlah">0</strong><span>Jumlah Baris</span></div>
+          <div><strong id="importSah">0</strong><span>Sah</span></div>
+          <div><strong id="importGagal">0</strong><span>Bermasalah</span></div>
+          <div><strong id="importFail">-</strong><span>Nama Fail</span></div>
+        </div>
+
+        <div
+          class="status-box"
+          id="statusImportPenugasan"
+          role="status"
+          aria-live="polite"
+        ></div>
+
+        <div class="import-preview" id="ruangPratontonImport" hidden>
+          <p class="muted" id="notaPratontonImport">
+            Pratonton memaparkan sehingga 100 baris pertama.
+          </p>
+
+          <div class="wrap import-table-wrap">
+            <table class="import-table">
+              <thead>
+                <tr>
+                  <th>Baris</th>
+                  <th>Tarikh</th>
+                  <th>No Badan</th>
+                  <th>Call Sign</th>
+                  <th>Jenis Tugas</th>
+                  <th>Tempat Tugas</th>
+                  <th>Penyelia</th>
+                  <th>Pemegang Set</th>
+                  <th>Lat</th>
+                  <th>Long</th>
+                  <th>Radius</th>
+                  <th>Semakan</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyImportPenugasan"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <button
+          class="green-button import-button"
+          id="btnImportPenugasan"
+          type="button"
+          onclick="importPenugasanCsv()"
+          disabled
+        >
+          IMPORT PENUGASAN KE SUPABASE
+        </button>
+      </section>
+
+      <!-- ===============================================
+           JADUAL PETUGAS
+      ================================================ -->
+      <section class="table-card" aria-labelledby="tajukJadual">
+        <div class="tools">
+          <div>
+            <label class="sr-only" for="carian">Carian petugas</label>
             <input
               id="carian"
               type="search"
@@ -563,27 +455,13 @@
             >
           </div>
 
-          <div
-            id="status"
-            role="status"
-            aria-live="polite"
-          ></div>
-
+          <div id="status" role="status" aria-live="polite"></div>
         </div>
 
-
-        <h2
-          class="sr-only"
-          id="tajukJadual"
-        >
-          Senarai Kehadiran Petugas
-        </h2>
-
+        <h2 class="sr-only" id="tajukJadual">Senarai Kehadiran Petugas</h2>
 
         <div class="wrap">
-
           <table>
-
             <thead>
               <tr>
                 <th scope="col">Bil.</th>
@@ -605,64 +483,32 @@
 
             <tbody id="tbody">
               <tr>
-                <td
-                  colspan="14"
-                  class="empty-row"
-                >
-                  Belum ada data dipaparkan.
-                </td>
+                <td colspan="14" class="empty-row">Belum ada data dipaparkan.</td>
               </tr>
             </tbody>
-
           </table>
-
         </div>
-
       </section>
-
     </main>
   </div>
 
-
-  <!-- ==============================
+  <!-- =====================================================
        MODAL RESET DEVICE
-  =============================== -->
-  <div
-    class="modal"
-    id="modalResetDevice"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="tajukResetDevice"
-  >
-
+  ====================================================== -->
+  <div class="modal" id="modalResetDevice" role="dialog" aria-modal="true" aria-labelledby="tajukResetDevice">
     <div class="modal-card">
+      <h2 id="tajukResetDevice">Reset Device Petugas</h2>
+      <div class="info-box" id="maklumatResetDevice"></div>
 
-      <h2 id="tajukResetDevice">
-        Reset Device Petugas
-      </h2>
-
-      <div
-        class="info-box"
-        id="maklumatResetDevice"
-      ></div>
-
-      <label for="sebabResetDevice">
-        <strong>Sebab Reset *</strong>
-      </label>
-
+      <label for="sebabResetDevice"><strong>Sebab Reset *</strong></label>
       <textarea
         id="sebabResetDevice"
         placeholder="Nyatakan sebab Device ID perlu direset."
       ></textarea>
 
-      <div
-        id="statusModalResetDevice"
-        role="status"
-        aria-live="polite"
-      ></div>
+      <div id="statusModalResetDevice" role="status" aria-live="polite"></div>
 
       <div class="modal-actions">
-
         <button
           class="red"
           id="btnSahkanResetDevice"
@@ -672,79 +518,35 @@
           SAHKAN RESET DEVICE
         </button>
 
-        <button
-          class="gray"
-          type="button"
-          onclick="tutupModalResetDevice()"
-        >
-          BATAL
-        </button>
-
+        <button class="gray" type="button" onclick="tutupModalResetDevice()">BATAL</button>
       </div>
-
     </div>
   </div>
 
-
-  <!-- ==============================
-       JAVASCRIPT
-       Susunan ini mesti dikekalkan
-  =============================== -->
-
-  <!-- 1. Pustaka Supabase -->
-  <script
-    src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
-  ></script>
-
-  <!-- 2. Konfigurasi projek -->
-  <script
-    src="js/api-config.js?v=20260721-1600"
-  ></script>
-
-  <!-- 3. Sambungan Supabase -->
-  <script
-    src="js/supabase-client.js?v=20260721-1600"
-  ></script>
-
-  <!-- 4. Fungsi Pentadbir -->
-  <script
-    src="js/admin.js?v=20260721-1600"
-  ></script>
-
+  <!-- =====================================================
+       SUPABASE DAN JAVASCRIPT
+  ====================================================== -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/api-config.js?v=20260721-1700"></script>
+<script src="js/supabase-client.js?v=20260721-1700"></script>
+<script src="js/admin.js?v=20260721-1700"></script>
 
   <script>
     function toggleDaftarPengguna() {
-      const borang =
-        document.getElementById("borangDaftarPengguna");
+      const borang = document.getElementById("borangDaftarPengguna");
+      const butang = document.getElementById("btnToggleDaftarPengguna");
+      const sedangTersembunyi = borang.hidden;
 
-      const butang =
-        document.getElementById(
-          "btnToggleDaftarPengguna"
-        );
-
-      const sedangTersembunyi =
-        borang.hidden;
-
-      borang.hidden =
-        !sedangTersembunyi;
-
-      butang.setAttribute(
-        "aria-expanded",
-        String(sedangTersembunyi)
-      );
-
-      butang.textContent =
-        sedangTersembunyi
-          ? "SEMBUNYIKAN BORANG"
-          : "PAPARKAN BORANG";
+      borang.hidden = !sedangTersembunyi;
+      butang.setAttribute("aria-expanded", String(sedangTersembunyi));
+      butang.textContent = sedangTersembunyi
+        ? "SEMBUNYIKAN BORANG"
+        : "PAPARKAN BORANG";
     }
-
 
     function bukaModulTSM() {
-      window.location.href =
-        "tsm.html";
+      window.location.href = "tsm.html";
     }
   </script>
-
 </body>
 </html>
