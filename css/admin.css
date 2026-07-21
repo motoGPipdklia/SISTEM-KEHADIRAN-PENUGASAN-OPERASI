@@ -797,6 +797,21 @@ tbody tr:hover{
   .actions{
     grid-template-columns:repeat(3,1fr);
   }
+
+  .topbar{
+    align-items:flex-start;
+  }
+
+  .topbar-actions{
+    justify-content:flex-end;
+  }
+
+  .header-action-button,
+  .topbar-actions .nav-button,
+  .topbar-actions .logout{
+    padding:10px 12px;
+    font-size:11px;
+  }
 }
 
 @media(max-width:900px){
