@@ -6,8 +6,8 @@
   <meta name="color-scheme" content="dark">
   <title>SKPO Pentadbir</title>
 
-  <link rel="stylesheet" href="css/style.css?v=20260721-1700">
-  <link rel="stylesheet" href="css/admin.css?v=20260721-1700">
+  <link rel="stylesheet" href="css/style.css?v=20260721-1800">
+  <link rel="stylesheet" href="css/admin.css?v=20260721-1800">
 </head>
 
 <body>
@@ -197,6 +197,114 @@
         </div>
 
         <div class="progress-text" id="progressText">0 / 0 Petugas Hadir</div>
+      </section>
+
+      <!-- ===============================================
+           IMPORT PENGGUNA CSV
+      ================================================ -->
+      <section class="card import-assignment import-users" id="modulImportPengguna">
+        <div class="section-heading">
+          <div>
+            <h2>Import Pengguna CSV</h2>
+            <p class="muted">
+              Daftarkan ratusan pengguna ke Supabase Authentication dan jadual
+              profiles. Akaun yang sudah wujud akan dilangkau dengan selamat.
+            </p>
+          </div>
+
+          <button
+            class="gold compact-button"
+            type="button"
+            onclick="muatTurunTemplatPengguna()"
+          >
+            MUAT TURUN TEMPLAT PENGGUNA
+          </button>
+        </div>
+
+        <div class="import-guide">
+          <span><strong>1.</strong> Isi maklumat dan kata laluan</span>
+          <span><strong>2.</strong> Simpan sebagai CSV UTF-8</span>
+          <span><strong>3.</strong> Semak pratonton</span>
+          <span><strong>4.</strong> Import pengguna</span>
+        </div>
+
+        <div class="security-note">
+          <strong>Keselamatan:</strong> gunakan kata laluan berbeza bagi setiap
+          pengguna. Kata laluan tidak dipaparkan dalam pratonton dan tidak
+          disimpan dalam jadual profiles.
+        </div>
+
+        <div class="import-file-row">
+          <div class="form-group">
+            <label for="failPenggunaCsv">Fail pengguna (.csv)</label>
+            <input
+              id="failPenggunaCsv"
+              type="file"
+              accept=".csv,text/csv"
+              onchange="bacaFailPenggunaCsv(event)"
+            >
+          </div>
+
+          <button
+            class="gray"
+            id="btnKosongkanImportPengguna"
+            type="button"
+            onclick="kosongkanImportPengguna()"
+          >
+            KOSONGKAN
+          </button>
+        </div>
+
+        <div class="import-summary import-user-summary" aria-label="Ringkasan pengguna CSV">
+          <div><strong id="importPenggunaJumlah">0</strong><span>Jumlah Baris</span></div>
+          <div><strong id="importPenggunaBaharu">0</strong><span>Pengguna Baharu</span></div>
+          <div><strong id="importPenggunaSediaAda">0</strong><span>Sedia Ada / Siap</span></div>
+          <div><strong id="importPenggunaGagal">0</strong><span>Bermasalah</span></div>
+          <div><strong id="importPenggunaFail">-</strong><span>Nama Fail</span></div>
+        </div>
+
+        <div
+          class="status-box"
+          id="statusImportPengguna"
+          role="status"
+          aria-live="polite"
+        ></div>
+
+        <div class="import-preview" id="ruangPratontonImportPengguna" hidden>
+          <p class="muted" id="notaPratontonImportPengguna">
+            Pratonton memaparkan sehingga 100 baris pertama. Kata laluan disembunyikan.
+          </p>
+
+          <div class="wrap import-table-wrap">
+            <table class="import-table import-user-table">
+              <thead>
+                <tr>
+                  <th>Baris</th>
+                  <th>No Badan</th>
+                  <th>Pangkat</th>
+                  <th>Nama</th>
+                  <th>Peranan</th>
+                  <th>Telefon</th>
+                  <th>Bahagian</th>
+                  <th>Daerah</th>
+                  <th>Aktif</th>
+                  <th>Semakan</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyImportPengguna"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <button
+          class="green-button import-button"
+          id="btnImportPengguna"
+          type="button"
+          onclick="importPenggunaCsv()"
+          disabled
+        >
+          IMPORT PENGGUNA KE SUPABASE
+        </button>
       </section>
 
       <!-- ===============================================
@@ -527,9 +635,9 @@
        SUPABASE DAN JAVASCRIPT
   ====================================================== -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/api-config.js?v=20260721-1700"></script>
-<script src="js/supabase-client.js?v=20260721-1700"></script>
-<script src="js/admin.js?v=20260721-1700"></script>
+<script src="js/api-config.js?v=20260721-1800"></script>
+<script src="js/supabase-client.js?v=20260721-1800"></script>
+<script src="js/admin.js?v=20260721-1800"></script>
 
   <script>
     function toggleDaftarPengguna() {
