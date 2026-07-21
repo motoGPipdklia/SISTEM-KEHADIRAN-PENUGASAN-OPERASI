@@ -2173,7 +2173,9 @@ function bukaModalPengganti(idPenugasan){
     dataPenyelia.find(
       x => String(x.idPenugasan) === String(idPenugasan)
     );
-
+penugasanDipilih.petugasBaru = null;
+penugasanDipilih.modPengganti = null;
+   
   if(!penugasanDipilih){
     return;
   }
@@ -2222,15 +2224,43 @@ function tutupModalPengganti(){
 }
 
 async function semakPetugasPengganti() {
+  const inputNoBadan =
+    elemenPenyelia("noBadanPengganti");
 
-  const noBadan = teksPenyelia(
-    elemenPenyelia("noBadanPengganti").value
-  );
+  const noBadan =
+    atasPenyelia(inputNoBadan?.value || "");
+
+  const preview =
+    elemenPenyelia("previewPengganti");
+
+  const borang =
+    elemenPenyelia("borangPengganti");
 
   if (!noBadan) {
-    alert("Masukkan No Badan pengganti.");
+    statusPenyelia(
+      "statusPertukaran",
+      "Sila masukkan No Badan pengganti.",
+      "error"
+    );
+
+    inputNoBadan?.focus();
     return;
   }
+
+  if (!penugasanDipilih) {
+    statusPenyelia(
+      "statusPertukaran",
+      "Maklumat penugasan asal tidak ditemui.",
+      "error"
+    );
+    return;
+  }
+
+  penugasanDipilih.petugasBaru = null;
+  penugasanDipilih.modPengganti = null;
+
+  preview?.classList.add("hidden");
+  borang?.classList.add("hidden");
 
   statusPenyelia(
     "statusPertukaran",
@@ -2239,7 +2269,6 @@ async function semakPetugasPengganti() {
   );
 
   try {
-
     const { data, error } =
       await dbPenyelia
         .from("profiles")
@@ -2247,89 +2276,176 @@ async function semakPetugasPengganti() {
         .eq("no_badan", noBadan)
         .maybeSingle();
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
+
+    /* ============================================================
+       PETUGAS TIDAK DITEMUI — PAPAR BORANG DAFTAR BAHARU
+    ============================================================ */
 
     if (!data) {
+      penugasanDipilih.modPengganti = "BARU";
+
+      if (preview) {
+        preview.innerHTML = `
+          <strong>Petugas belum didaftarkan</strong>
+          <br><br>
+
+          No Badan:
+          <strong>${htmlPenyelia(noBadan)}</strong>
+
+          <br>
+
+          Sila lengkapkan maklumat petugas baharu di bawah.
+        `;
+
+        preview.classList.remove("hidden");
+      }
+
+      if (borang) {
+        borang.classList.remove("hidden");
+      }
+
+      const nama =
+        elemenPenyelia("namaPengganti");
+
+      const pangkat =
+        elemenPenyelia("pangkatPengganti");
+
+      const telefon =
+        elemenPenyelia("telefonPengganti");
+
+      const bahagian =
+        elemenPenyelia("bahagianPengganti");
+
+      const password =
+        elemenPenyelia("passwordPengganti");
+
+      if (nama) nama.value = "";
+      if (pangkat) pangkat.value = "";
+      if (telefon) telefon.value = "";
+      if (bahagian) bahagian.value = "";
+      if (password) password.value = "";
 
       statusPenyelia(
         "statusPertukaran",
-        "Petugas tidak ditemui.",
-        "error"
+        "Petugas tidak ditemui. Sila daftar petugas baharu.",
+        "warning"
       );
 
-      elemenPenyelia("previewPengganti").classList.add("hidden");
-      elemenPenyelia("borangPengganti").classList.add("hidden");
-
+      nama?.focus();
       return;
     }
 
-    if (data.aktif === false) {
+    /* ============================================================
+       PETUGAS DITEMUI
+    ============================================================ */
 
+    if (data.aktif === false) {
       statusPenyelia(
         "statusPertukaran",
-        "Petugas tidak aktif.",
+        "Akaun petugas ini tidak aktif.",
         "error"
       );
-
       return;
     }
 
     if (
       String(data.id) ===
-      String(penugasanDipilih.profil.id)
+      String(penugasanDipilih.profil?.id)
     ) {
-
       statusPenyelia(
         "statusPertukaran",
-        "Petugas yang sama tidak boleh dipilih.",
+        "Petugas asal tidak boleh dipilih sebagai pengganti.",
         "error"
       );
-
       return;
     }
 
-    elemenPenyelia("previewPengganti").innerHTML = `
-      <strong>Petugas Pengganti</strong><br><br>
+    const peranan =
+      atasPenyelia(data.peranan);
 
-      ${htmlPenyelia(data.pangkat)}
-
-      ${htmlPenyelia(data.nama)}
-
-      <br>
-
-      ${htmlPenyelia(data.no_badan)}
-
-      <br>
-
-      ${htmlPenyelia(data.peranan)}
-    `;
-
-    elemenPenyelia("previewPengganti")
-      .classList.remove("hidden");
-
-    elemenPenyelia("borangPengganti")
-      .classList.remove("hidden");
+    if (
+      peranan &&
+      peranan !== "PETUGAS"
+    ) {
+      statusPenyelia(
+        "statusPertukaran",
+        `Profil ini mempunyai peranan ${htmlPenyelia(
+          peranan
+        )}, bukan PETUGAS.`,
+        "error"
+      );
+      return;
+    }
 
     penugasanDipilih.petugasBaru = data;
+    penugasanDipilih.modPengganti = "SEDIA_ADA";
+
+    if (preview) {
+      preview.innerHTML = `
+        <strong>Petugas Pengganti Ditemui</strong>
+        <br><br>
+
+        <div class="grid">
+          <div class="label">Nama</div>
+          <div>
+            ${htmlPenyelia(data.pangkat || "")}
+            ${htmlPenyelia(data.nama || "-")}
+          </div>
+
+          <div class="label">No Badan</div>
+          <div>${htmlPenyelia(data.no_badan || "-")}</div>
+
+          <div class="label">Bahagian</div>
+          <div>
+            ${htmlPenyelia(
+              data.bahagian ||
+              data.balai ||
+              data.cawangan ||
+              "-"
+            )}
+          </div>
+
+          <div class="label">Telefon</div>
+          <div>${htmlPenyelia(data.telefon || "-")}</div>
+
+          <div class="label">Peranan</div>
+          <div>${htmlPenyelia(peranan || "PETUGAS")}</div>
+        </div>
+      `;
+
+      preview.classList.remove("hidden");
+    }
+
+    /* Petugas sedia ada tidak perlu borang pendaftaran */
+    borang?.classList.add("hidden");
 
     statusPenyelia(
       "statusPertukaran",
-      "Petugas pengganti dijumpai.",
+      "Petugas pengganti berjaya ditemui.",
       "success"
     );
 
-  } catch (err) {
+  } catch (error) {
+    console.error(
+      "Ralat semak petugas pengganti:",
+      error
+    );
 
-    console.error(err);
+    penugasanDipilih.petugasBaru = null;
+    penugasanDipilih.modPengganti = null;
 
     statusPenyelia(
       "statusPertukaran",
-      err.message,
+      `Semakan gagal: ${htmlPenyelia(
+        error.message ||
+        "Ralat tidak diketahui."
+      )}`,
       "error"
     );
-
   }
-
 }
 
 function gantiPetugas(){
