@@ -205,7 +205,6 @@ async function profilPenyelia(userId) {
 function perananPenyeliaDibenarkan(peranan) {
   return [
     "URUSETIA",
-    "PENYELIA",
     "PENTADBIR",
     "ADMIN"
   ].includes(
@@ -290,18 +289,20 @@ async function loginPenyelia() {
       );
     }
 
-    if (
-      !perananPenyeliaDibenarkan(
-        profil.peranan
-      )
-    ) {
-      throw new Error(
-        `Akses ditolak. Peranan akaun ialah ${
-          atasPenyelia(profil.peranan) ||
-          "TIDAK DITETAPKAN"
-        }.`
-      );
-    }
+    const peranan = atasPenyelia(profil.peranan);
+
+if (!perananPenyeliaDibenarkan(peranan)) {
+
+  await dbPenyelia.auth.signOut().catch(() => {});
+
+  if (peranan === "TSM") {
+    window.location.replace("tsm.html");
+    return;
+  }
+
+  window.location.replace("index.html");
+  return;
+}
 
     penggunaPenyelia = {
       ...profil,
@@ -419,18 +420,27 @@ async function pulihkanSesiPenyelia() {
     );
 
     if (
-      !profil ||
-      profil.aktif === false ||
-      !perananPenyeliaDibenarkan(
-        profil.peranan
-      )
-    ) {
-      await dbPenyelia.auth
-        .signOut()
-        .catch(() => {});
+  !profil ||
+  profil.aktif === false ||
+  !perananPenyeliaDibenarkan(
+    profil.peranan
+  )
+) {
 
-      return;
-    }
+  const peranan = atasPenyelia(profil?.peranan);
+
+  await dbPenyelia.auth
+    .signOut()
+    .catch(() => {});
+
+  if (peranan === "TSM") {
+    window.location.replace("tsm.html");
+    return;
+  }
+
+  window.location.replace("index.html");
+  return;
+}
 
     penggunaPenyelia = {
       ...profil,
