@@ -654,7 +654,7 @@ async function daftarPenggunaBaharu() {
 
   try {
     const { data, error } = await denganHadMasa(
-      db.functions.invoke("tambah_petugas", {
+      db.functions.invoke("tambah-petugas", {
         body: {
           no_badan: noBadan,
           noBadan,
