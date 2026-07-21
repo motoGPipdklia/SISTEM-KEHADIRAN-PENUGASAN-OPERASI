@@ -22,13 +22,16 @@ function elemenPenyelia(id) {
   return document.getElementById(id);
 }
 
+
 function teksPenyelia(nilai) {
   return String(nilai ?? "").trim();
 }
 
+
 function atasPenyelia(nilai) {
   return teksPenyelia(nilai).toUpperCase();
 }
+
 
 function htmlPenyelia(nilai) {
   return String(nilai ?? "")
@@ -39,11 +42,13 @@ function htmlPenyelia(nilai) {
     .replace(/'/g, "&#039;");
 }
 
+
 function emailPenyelia(noBadan) {
   return `${teksPenyelia(noBadan)
     .toLowerCase()
     .replace(/[^a-z0-9_-]/g, "")}@skpo.local`;
 }
+
 
 function hariIniPenyelia() {
   return new Intl.DateTimeFormat("en-CA", {
@@ -53,6 +58,7 @@ function hariIniPenyelia() {
     day: "2-digit"
   }).format(new Date());
 }
+
 
 function formatMasaPenyelia(nilai) {
   if (!nilai) return "-";
@@ -75,6 +81,7 @@ function formatMasaPenyelia(nilai) {
   }).format(tarikh);
 }
 
+
 function statusPenyelia(id, mesej, jenis = "warning") {
   const elemen = elemenPenyelia(id);
 
@@ -83,6 +90,7 @@ function statusPenyelia(id, mesej, jenis = "warning") {
   elemen.className = `status ${jenis}`;
   elemen.innerHTML = mesej;
 }
+
 
 function nilaiPertama(objek, senaraiKunci, nilaiAsal = "") {
   for (const kunci of senaraiKunci) {
@@ -99,6 +107,7 @@ function nilaiPertama(objek, senaraiKunci, nilaiAsal = "") {
 
   return nilaiAsal;
 }
+
 
 function tarikhDaripadaNilai(nilai) {
   if (!nilai) return "";
@@ -129,7 +138,6 @@ function tarikhDaripadaNilai(nilai) {
 ================================================================ */
 
 async function profilPenyelia(userId) {
-
   let hasil = await dbPenyelia
     .from("profiles")
     .select("*")
@@ -140,7 +148,6 @@ async function profilPenyelia(userId) {
     hasil.error &&
     /auth_user_id/i.test(hasil.error.message || "")
   ) {
-
     hasil = await dbPenyelia
       .from("profiles")
       .select("*")
@@ -155,31 +162,26 @@ async function profilPenyelia(userId) {
   return hasil.data;
 }
 
+
 function perananPenyeliaDibenarkan(peranan) {
   return [
     "URUSETIA",
     "PENYELIA",
     "PENTADBIR",
     "ADMIN"
-  ].includes(
-    atasPenyelia(peranan)
-  );
+  ].includes(atasPenyelia(peranan));
 }
 
-async function loginPenyelia() {
 
+async function loginPenyelia() {
   const noBadan = atasPenyelia(
     elemenPenyelia("noBadan").value
   );
 
-  const password =
-    elemenPenyelia("password").value;
-
-  const butang =
-    elemenPenyelia("btnLogin");
+  const password = elemenPenyelia("password").value;
+  const butang = elemenPenyelia("btnLogin");
 
   if (!noBadan || !password) {
-
     statusPenyelia(
       "loginStatus",
       "Sila masukkan No Badan dan kata laluan.",
@@ -199,7 +201,6 @@ async function loginPenyelia() {
   );
 
   try {
-
     if (!dbPenyelia?.auth) {
       throw new Error(
         window.SKPO_SUPABASE_ERROR ||
@@ -209,45 +210,35 @@ async function loginPenyelia() {
 
     const { data, error } =
       await dbPenyelia.auth.signInWithPassword({
-
         email: emailPenyelia(noBadan),
         password
-
       });
 
     if (error || !data.user) {
-
       throw new Error(
         "No Badan atau kata laluan tidak sah."
       );
     }
 
-    const profil =
-      await profilPenyelia(data.user.id);
+    const profil = await profilPenyelia(data.user.id);
 
     if (!profil) {
-
       throw new Error(
         "Profil Urusetia tidak ditemui."
       );
     }
 
     if (profil.aktif === false) {
-
       throw new Error(
         "Akaun telah dinyahaktifkan."
       );
     }
 
-    if (
-      !perananPenyeliaDibenarkan(
-        profil.peranan
-      )
-    ) {
-
+    if (!perananPenyeliaDibenarkan(profil.peranan)) {
       throw new Error(
         `Akses ditolak. Peranan akaun ialah ${
-          atasPenyelia(profil.peranan)
+          atasPenyelia(profil.peranan) ||
+          "TIDAK DITETAPKAN"
         }.`
       );
     }
@@ -262,10 +253,7 @@ async function loginPenyelia() {
     await muatSemuaDataPenyelia();
 
   } catch (error) {
-
-    await dbPenyelia.auth
-      .signOut()
-      .catch(() => {});
+    await dbPenyelia?.auth?.signOut().catch(() => {});
 
     statusPenyelia(
       "loginStatus",
@@ -274,11 +262,11 @@ async function loginPenyelia() {
     );
 
   } finally {
-
     butang.disabled = false;
     butang.textContent = "LOGIN URUSETIA";
   }
 }
+
 
 /* ================================================================
    PAPAR DASHBOARD
@@ -880,7 +868,8 @@ async function ubahStatusKehadiran(
 
 async function muatLaporanPenyelia() {
   if (!penggunaPenyelia) return;
-     const tarikh =
+
+  const tarikh =
     elemenPenyelia("tarikh")?.value ||
     hariIniPenyelia();
 
@@ -891,72 +880,36 @@ async function muatLaporanPenyelia() {
   );
 
   try {
-    /*
-      Ambil semua rekod tanpa menggunakan created_at
-      kerana kolum tersebut tidak wujud dalam jadual pelaporan.
-    */
     const laporanRes = await dbPenyelia
       .from(JADUAL_LAPORAN)
-      .select("*");
+      .select("*")
+      .order("created_at", {
+        ascending: false
+      });
 
     if (laporanRes.error) {
       throw laporanRes.error;
     }
 
-    const semuaLaporan = laporanRes.data || [];
+    const semuaLaporan =
+      laporanRes.data || [];
 
-    /*
-      Susun laporan secara menurun menggunakan kolum tarikh/masa
-      yang tersedia dalam rekod.
-    */
-    semuaLaporan.sort((a, b) => {
-      const masaA = nilaiPertama(a, [
-        "tarikh_masa",
-        "masa_laporan",
-        "masa_hantar",
-        "timestamp",
-        "tarikh_laporan",
-        "tarikh"
-      ]);
+    const laporanTarikh =
+      semuaLaporan.filter(item => {
+        const tarikhItem =
+          tarikhDaripadaNilai(
+            nilaiPertama(item, [
+              "tarikh",
+              "tarikh_laporan",
+              "tarikh_masa",
+              "masa_laporan",
+              "created_at"
+            ])
+          );
 
-      const masaB = nilaiPertama(b, [
-        "tarikh_masa",
-        "masa_laporan",
-        "masa_hantar",
-        "timestamp",
-        "tarikh_laporan",
-        "tarikh"
-      ]);
+        return tarikhItem === tarikh;
+      });
 
-      const nilaiA = new Date(masaA).getTime();
-      const nilaiB = new Date(masaB).getTime();
-
-      return (Number.isNaN(nilaiB) ? 0 : nilaiB) -
-             (Number.isNaN(nilaiA) ? 0 : nilaiA);
-    });
-
-    /*
-      Tapis laporan mengikut tarikh yang dipilih.
-    */
-    const laporanTarikh = semuaLaporan.filter(item => {
-      const nilaiTarikh = nilaiPertama(item, [
-        "tarikh",
-        "tarikh_laporan",
-        "tarikh_masa",
-        "masa_laporan",
-        "masa_hantar",
-        "timestamp"
-      ]);
-
-      const tarikhItem =
-        tarikhDaripadaNilai(nilaiTarikh);
-
-      return tarikhItem === tarikh;
-    });
-
-    /*
-      Dapatkan ID petugas daripada laporan.
-    */
     const petugasIds = [
       ...new Set(
         laporanTarikh
@@ -983,7 +936,8 @@ async function muatLaporanPenyelia() {
         throw profilRes.error;
       }
 
-      profiles = profilRes.data || [];
+      profiles =
+        profilRes.data || [];
     }
 
     const profilMap = new Map(
@@ -993,116 +947,123 @@ async function muatLaporanPenyelia() {
       ])
     );
 
-    /*
-      Gabungkan laporan dengan profil petugas.
-    */
-    dataLaporanPenyelia = laporanTarikh.map(item => {
-      const petugasId = nilaiPertama(item, [
-        "petugas_id",
-        "profile_id",
-        "user_id"
-      ]);
+    dataLaporanPenyelia =
+      laporanTarikh.map(item => {
+        const petugasId =
+          nilaiPertama(item, [
+            "petugas_id",
+            "profile_id",
+            "user_id"
+          ]);
 
-      const profil =
-        profilMap.get(petugasId) ||
-        {};
+        const profil =
+          profilMap.get(petugasId) ||
+          {};
 
-      const telahDibaca =
-        item.telah_dibaca === true ||
-        atasPenyelia(item.status_bacaan) ===
-          "TELAH DIBACA" ||
-        atasPenyelia(item.status_laporan) ===
-          "TELAH DIBACA" ||
-        Boolean(
-          item.masa_dibaca ||
-          item.dibaca_pada
-        );
+        const telahDibaca =
+          item.telah_dibaca === true ||
+          atasPenyelia(
+            item.status_bacaan
+          ) === "TELAH DIBACA" ||
+          atasPenyelia(
+            item.status_laporan
+          ) === "TELAH DIBACA" ||
+          Boolean(
+            item.masa_dibaca ||
+            item.dibaca_pada
+          );
 
-      return {
-        asal: item,
-        id: item.id,
-        profil,
-        petugasId,
+        return {
+          asal: item,
+          id: item.id,
+          profil,
+          petugasId,
 
-        tarikhMasa: nilaiPertama(item, [
-          "tarikh_masa",
-          "masa_laporan",
-          "masa_hantar",
-          "timestamp",
-          "tarikh_laporan",
-          "tarikh"
-        ]),
+          tarikhMasa:
+            nilaiPertama(item, [
+              "tarikh_masa",
+              "masa_laporan",
+              "created_at",
+              "tarikh"
+            ]),
 
-        callSign: nilaiPertama(
-          item,
-          [
-            "call_sign",
-            "callsign"
-          ],
-          "-"
-        ),
+          callSign:
+            nilaiPertama(
+              item,
+              [
+                "call_sign",
+                "callsign"
+              ],
+              "-"
+            ),
 
-        jumlahPengunjung: nilaiPertama(
-          item,
-          [
-            "jumlah_pengunjung",
-            "pengunjung"
-          ],
-          0
-        ),
+          jumlahPengunjung:
+            nilaiPertama(
+              item,
+              [
+                "jumlah_pengunjung",
+                "pengunjung"
+              ],
+              0
+            ),
 
-        jumlahKenderaan: nilaiPertama(
-          item,
-          [
-            "jumlah_kenderaan",
-            "kenderaan"
-          ],
-          0
-        ),
+          jumlahKenderaan:
+            nilaiPertama(
+              item,
+              [
+                "jumlah_kenderaan",
+                "kenderaan"
+              ],
+              0
+            ),
 
-        vvipVip: nilaiPertama(
-          item,
-          [
-            "vvip_vip",
-            "vvip",
-            "vip"
-          ],
-          "-"
-        ),
+          vvipVip:
+            nilaiPertama(
+              item,
+              [
+                "vvip_vip",
+                "vvip",
+                "vip"
+              ],
+              "-"
+            ),
 
-        perkaraMenarik: nilaiPertama(
-          item,
-          [
-            "perkara_menarik",
-            "catatan",
-            "laporan",
-            "butiran"
-          ],
-          "-"
-        ),
+          perkaraMenarik:
+            nilaiPertama(
+              item,
+              [
+                "perkara_menarik",
+                "catatan",
+                "laporan",
+                "butiran"
+              ],
+              "-"
+            ),
 
-        telahDibaca,
+          telahDibaca,
 
-        dibacaOleh: nilaiPertama(
-          item,
-          [
-            "dibaca_oleh",
-            "disemak_oleh"
-          ],
-          ""
-        ),
+          dibacaOleh:
+            nilaiPertama(
+              item,
+              [
+                "dibaca_oleh",
+                "disemak_oleh"
+              ],
+              ""
+            ),
 
-        masaDibaca: nilaiPertama(
-          item,
-          [
-            "masa_dibaca",
-            "dibaca_pada",
-            "masa_semakan"
-          ],
-          ""
-        )
-      };
-    });
+          masaDibaca:
+            nilaiPertama(
+              item,
+              [
+                "masa_dibaca",
+                "dibaca_pada",
+                "updated_at"
+              ],
+              ""
+            )
+        };
+      });
 
     paparSenaraiLaporan();
 
@@ -1390,6 +1351,7 @@ function bukaBahagianLaporan() {
 
   paparSenaraiLaporan();
 }
+
 
 /* ================================================================
    TUKAR TAB KEHADIRAN / LAPORAN
