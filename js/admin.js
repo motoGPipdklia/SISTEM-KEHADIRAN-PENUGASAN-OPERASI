@@ -118,6 +118,102 @@ function pastikanSupabase() {
   }
 }
 
+async function panggilEdgeFunction(namaFungsi, body) {
+  pastikanSupabase();
+
+  const konfigurasi = window.SKPO_CONFIG || {};
+  const projectUrlInput = teks(konfigurasi.SUPABASE_URL);
+  const publishableKey = teks(
+    konfigurasi.SUPABASE_PUBLISHABLE_KEY ||
+    konfigurasi.SUPABASE_ANON_KEY
+  );
+
+  if (!projectUrlInput || !publishableKey) {
+    throw new Error(
+      "Project URL atau Publishable Key belum lengkap dalam js/api-config.js."
+    );
+  }
+
+  let projectUrl;
+
+  try {
+    const url = new URL(projectUrlInput);
+
+    if (
+      url.protocol !== "https:" ||
+      !url.hostname.endsWith(".supabase.co")
+    ) {
+      throw new Error("Domain Supabase tidak sah.");
+    }
+
+    projectUrl = url.origin;
+  } catch (_) {
+    throw new Error(
+      "SUPABASE_URL tidak sah. Gunakan URL seperti https://PROJECT-ID.supabase.co"
+    );
+  }
+
+  const { data: sesiData, error: sesiError } =
+    await denganHadMasa(db.auth.getSession());
+
+  if (sesiError) throw sesiError;
+
+  const accessToken = sesiData?.session?.access_token;
+
+  if (!accessToken) {
+    throw new Error(
+      "Sesi Pentadbir telah tamat. Sila log keluar dan login semula."
+    );
+  }
+
+  const endpoint =
+    `${projectUrl}/functions/v1/${encodeURIComponent(namaFungsi)}`;
+
+  let response;
+
+  try {
+    response = await denganHadMasa(
+      fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${accessToken}`,
+          "apikey": publishableKey,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(body || {})
+      }),
+      25000
+    );
+  } catch (error) {
+    throw new Error(
+      "Edge Function tidak dapat dihubungi. Pastikan fungsi " +
+      `\"${namaFungsi}\" telah dideploy dan kod CORS telah dimasukkan. ` +
+      `Butiran: ${error?.message || "Ralat rangkaian"}`
+    );
+  }
+
+  const responseText = await response.text();
+  let data = null;
+
+  if (responseText) {
+    try {
+      data = JSON.parse(responseText);
+    } catch (_) {
+      data = { message: responseText };
+    }
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      data?.message ||
+      data?.error ||
+      `Edge Function gagal dengan status HTTP ${response.status}.`
+    );
+  }
+
+  return data || {};
+}
+
 async function dapatkanProfil(userId) {
   let hasil = await denganHadMasa(
     db.from("profiles")
@@ -653,24 +749,21 @@ async function daftarPenggunaBaharu() {
   paparMesej("statusDaftarPengguna", "Sedang mencipta akaun...", "warning");
 
   try {
-    const { data, error } = await denganHadMasa(
-      db.functions.invoke("tambah-petugas", {
-        body: {
-          no_badan: noBadan,
-          noBadan,
-          pangkat,
-          nama,
-          peranan,
-          telefon,
-          bahagian,
-          daerah,
-          password
-        }
-      }),
-      25000
+    const data = await panggilEdgeFunction(
+      "tambah-petugas",
+      {
+        no_badan: noBadan,
+        noBadan,
+        pangkat,
+        nama,
+        peranan,
+        telefon,
+        bahagian,
+        daerah,
+        password
+      }
     );
 
-    if (error) throw error;
     if (data?.status === false || data?.success === false) {
       throw new Error(data.mesej || data.message || "Pendaftaran pengguna gagal.");
     }
