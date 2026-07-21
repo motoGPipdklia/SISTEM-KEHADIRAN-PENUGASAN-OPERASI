@@ -6,8 +6,8 @@
   <meta name="color-scheme" content="dark">
   <title>SKPO Pentadbir</title>
 
-  <link rel="stylesheet" href="css/style.css?v=20260721-1800">
-  <link rel="stylesheet" href="css/admin.css?v=20260721-1800">
+  <link rel="stylesheet" href="css/style.css?v=20260721-1815">
+  <link rel="stylesheet" href="css/admin.css?v=20260721-1815">
 </head>
 
 <body>
@@ -212,14 +212,29 @@
             </p>
           </div>
 
-          <button
-            class="gold compact-button"
-            type="button"
-            onclick="muatTurunTemplatPengguna()"
-          >
-            MUAT TURUN TEMPLAT PENGGUNA
-          </button>
+          <div class="section-heading-actions">
+            <button
+              class="gold compact-button"
+              type="button"
+              onclick="muatTurunTemplatPengguna()"
+            >
+              MUAT TURUN TEMPLAT PENGGUNA
+            </button>
+
+            <button
+              class="gray compact-button"
+              id="btnToggleImportPengguna"
+              type="button"
+              onclick="toggleImportPengguna()"
+              aria-expanded="true"
+              aria-controls="kandunganImportPengguna"
+            >
+              SEMBUNYIKAN IMPORT
+            </button>
+          </div>
         </div>
+
+        <div id="kandunganImportPengguna">
 
         <div class="import-guide">
           <span><strong>1.</strong> Isi maklumat dan kata laluan</span>
@@ -305,6 +320,7 @@
         >
           IMPORT PENGGUNA KE SUPABASE
         </button>
+        </div>
       </section>
 
       <!-- ===============================================
@@ -458,14 +474,29 @@
             </p>
           </div>
 
-          <button
-            class="gold compact-button"
-            type="button"
-            onclick="muatTurunTemplatPenugasan()"
-          >
-            MUAT TURUN TEMPLAT CSV
-          </button>
+          <div class="section-heading-actions">
+            <button
+              class="gold compact-button"
+              type="button"
+              onclick="muatTurunTemplatPenugasan()"
+            >
+              MUAT TURUN TEMPLAT CSV
+            </button>
+
+            <button
+              class="gray compact-button"
+              id="btnToggleImportPenugasan"
+              type="button"
+              onclick="toggleImportPenugasan()"
+              aria-expanded="true"
+              aria-controls="kandunganImportPenugasan"
+            >
+              SEMBUNYIKAN IMPORT
+            </button>
+          </div>
         </div>
+
+        <div id="kandunganImportPenugasan">
 
         <div class="import-guide">
           <span><strong>1.</strong> Muat turun dan isi templat</span>
@@ -546,6 +577,7 @@
         >
           IMPORT PENUGASAN KE SUPABASE
         </button>
+        </div>
       </section>
 
       <!-- ===============================================
@@ -635,9 +667,9 @@
        SUPABASE DAN JAVASCRIPT
   ====================================================== -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/api-config.js?v=20260721-1800"></script>
-<script src="js/supabase-client.js?v=20260721-1800"></script>
-<script src="js/admin.js?v=20260721-1800"></script>
+<script src="js/api-config.js?v=20260721-1815"></script>
+<script src="js/supabase-client.js?v=20260721-1815"></script>
+<script src="js/admin.js?v=20260721-1815"></script>
 
   <script>
     function toggleDaftarPengguna() {
@@ -650,6 +682,32 @@
       butang.textContent = sedangTersembunyi
         ? "SEMBUNYIKAN BORANG"
         : "PAPARKAN BORANG";
+    }
+
+    function toggleBahagianImport(idKandungan, idButang) {
+      const kandungan = document.getElementById(idKandungan);
+      const butang = document.getElementById(idButang);
+      const sedangTersembunyi = kandungan.hidden;
+
+      kandungan.hidden = !sedangTersembunyi;
+      butang.setAttribute("aria-expanded", String(sedangTersembunyi));
+      butang.textContent = sedangTersembunyi
+        ? "SEMBUNYIKAN IMPORT"
+        : "PAPARKAN IMPORT";
+    }
+
+    function toggleImportPengguna() {
+      toggleBahagianImport(
+        "kandunganImportPengguna",
+        "btnToggleImportPengguna"
+      );
+    }
+
+    function toggleImportPenugasan() {
+      toggleBahagianImport(
+        "kandunganImportPenugasan",
+        "btnToggleImportPenugasan"
+      );
     }
 
     function bukaModulTSM() {
