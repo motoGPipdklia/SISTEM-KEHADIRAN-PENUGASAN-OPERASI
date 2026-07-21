@@ -2221,11 +2221,114 @@ function tutupModalPengganti(){
 
 }
 
-function semakPetugasPengganti(){
+async function semakPetugasPengganti() {
 
-  alert(
-    "PATCH 2 akan menghubungkan carian ke Supabase."
+  const noBadan = teksPenyelia(
+    elemenPenyelia("noBadanPengganti").value
   );
+
+  if (!noBadan) {
+    alert("Masukkan No Badan pengganti.");
+    return;
+  }
+
+  statusPenyelia(
+    "statusPertukaran",
+    "Sedang menyemak petugas...",
+    "warning"
+  );
+
+  try {
+
+    const { data, error } =
+      await dbPenyelia
+        .from("profiles")
+        .select("*")
+        .eq("no_badan", noBadan)
+        .maybeSingle();
+
+    if (error) throw error;
+
+    if (!data) {
+
+      statusPenyelia(
+        "statusPertukaran",
+        "Petugas tidak ditemui.",
+        "error"
+      );
+
+      elemenPenyelia("previewPengganti").classList.add("hidden");
+      elemenPenyelia("borangPengganti").classList.add("hidden");
+
+      return;
+    }
+
+    if (data.aktif === false) {
+
+      statusPenyelia(
+        "statusPertukaran",
+        "Petugas tidak aktif.",
+        "error"
+      );
+
+      return;
+    }
+
+    if (
+      String(data.id) ===
+      String(penugasanDipilih.profil.id)
+    ) {
+
+      statusPenyelia(
+        "statusPertukaran",
+        "Petugas yang sama tidak boleh dipilih.",
+        "error"
+      );
+
+      return;
+    }
+
+    elemenPenyelia("previewPengganti").innerHTML = `
+      <strong>Petugas Pengganti</strong><br><br>
+
+      ${htmlPenyelia(data.pangkat)}
+
+      ${htmlPenyelia(data.nama)}
+
+      <br>
+
+      ${htmlPenyelia(data.no_badan)}
+
+      <br>
+
+      ${htmlPenyelia(data.peranan)}
+    `;
+
+    elemenPenyelia("previewPengganti")
+      .classList.remove("hidden");
+
+    elemenPenyelia("borangPengganti")
+      .classList.remove("hidden");
+
+    penugasanDipilih.petugasBaru = data;
+
+    statusPenyelia(
+      "statusPertukaran",
+      "Petugas pengganti dijumpai.",
+      "success"
+    );
+
+  } catch (err) {
+
+    console.error(err);
+
+    statusPenyelia(
+      "statusPertukaran",
+      err.message,
+      "error"
+    );
+
+  }
 
 }
 
