@@ -787,6 +787,9 @@ function paparSenarai() {
         Boolean(item.checkin) &&
         item.status ===
           "MENUNGGU";
+       
+       const bolehGanti =
+     item.status === "BELUM HADIR";
 
       const statusPaparan =
         item.status === "MENUNGGU"
@@ -905,27 +908,40 @@ function paparSenarai() {
               ? `
                 <div class="actions">
 
-                  <button
-                    class="btn-ok"
-                    type="button"
-                    onclick="sahkanKehadiran('${htmlPenyelia(
-                      item.checkin.id
-                    )}')"
-                  >
-                    SAHKAN HADIR
-                  </button>
+  ${
+    bolehTindak
+      ? `
+      <button
+        class="btn-ok"
+        type="button"
+        onclick="sahkanKehadiran('${htmlPenyelia(item.checkin.id)}')">
+        SAHKAN HADIR
+      </button>
 
-                  <button
-                    class="btn-no"
-                    type="button"
-                    onclick="tolakKehadiran('${htmlPenyelia(
-                      item.checkin.id
-                    )}')"
-                  >
-                    TOLAK
-                  </button>
+      <button
+        class="btn-no"
+        type="button"
+        onclick="tolakKehadiran('${htmlPenyelia(item.checkin.id)}')">
+        TOLAK
+      </button>
+      `
+      : ""
+  }
 
-                </div>
+  ${
+    bolehGanti
+      ? `
+      <button
+        class="btn-change"
+        type="button"
+        onclick="bukaModalPengganti('${htmlPenyelia(item.idPenugasan)}')">
+        GANTI PETUGAS
+      </button>
+      `
+      : ""
+  }
+
+</div>
               `
               : ""
           }
