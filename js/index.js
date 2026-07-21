@@ -1,3101 +1,439 @@
-// ===============================
-// DEVICE ID PELAYAR
-// ===============================
+"use strict";
 
-function dapatkanDeviceId(){
+/* SKPO V2 - Petugas (GitHub Pages + Supabase) */
 
-  const kunci =
-    "skpoDeviceId";
-
-  let deviceId =
-    localStorage.getItem(
-      kunci
-    );
-
-  if(!deviceId){
-
-    let rawak = "";
-
-    if(
-      window.crypto &&
-      typeof window.crypto.randomUUID ===
-      "function"
-    ){
-
-      rawak =
-        window.crypto.randomUUID();
-
-    }else{
-
-      rawak =
-        "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"
-          .replace(
-            /[xy]/g,
-            function(aksara){
-
-              const nombor =
-                Math.random() * 16 | 0;
-
-              const nilai =
-                aksara === "x"
-                  ? nombor
-                  : (
-                      nombor & 0x3 |
-                      0x8
-                    );
-
-              return nilai.toString(16);
-
-            }
-          );
-
-    }
-
-    deviceId =
-      "DEV-" +
-      rawak.toUpperCase();
-
-    localStorage.setItem(
-      kunci,
-      deviceId
-    );
-
-  }
-
-  return deviceId;
-
-}
-
-
-
-let userLogin = null;
-let lokasiGPS = null;
-let tugas = null;
-let jarakSemasa = null;
-let lokasiDibenarkan = false;
-let sedangMenghantar = false;
-
-let lokasiGPSCheckout = null;
-let jarakCheckout = null;
-let lokasiCheckoutDibenarkan = false;
-let sedangMenghantarCheckout = false;
-let timerSemakStatus = null;
-
-let statusKehadiranSemasa = "";
-let sudahCheckOutSemasa = false;
-
-const RADIUS_SUBTEK = 30;
+const db = window.supabaseClient;
+const ZON_MASA = "Asia/Kuala_Lumpur";
 const SELANG_SEMAKAN_STATUS = 15000;
 
+let userLogin = null;
+let tugas = null;
+let lokasiGPS = null;
+let lokasiGPSCheckout = null;
+let jarakSemasa = null;
+let jarakCheckout = null;
+let lokasiDibenarkan = false;
+let lokasiCheckoutDibenarkan = false;
+let sedangMenghantar = false;
+let sedangMenghantarCheckout = false;
+let timerSemakStatus = null;
+let statusKehadiranSemasa = "";
+let sudahCheckOutSemasa = false;
+let rekodCheckinSemasa = null;
 
-// ===============================
-// LOGIN
-// ===============================
-
-function login(){
-
-  const noBadan =
-    document.getElementById("noBadan")
-      .value
-      .trim();
-
-  const password =
-    document.getElementById("password")
-      .value
-      .trim();
-
-  const status =
-    document.getElementById("status");
-
-  const btnLogin =
-    document.getElementById("btnLogin");
-
-
-  if(!noBadan || !password){
-
-    status.innerHTML =
-      '<span class="status-error">' +
-      'Sila masukkan No Badan dan kata laluan.' +
-      '</span>';
-
-    return;
-
+function el(id) { return document.getElementById(id); }
+function teks(v) { return String(v ?? "").trim(); }
+function atas(v) { return teks(v).toUpperCase(); }
+function escapeHtml(value) {
+  return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#039;");
+}
+function hariIniMalaysia() {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: ZON_MASA, year: "numeric", month: "2-digit", day: "2-digit"
+  }).format(new Date());
+}
+function formatTarikhMasa(v) {
+  if (!v) return "-";
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return teks(v) || "-";
+  return new Intl.DateTimeFormat("ms-MY", {
+    timeZone: ZON_MASA, day: "2-digit", month: "2-digit", year: "numeric",
+    hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false
+  }).format(d);
+}
+function nilaiBoolean(v) {
+  return v === true || ["YA", "YES", "Y", "1", "BENAR", "TRUE"].includes(atas(v));
+}
+function paparStatus(id, mesej, jenis = "warning") {
+  const e = el(id); if (!e) return;
+  e.className = `status-box ${jenis}`; e.style.display = "block"; e.innerHTML = mesej;
+}
+function emailDalaman(noBadan) {
+  const n = teks(noBadan).toLowerCase().replace(/[^a-z0-9_-]/g, "");
+  return `${n}@skpo.local`;
+}
+function dapatkanDeviceId() {
+  const kunci = "skpoDeviceId";
+  let id = localStorage.getItem(kunci);
+  if (!id) {
+    const rawak = window.crypto?.randomUUID?.() ||
+      "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c => {
+        const r = Math.random() * 16 | 0; return (c === "x" ? r : (r & 3 | 8)).toString(16);
+      });
+    id = `DEV-${rawak.toUpperCase()}`; localStorage.setItem(kunci, id);
   }
-
-
-  status.innerHTML =
-    '<span class="status-warning">' +
-    'Sedang menyemak...' +
-    '</span>';
-
-  btnLogin.disabled = true;
-
-
-  google.script.run
-
-    .withSuccessHandler(function(res){
-
-      btnLogin.disabled = false;
-
-
-      if(res && res.status === true){
-
-        userLogin = res;
-
-        localStorage.setItem(
-          "user",
-          JSON.stringify(res)
-        );
-
-
-        document.getElementById(
-          "loginBox"
-        ).style.display = "none";
-
-
-        document.getElementById(
-          "dashboard"
-        ).style.display = "block";
-
-
-        document.getElementById(
-          "pangkatPetugas"
-        ).textContent =
-          res.pangkat || "PANGKAT TIDAK DINYATAKAN";
-
-
-        document.getElementById(
-          "namaPetugas"
-        ).textContent =
-          res.nama || "-";
-
-
-        document.getElementById(
-          "noBadanPetugas"
-        ).textContent =
-          "No Badan: " +
-          (res.noBadan || "-");
-
-
-        status.innerHTML = "";
-
-
-        dapatkanTugasHariIni(
-          res.noBadan
-        );
-
-        mulaSemakanStatusAutomatik();
-
-      }else{
-
-        status.innerHTML =
-          '<span class="status-error">' +
-
-          escapeHtml(
-            res && res.mesej
-              ? res.mesej
-              : "Login gagal."
-          ) +
-
-          '</span>';
-
-      }
-
-    })
-
-    .withFailureHandler(function(error){
-
-      btnLogin.disabled = false;
-
-      status.innerHTML =
-        '<span class="status-error">' +
-        "Ralat sistem: " +
-        escapeHtml(error.message) +
-        '</span>';
-
-    })
-
-    .loginPetugas(
-      noBadan,
-      password
-    );
-
+  return id;
 }
 
-
-
-// ===============================
-// KELAYAKAN PELAPORAN
-// ===============================
-
-function nilaiYaPelaporan(nilai){
-
-  return [
-    "YA",
-    "YES",
-    "Y",
-    "1",
-    "BENAR",
-    "TRUE"
-  ].includes(
-    String(nilai || "")
-      .trim()
-      .toUpperCase()
-  );
-
-}
-
-
-function petugasLayakHantarLaporan(dataTugas){
-
-  if(
-    !dataTugas ||
-    dataTugas.status !== true
-  ){
-    return false;
+async function ambilProfil(userId) {
+  let hasil = await db.from("profiles").select("*").eq("id", userId).maybeSingle();
+  if (hasil.error && /auth_user_id/i.test(hasil.error.message || "")) {
+    hasil = await db.from("profiles").select("*").eq("auth_user_id", userId).maybeSingle();
   }
-
-  return (
-    nilaiYaPelaporan(
-      dataTugas.penyelia
-    ) ||
-    nilaiYaPelaporan(
-      dataTugas.pemegangSet
-    )
-  );
-
+  if (hasil.error) throw hasil.error;
+  return hasil.data;
 }
 
-
-function kemasKiniButangPelaporan(dataTugas){
-
-  const btnLaporan =
-    document.getElementById(
-      "btnLaporan"
-    );
-
-  const layakJawatan =
-    petugasLayakHantarLaporan(
-      dataTugas
-    );
-
-  const kehadiranDisahkan =
-    String(
-      statusKehadiranSemasa || ""
-    ).trim().toUpperCase() === "HADIR";
-
-  const bolehHantar =
-    layakJawatan &&
-    kehadiranDisahkan &&
-    sudahCheckOutSemasa !== true;
-
-  /*
-    Petugas yang bukan Penyelia atau
-    Pemegang Set tidak melihat butang.
-  */
-  btnLaporan.style.display =
-    layakJawatan
-      ? "block"
-      : "none";
-
-  btnLaporan.disabled =
-    !bolehHantar;
-
-  if(!layakJawatan){
-
-    btnLaporan.textContent =
-      "HANTAR PELAPORAN";
-
-  }else if(sudahCheckOutSemasa === true){
-
-    btnLaporan.textContent =
-      "PELAPORAN DITUTUP SELEPAS CHECK-OUT";
-
-  }else if(!kehadiranDisahkan){
-
-    btnLaporan.textContent =
-      "PELAPORAN MENUNGGU PENGESAHAN URUSETIA";
-
-  }else{
-
-    btnLaporan.textContent =
-      "HANTAR PELAPORAN";
-
-  }
-
-}
-
-
-// ===============================
-// DAPATKAN TUGAS
-// ===============================
-
-function dapatkanTugasHariIni(noBadan){
-
-  const statusTugas =
-    document.getElementById(
-      "statusTugas"
-    );
-
-  const btnCheckin =
-    document.getElementById(
-      "btnCheckin"
-    );
-
-
-  statusTugas.innerHTML =
-    '<span class="status-warning">' +
-    'Sedang mendapatkan tugasan...' +
-    '</span>';
-
-  btnCheckin.disabled = true;
-
-
-  document.getElementById(
-    "callSignTugas"
-  ).textContent = "Memuatkan...";
-
-  document.getElementById(
-    "jenisTugas"
-  ).textContent = "Memuatkan...";
-
-  document.getElementById(
-    "lokasiTugas"
-  ).textContent = "Memuatkan...";
-
-  document.getElementById(
-    "penyeliaTugas"
-  ).textContent = "Memuatkan...";
-
-  document.getElementById(
-    "pemegangSetTugas"
-  ).textContent = "Memuatkan...";
-
-
-  google.script.run
-
-    .withSuccessHandler(function(data){
-
-      if(data && data.status === true){
-
-        tugas = data;
-
-
-        document.getElementById(
-          "callSignTugas"
-        ).textContent =
-          data.callSign || "-";
-
-
-        document.getElementById(
-          "jenisTugas"
-        ).textContent =
-          data.jenisTugas || "-";
-
-
-        document.getElementById(
-          "lokasiTugas"
-        ).textContent =
-          data.lokasi || "-";
-
-
-        document.getElementById(
-          "penyeliaTugas"
-        ).textContent =
-          data.penyelia || "-";
-
-
-        document.getElementById(
-          "pemegangSetTugas"
-        ).textContent =
-          data.pemegangSet || "-";
-
-
-        statusTugas.innerHTML =
-          '<span class="status-success">' +
-          'Tugasan hari ini dijumpai.' +
-          '</span>';
-
-
-        kemasKiniButangPelaporan(
-          data
-        );
-
-        semakStatusSetWalkieTalkie();
-        semakStatusCheckInPetugas();
-
-      }else{
-
-        tugas = null;
-
-        kemasKiniButangPelaporan(
-          null
-        );
-        resetPaparanSetWalkieTalkie();
-
-        kosongkanMaklumatTugas();
-
-        const statusDiganti =
-          adakahStatusDiganti(data);
-
-        if(statusDiganti){
-
-          statusTugas.innerHTML =
-            '<span class="status-error">' +
-            '<strong>STATUS PETUGAS: DIGANTI</strong><br>' +
-            'Anda telah digantikan dengan petugas lain bagi penugasan hari ini.' +
-            '</span>';
-
-          btnCheckin.disabled = true;
-          btnCheckin.textContent =
-            "CHECK-IN TIDAK DIBENARKAN";
-
-          const btnCheckout =
-            document.getElementById(
-              "btnCheckout"
-            );
-
-          btnCheckout.disabled = true;
-          btnCheckout.textContent =
-            "CHECK-OUT TIDAK DIBENARKAN";
-
-          const statusKehadiran =
-            document.getElementById(
-              "statusKehadiran"
-            );
-
-          statusKehadiran.className =
-            "status-box error";
-
-          statusKehadiran.innerHTML =
-            "<strong>Anda tidak lagi berada dalam senarai petugas aktif.</strong><br>" +
-            "Status penugasan anda ialah DIGANTI.";
-
-          const statusCheckout =
-            document.getElementById(
-              "statusCheckout"
-            );
-
-          statusCheckout.className =
-            "status-box error";
-
-          statusCheckout.innerHTML =
-            "Check-Out tidak dibenarkan untuk petugas berstatus DIGANTI.";
-
-        }else{
-
-          statusTugas.innerHTML =
-            '<span class="status-error">' +
-
-            escapeHtml(
-              data && data.mesej
-                ? data.mesej
-                : "Tiada tugasan hari ini."
-            ) +
-
-            '</span>';
-
-          btnCheckin.disabled = true;
-
-        }
-
-      }
-
-    })
-
-    .withFailureHandler(function(error){
-
-      tugas = null;
-
-      kosongkanMaklumatTugas();
-
-      statusTugas.innerHTML =
-        '<span class="status-error">' +
-        "Ralat mendapatkan tugasan: " +
-        escapeHtml(error.message) +
-        '</span>';
-
-      btnCheckin.disabled = true;
-
-    })
-
-    .dapatkanTugas(noBadan);
-
-}
-
-
-// ===============================
-// SEMAK STATUS CHECK-IN
-// ===============================
-
-function semakStatusCheckInPetugas(){
-
-  if(!userLogin){
+async function login() {
+  const noBadan = atas(el("noBadan")?.value);
+  const password = teks(el("password")?.value);
+  const btn = el("btnLogin");
+  if (!noBadan || !password) {
+    el("status").innerHTML = '<span class="status-error">Sila masukkan No Badan dan kata laluan.</span>';
     return;
   }
-
-
-  const btnCheckin =
-    document.getElementById(
-      "btnCheckin"
-    );
-
-  const statusKehadiran =
-    document.getElementById(
-      "statusKehadiran"
-    );
-
-
-  btnCheckin.disabled = true;
-
-  statusKehadiran.className =
-    "status-box warning";
-
-  statusKehadiran.innerHTML =
-    "Sedang menyemak status kehadiran...";
-
-
-  google.script.run
-
-    .withSuccessHandler(function(res){
-
-      if(
-        res &&
-        res.status === true &&
-        res.sudahCheckIn === true
-      ){
-
-        btnCheckin.disabled = true;
-
-        btnCheckin.textContent =
-          "CHECK-IN TELAH DIREKODKAN";
-
-        const statusSemasa =
-          String(
-            res.statusKehadiran || ""
-          ).toUpperCase();
-
-        statusKehadiranSemasa =
-          statusSemasa;
-
-        kemasKiniButangPelaporan(
-          tugas
-        );
-
-
-        if(statusSemasa === "DITOLAK"){
-
-          statusKehadiran.className =
-            "status-box error";
-
-        }else if(
-          statusSemasa ===
-          "MENUNGGU PENGESAHAN URUSETIA"
-        ){
-
-          statusKehadiran.className =
-            "status-box warning";
-
-        }else{
-
-          statusKehadiran.className =
-            "status-box success";
-
-        }
-
-
-        statusKehadiran.innerHTML =
-
-          "<strong>Check-In telah direkodkan.</strong><br>" +
-
-          "Masa: " +
-          escapeHtml(res.masa || "-") +
-
-          "<br>Status: " +
-          escapeHtml(
-            res.statusKehadiran || "-"
-          );
-
-        semakStatusCheckOutPetugas();
-
-      }else{
-
-        /*
-          Jika Pentadbir telah membuat RESET DEVICE,
-          rekod Check-In hari ini telah dipadamkan.
-          Dashboard petugas perlu kembali kepada
-          status BELUM HADIR dan membenarkan Check-In semula.
-        */
-
-        statusKehadiranSemasa = "";
-        sudahCheckOutSemasa = false;
-
-        kemasKiniButangPelaporan(
-          tugas
-        );
-
-        btnCheckin.disabled = false;
-
-        btnCheckin.textContent =
-          "CHECK-IN KEHADIRAN";
-
-        statusKehadiran.style.display =
-          "block";
-
-        statusKehadiran.className =
-          "status-box warning";
-
-        statusKehadiran.innerHTML =
-          "<strong>Status Kehadiran: BELUM HADIR</strong><br>" +
-          "Sila buat Check-In kehadiran menggunakan peranti yang dibenarkan.";
-
-        const btnCheckout =
-          document.getElementById(
-            "btnCheckout"
-          );
-
-        btnCheckout.disabled = true;
-
-        btnCheckout.textContent =
-          "CHECK-OUT TIDAK DIBENARKAN";
-
-        const statusCheckout =
-          document.getElementById(
-            "statusCheckout"
-          );
-
-        statusCheckout.style.display =
-          "block";
-
-        statusCheckout.className =
-          "status-box warning";
-
-        statusCheckout.innerHTML =
-          "Check-Out hanya dibenarkan selepas Check-In disahkan.";
-
-        /*
-          Kosongkan data GPS lama supaya rekod sebelumnya
-          tidak boleh dihantar semula secara tidak sengaja.
-        */
-        lokasiGPS = null;
-        jarakSemasa = null;
-        lokasiDibenarkan = false;
-        sedangMenghantar = false;
-
-        lokasiGPSCheckout = null;
-        jarakCheckout = null;
-        lokasiCheckoutDibenarkan = false;
-        sedangMenghantarCheckout = false;
-
-      }
-
-    })
-
-    .withFailureHandler(function(error){
-
-      btnCheckin.disabled = false;
-
-      statusKehadiran.className =
-        "status-box error";
-
-      statusKehadiran.innerHTML =
-        "Ralat menyemak status: " +
-        escapeHtml(error.message);
-
-    })
-
-    .semakStatusCheckIn(
-      userLogin.noBadan
-    );
-
+  btn.disabled = true; btn.textContent = "SEDANG LOGIN...";
+  el("status").innerHTML = '<span class="status-warning">Sedang menyemak...</span>';
+  try {
+    const { data, error } = await db.auth.signInWithPassword({ email: emailDalaman(noBadan), password });
+    if (error || !data.user) throw new Error("No Badan atau kata laluan tidak sah.");
+    const profil = await ambilProfil(data.user.id);
+    if (!profil) throw new Error("Profil petugas tidak dijumpai.");
+    if (profil.aktif === false) throw new Error("Akaun petugas tidak aktif.");
+    userLogin = {
+      id: profil.id, authUserId: data.user.id, noBadan: profil.no_badan,
+      pangkat: profil.pangkat || "", nama: profil.nama || "", peranan: profil.peranan || "PETUGAS"
+    };
+    localStorage.setItem("user", JSON.stringify(userLogin));
+    paparDashboardProfil();
+    await refreshDashboard();
+    mulaSemakanStatusAutomatik();
+  } catch (err) {
+    await db.auth.signOut().catch(() => {});
+    el("status").innerHTML = `<span class="status-error">${escapeHtml(err.message)}</span>`;
+  } finally {
+    btn.disabled = false; btn.textContent = "LOGIN";
+  }
 }
 
-
-// ===============================
-// BUKA CHECK-IN
-// ===============================
-
-function mulaCheckin(){
-
-  if(!tugas || tugas.status !== true){
-
-    alert(
-      "Tiada tugasan yang sah untuk hari ini."
-    );
-
-    return;
-
-  }
-
-
-  lokasiGPS = null;
-  jarakSemasa = null;
-  lokasiDibenarkan = false;
-  sedangMenghantar = false;
-
-
-  document.getElementById(
-    "dashboard"
-  ).style.display = "none";
-
-
-  document.getElementById(
-    "checkin"
-  ).style.display = "block";
-
-
-  document.getElementById(
-    "tugasCheckin"
-  ).innerHTML =
-
-    binaBarisMaklumat(
-      "Call Sign:",
-      tugas.callSign
-    ) +
-
-    binaBarisMaklumat(
-      "Jenis Tugas:",
-      tugas.jenisTugas
-    ) +
-
-    binaBarisMaklumat(
-      "Tempat Tugas:",
-      tugas.lokasi
-    ) +
-
-    binaBarisMaklumat(
-      "Penyelia:",
-      tugas.penyelia
-    ) +
-
-    binaBarisMaklumat(
-      "Pemegang Set:",
-      tugas.pemegangSet
-    );
-
-
-  document.getElementById(
-    "gpsStatus"
-  ).innerHTML =
-    "Sila dapatkan lokasi GPS semasa.";
-
-
-  document.getElementById(
-    "koordinat"
-  ).innerHTML = "";
-
-
-  document.getElementById(
-    "jarakStatus"
-  ).innerHTML = "";
-
-
-  const statusHantar =
-    document.getElementById(
-      "statusHantar"
-    );
-
-  statusHantar.style.display = "none";
-  statusHantar.innerHTML = "";
-
-
-  document.getElementById(
-    "btnDapatGPS"
-  ).disabled = false;
-
-
-  const btnHantar =
-    document.getElementById(
-      "btnHantar"
-    );
-
-  btnHantar.disabled = true;
-  btnHantar.textContent =
-    "HANTAR KEHADIRAN";
-
+function paparDashboardProfil() {
+  el("loginBox").style.display = "none"; el("dashboard").style.display = "block";
+  el("pangkatPetugas").textContent = userLogin.pangkat || "PANGKAT TIDAK DINYATAKAN";
+  el("namaPetugas").textContent = userLogin.nama || "-";
+  el("noBadanPetugas").textContent = `No Badan: ${userLogin.noBadan || "-"}`;
+  el("status").innerHTML = "";
 }
 
+async function pulihkanSesi() {
+  try {
+    const { data, error } = await db.auth.getSession();
+    if (error || !data.session?.user) return;
+    const profil = await ambilProfil(data.session.user.id);
+    if (!profil || profil.aktif === false) { await db.auth.signOut(); return; }
+    userLogin = {
+      id: profil.id, authUserId: data.session.user.id, noBadan: profil.no_badan,
+      pangkat: profil.pangkat || "", nama: profil.nama || "", peranan: profil.peranan || "PETUGAS"
+    };
+    localStorage.setItem("user", JSON.stringify(userLogin));
+    paparDashboardProfil(); await refreshDashboard(); mulaSemakanStatusAutomatik();
+  } catch (err) { console.error("Pemulihan sesi gagal:", err); }
+}
 
-// ===============================
-// DAPATKAN GPS
-// ===============================
-
-function dapatkanGPS(){
-
-  const gpsStatus =
-    document.getElementById(
-      "gpsStatus"
-    );
-
-  const koordinat =
-    document.getElementById(
-      "koordinat"
-    );
-
-  const jarakStatus =
-    document.getElementById(
-      "jarakStatus"
-    );
-
-  const btnGPS =
-    document.getElementById(
-      "btnDapatGPS"
-    );
-
-  const btnHantar =
-    document.getElementById(
-      "btnHantar"
-    );
-
-
-  lokasiGPS = null;
-  jarakSemasa = null;
-  lokasiDibenarkan = false;
-
-  btnHantar.disabled = true;
-
-
-  if(!navigator.geolocation){
-
-    gpsStatus.innerHTML =
-      '<span class="status-error">' +
-      'Peranti ini tidak menyokong GPS.' +
-      '</span>';
-
-    return;
-
-  }
-
-
-  gpsStatus.innerHTML =
-    '<span class="status-warning">' +
-    'Mendapatkan lokasi GPS...' +
-    '</span>';
-
-
-  koordinat.innerHTML = "";
-  jarakStatus.innerHTML = "";
-  btnGPS.disabled = true;
-
-
-  navigator.geolocation.getCurrentPosition(
-
-    function(position){
-
-      btnGPS.disabled = false;
-
-
-      lokasiGPS = {
-
-        lat:Number(
-          position.coords.latitude
-        ),
-
-        lng:Number(
-          position.coords.longitude
-        ),
-
-        accuracy:Number(
-          position.coords.accuracy
-        )
-
-      };
-
-
-      gpsStatus.innerHTML =
-        '<span class="status-success">' +
-        'GPS berjaya diperoleh.' +
-        '</span>';
-
-
-      koordinat.innerHTML =
-
-        "Latitude: " +
-        lokasiGPS.lat.toFixed(7) +
-
-        "<br>Longitude: " +
-        lokasiGPS.lng.toFixed(7) +
-
-        "<br>Ketepatan GPS: " +
-        lokasiGPS.accuracy.toFixed(1) +
-        " meter";
-
-
-      semakRadiusLokasi();
-
-    },
-
-    function(error){
-
-      btnGPS.disabled = false;
-
-
-      let mesej =
-        "Lokasi GPS tidak berjaya diperoleh.";
-
-
-      if(error.code === 1){
-
-        mesej =
-          "Kebenaran lokasi ditolak. " +
-          "Sila benarkan akses lokasi.";
-
-      }else if(error.code === 2){
-
-        mesej =
-          "Lokasi tidak dapat dikesan. " +
-          "Sila aktifkan GPS.";
-
-      }else if(error.code === 3){
-
-        mesej =
-          "Masa mendapatkan GPS tamat. " +
-          "Sila cuba semula.";
-
-      }
-
-
-      gpsStatus.innerHTML =
-        '<span class="status-error">' +
-        escapeHtml(mesej) +
-        '</span>';
-
-    },
-
-    {
-      enableHighAccuracy:true,
-      timeout:20000,
-      maximumAge:0
+async function dapatkanTugasHariIni() {
+  const status = el("statusTugas");
+  status.innerHTML = '<span class="status-warning">Sedang mendapatkan tugasan...</span>';
+  el("btnCheckin").disabled = true;
+  ["callSignTugas", "jenisTugas", "lokasiTugas", "penyeliaTugas", "pemegangSetTugas"]
+    .forEach(id => el(id).textContent = "Memuatkan...");
+  try {
+    const tarikh = hariIniMalaysia();
+    let q = await db.from("penugasan").select("*").eq("petugas_id", userLogin.id).eq("tarikh", tarikh)
+      .order("created_at", { ascending: false }).limit(1).maybeSingle();
+    if (q.error && /petugas_id|tarikh/i.test(q.error.message || "")) {
+      q = await db.from("penugasan").select("*").eq("profile_id", userLogin.id).eq("tarikh_tugas", tarikh)
+        .order("created_at", { ascending: false }).limit(1).maybeSingle();
     }
-
-  );
-
+    if (q.error) throw q.error;
+    const p = q.data;
+    if (!p) {
+      tugas = null; kosongkanMaklumatTugas();
+      status.innerHTML = '<span class="status-error">Tiada tugasan hari ini.</span>';
+      kemasKiniButangPelaporan(null); return null;
+    }
+    if (atas(p.status) === "DIGANTI") {
+      tugas = null; kosongkanMaklumatTugas();
+      status.innerHTML = '<span class="status-error"><strong>STATUS PETUGAS: DIGANTI</strong><br>Anda telah digantikan dengan petugas lain.</span>';
+      el("btnCheckin").disabled = true; el("btnCheckout").disabled = true;
+      el("btnCheckin").textContent = "CHECK-IN TIDAK DIBENARKAN";
+      el("btnCheckout").textContent = "CHECK-OUT TIDAK DIBENARKAN";
+      return null;
+    }
+    tugas = {
+      status: true, id: p.id, callSign: p.call_sign || "-",
+      jenisTugas: p.jenis_tugas || "-", lokasi: p.tempat_tugas || p.lokasi || "-",
+      penyelia: nilaiBoolean(p.penyelia) ? "YA" : "TIDAK",
+      pemegangSet: nilaiBoolean(p.pemegang_set) ? "YA" : "TIDAK",
+      lat: Number(p.latitude ?? p.lat), lng: Number(p.longitude ?? p.lng),
+      radius: Number(p.radius_meter ?? p.radius ?? 30), raw: p
+    };
+    el("callSignTugas").textContent = tugas.callSign;
+    el("jenisTugas").textContent = tugas.jenisTugas;
+    el("lokasiTugas").textContent = tugas.lokasi;
+    el("penyeliaTugas").textContent = tugas.penyelia;
+    el("pemegangSetTugas").textContent = tugas.pemegangSet;
+    status.innerHTML = '<span class="status-success">Tugasan hari ini dijumpai.</span>';
+    return tugas;
+  } catch (err) {
+    tugas = null; kosongkanMaklumatTugas();
+    status.innerHTML = `<span class="status-error">Ralat mendapatkan tugasan: ${escapeHtml(err.message)}</span>`;
+    return null;
+  }
 }
 
-
-// ===============================
-// SEMAK RADIUS SUBTEK
-// ===============================
-
-function semakRadiusLokasi(){
-
-  if(!lokasiGPS || !tugas){
-    return;
+async function semakStatusCheckInPetugas() {
+  if (!userLogin || !tugas) return;
+  paparStatus("statusKehadiran", "Sedang menyemak status kehadiran...", "warning");
+  try {
+    const { data, error } = await db.from("checkin").select("*").eq("petugas_id", userLogin.id)
+      .eq("tarikh", hariIniMalaysia()).order("masa_checkin", { ascending: false }).limit(1).maybeSingle();
+    if (error) throw error;
+    rekodCheckinSemasa = data || null;
+    if (!data) {
+      statusKehadiranSemasa = ""; sudahCheckOutSemasa = false;
+      el("btnCheckin").disabled = false; el("btnCheckin").textContent = "CHECK-IN KEHADIRAN";
+      paparStatus("statusKehadiran", "<strong>Status Kehadiran: BELUM HADIR</strong><br>Sila buat Check-In kehadiran.", "warning");
+      el("btnCheckout").disabled = true; el("btnCheckout").textContent = "CHECK-OUT TIDAK DIBENARKAN";
+      paparStatus("statusCheckout", "Check-Out hanya dibenarkan selepas Check-In disahkan.", "warning");
+      kemasKiniButangPelaporan(tugas); return;
+    }
+    statusKehadiranSemasa = atas(data.status);
+    const paparan = statusKehadiranSemasa === "MENUNGGU" ? "MENUNGGU PENGESAHAN URUSETIA" : statusKehadiranSemasa;
+    el("btnCheckin").disabled = true; el("btnCheckin").textContent = "CHECK-IN TELAH DIREKODKAN";
+    const jenis = statusKehadiranSemasa === "DITOLAK" ? "error" : statusKehadiranSemasa === "HADIR" ? "success" : "warning";
+    paparStatus("statusKehadiran", `<strong>Check-In telah direkodkan.</strong><br>Masa: ${escapeHtml(formatTarikhMasa(data.masa_checkin))}<br>Status: ${escapeHtml(paparan)}`, jenis);
+    await semakStatusCheckOutPetugas(); kemasKiniButangPelaporan(tugas);
+  } catch (err) {
+    paparStatus("statusKehadiran", `Ralat menyemak status: ${escapeHtml(err.message)}`, "error");
   }
-
-
-  const latSubtek =
-    Number(tugas.lat);
-
-  const lngSubtek =
-    Number(tugas.lng);
-
-
-  if(
-    !Number.isFinite(latSubtek) ||
-    !Number.isFinite(lngSubtek) ||
-    latSubtek === 0 ||
-    lngSubtek === 0
-  ){
-
-    lokasiDibenarkan = false;
-
-    document.getElementById(
-      "jarakStatus"
-    ).innerHTML =
-
-      '<span class="status-error">' +
-      'Koordinat lokasi SUBTEK tidak sah.' +
-      '</span>';
-
-    document.getElementById(
-      "btnHantar"
-    ).disabled = true;
-
-    return;
-
-  }
-
-
-  jarakSemasa = kiraJarakMeter(
-
-    lokasiGPS.lat,
-    lokasiGPS.lng,
-
-    latSubtek,
-    lngSubtek
-
-  );
-
-
-  let html = "";
-
-
-  if(lokasiGPS.accuracy > 50){
-
-    lokasiDibenarkan = false;
-
-    html =
-
-      "<span class='status-error'>" +
-
-      "Ketepatan GPS terlalu lemah.<br>" +
-
-      "Sila bergerak ke kawasan terbuka " +
-      "dan dapatkan lokasi GPS sekali lagi." +
-
-      "</span>";
-
-  }
-
-  else if(jarakSemasa <= RADIUS_SUBTEK){
-
-    lokasiDibenarkan = true;
-
-    html =
-
-      "<span class='status-success'>" +
-
-      "Lokasi SUBTEK berjaya disahkan.<br>" +
-
-      "Pengesahan kehadiran sedia untuk dihantar." +
-
-      "</span>";
-
-  }
-
-  else{
-
-    lokasiDibenarkan = false;
-
-    html =
-
-      "<span class='status-error'>" +
-
-      "Anda berada di luar kawasan SUBTEK.<br>" +
-
-      "Pengesahan kehadiran hanya dibenarkan " +
-      "dalam lingkungan 30 meter dari SUBTEK." +
-
-      "</span>";
-
-  }
-
-
-  document.getElementById(
-    "jarakStatus"
-  ).innerHTML = html;
-
-
-  document.getElementById(
-    "btnHantar"
-  ).disabled =
-    !lokasiDibenarkan;
-
 }
 
+async function semakStatusCheckOutPetugas() {
+  if (!userLogin || !tugas) return;
+  try {
+    const { data, error } = await db.from("checkout").select("*").eq("petugas_id", userLogin.id)
+      .eq("tarikh", hariIniMalaysia()).order("masa_checkout", { ascending: false }).limit(1).maybeSingle();
+    if (error) throw error;
+    if (data) {
+      sudahCheckOutSemasa = true; el("btnCheckout").disabled = true;
+      el("btnCheckout").textContent = "CHECK-OUT TELAH DIREKODKAN";
+      paparStatus("statusCheckout", `<strong>Check-Out telah direkodkan.</strong><br>Masa: ${escapeHtml(formatTarikhMasa(data.masa_checkout))}<br>Tempoh Bertugas: ${escapeHtml(formatTempoh(data.tempoh_minit))}<br>Status: <strong>SELESAI TUGAS</strong>`, "success");
+    } else if (statusKehadiranSemasa === "HADIR") {
+      sudahCheckOutSemasa = false; el("btnCheckout").disabled = false;
+      el("btnCheckout").textContent = "CHECK-OUT KEHADIRAN";
+      paparStatus("statusCheckout", "Check-Out boleh dibuat selepas selesai tugas.", "warning");
+    } else {
+      sudahCheckOutSemasa = false; el("btnCheckout").disabled = true;
+      el("btnCheckout").textContent = "CHECK-OUT TIDAK DIBENARKAN";
+      paparStatus("statusCheckout", "Check-Out hanya dibenarkan selepas Check-In disahkan.", "warning");
+    }
+    kemasKiniButangPelaporan(tugas);
+  } catch (err) { paparStatus("statusCheckout", `Ralat menyemak Check-Out: ${escapeHtml(err.message)}`, "error"); }
+}
 
-// ===============================
-// HANTAR KEHADIRAN
-// ===============================
+function formatTempoh(minit) {
+  if (!Number.isFinite(Number(minit))) return "-";
+  const m = Math.max(0, Number(minit)); return `${Math.floor(m / 60)} jam ${Math.round(m % 60)} minit`;
+}
+function petugasLayakHantarLaporan(t) { return !!t && (nilaiBoolean(t.penyelia) || nilaiBoolean(t.pemegangSet)); }
+function kemasKiniButangPelaporan(t) {
+  const b = el("btnLaporan"); if (!b) return;
+  const layak = petugasLayakHantarLaporan(t);
+  b.style.display = layak ? "block" : "none";
+  b.disabled = !(layak && statusKehadiranSemasa === "HADIR" && !sudahCheckOutSemasa);
+  b.textContent = !layak ? "HANTAR PELAPORAN" : sudahCheckOutSemasa
+    ? "PELAPORAN DITUTUP SELEPAS CHECK-OUT"
+    : statusKehadiranSemasa !== "HADIR" ? "PELAPORAN MENUNGGU PENGESAHAN URUSETIA" : "HANTAR PELAPORAN";
+}
 
-function hantarKehadiran(){
+function mulaCheckin() { bukaSkrinGps("checkin"); }
+function mulaCheckout() {
+  if (statusKehadiranSemasa !== "HADIR" || sudahCheckOutSemasa) return alert("Check-Out tidak dibenarkan.");
+  bukaSkrinGps("checkout");
+}
+function bukaSkrinGps(mod) {
+  if (!tugas) return alert("Tiada tugasan yang sah untuk hari ini.");
+  const keluar = mod === "checkout";
+  if (keluar) { lokasiGPSCheckout = null; jarakCheckout = null; lokasiCheckoutDibenarkan = false; }
+  else { lokasiGPS = null; jarakSemasa = null; lokasiDibenarkan = false; }
+  el("dashboard").style.display = "none"; el(mod).style.display = "block";
+  el(keluar ? "tugasCheckout" : "tugasCheckin").innerHTML =
+    binaBarisMaklumat("Call Sign:", tugas.callSign) + binaBarisMaklumat("Jenis Tugas:", tugas.jenisTugas) +
+    binaBarisMaklumat("Tempat Tugas:", tugas.lokasi) + (!keluar ? binaBarisMaklumat("Penyelia:", tugas.penyelia) + binaBarisMaklumat("Pemegang Set:", tugas.pemegangSet) : "");
+  el(keluar ? "gpsStatusCheckout" : "gpsStatus").textContent = "Sila dapatkan lokasi GPS semasa.";
+  el(keluar ? "koordinatCheckout" : "koordinat").innerHTML = "";
+  el(keluar ? "jarakStatusCheckout" : "jarakStatus").innerHTML = "";
+  const h = el(keluar ? "statusHantarCheckout" : "statusHantar"); h.style.display = "none"; h.innerHTML = "";
+  el(keluar ? "btnDapatGPSCheckout" : "btnDapatGPS").disabled = false;
+  el(keluar ? "btnHantarCheckout" : "btnHantar").disabled = true;
+}
 
-  if(sedangMenghantar){
-    return;
+function dapatkanGPS() { dapatkanGpsUntuk(false); }
+function dapatkanGPSCheckout() { dapatkanGpsUntuk(true); }
+function dapatkanGpsUntuk(keluar) {
+  const ids = keluar ? ["gpsStatusCheckout", "koordinatCheckout", "jarakStatusCheckout", "btnDapatGPSCheckout", "btnHantarCheckout"]
+    : ["gpsStatus", "koordinat", "jarakStatus", "btnDapatGPS", "btnHantar"];
+  const [s, k, , g, h] = ids.map(el);
+  if (!navigator.geolocation) { s.innerHTML = '<span class="status-error">Peranti ini tidak menyokong GPS.</span>'; return; }
+  s.innerHTML = '<span class="status-warning">Mendapatkan lokasi GPS...</span>'; k.innerHTML = ""; g.disabled = true; h.disabled = true;
+  navigator.geolocation.getCurrentPosition(pos => {
+    g.disabled = false;
+    const gps = { lat: Number(pos.coords.latitude), lng: Number(pos.coords.longitude), accuracy: Number(pos.coords.accuracy) };
+    if (keluar) lokasiGPSCheckout = gps; else lokasiGPS = gps;
+    s.innerHTML = '<span class="status-success">GPS berjaya diperoleh.</span>';
+    k.innerHTML = `Latitude: ${gps.lat.toFixed(7)}<br>Longitude: ${gps.lng.toFixed(7)}<br>Ketepatan GPS: ${gps.accuracy.toFixed(1)} meter`;
+    semakRadius(keluar);
+  }, err => {
+    g.disabled = false;
+    const mesej = err.code === 1 ? "Kebenaran lokasi ditolak." : err.code === 2 ? "Lokasi tidak dapat dikesan." : "Masa mendapatkan GPS tamat.";
+    s.innerHTML = `<span class="status-error">${escapeHtml(mesej)}</span>`;
+  }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
+}
+function semakRadius(keluar) {
+  const gps = keluar ? lokasiGPSCheckout : lokasiGPS;
+  const jarakId = keluar ? "jarakStatusCheckout" : "jarakStatus";
+  const butangId = keluar ? "btnHantarCheckout" : "btnHantar";
+  const radius = Number(tugas?.radius || 30);
+  if (!gps || !Number.isFinite(tugas?.lat) || !Number.isFinite(tugas?.lng)) {
+    el(jarakId).innerHTML = '<span class="status-error">Koordinat lokasi tugas tidak sah.</span>'; return;
   }
+  const jarak = kiraJarakMeter(gps.lat, gps.lng, tugas.lat, tugas.lng);
+  if (keluar) jarakCheckout = jarak; else jarakSemasa = jarak;
+  const dibenar = gps.accuracy <= 50 && jarak <= radius;
+  if (keluar) lokasiCheckoutDibenarkan = dibenar; else lokasiDibenarkan = dibenar;
+  el(jarakId).innerHTML = dibenar
+    ? `<span class="status-success">Lokasi berjaya disahkan (jarak ${jarak.toFixed(1)} meter).</span>`
+    : `<span class="status-error">Lokasi tidak dibenarkan. Jarak ${jarak.toFixed(1)} meter; radius ${radius} meter.</span>`;
+  el(butangId).disabled = !dibenar;
+}
 
-
-  if(!userLogin){
-
-    alert(
-      "Maklumat pengguna tidak dijumpai."
-    );
-
-    return;
-
-  }
-
-
-  if(!tugas){
-
-    alert(
-      "Maklumat tugasan tidak dijumpai."
-    );
-
-    return;
-
-  }
-
-
-  if(!lokasiGPS){
-
-    alert(
-      "Sila dapatkan lokasi GPS dahulu."
-    );
-
-    return;
-
-  }
-
-
-  if(!lokasiDibenarkan){
-
-    alert(
-
-      "Kehadiran tidak boleh dihantar.\n\n" +
-
-      "Anda mesti berada dalam lingkungan " +
-      "30 meter dari lokasi SUBTEK."
-
-    );
-
-    return;
-
-  }
-
-
-  const btnHantar =
-    document.getElementById(
-      "btnHantar"
-    );
-
-  const btnGPS =
-    document.getElementById(
-      "btnDapatGPS"
-    );
-
-  const btnKembali =
-    document.getElementById(
-      "btnKembali"
-    );
-
-  const statusHantar =
-    document.getElementById(
-      "statusHantar"
-    );
-
-
-  sedangMenghantar = true;
-
-  btnHantar.disabled = true;
-  btnGPS.disabled = true;
-  btnKembali.disabled = true;
-
-  btnHantar.textContent =
-    "SEDANG MENGHANTAR...";
-
-
-  statusHantar.className =
-    "status-box warning";
-
-  statusHantar.innerHTML =
-    "Sedang menyimpan rekod kehadiran...";
-
-
-  const dataKehadiran = {
-
-    noBadan:
-      userLogin.noBadan,
-
-    lat:
-      lokasiGPS.lat,
-
-    lng:
-      lokasiGPS.lng,
-
-    accuracy:
-      lokasiGPS.accuracy,
-
-    deviceId:
-      dapatkanDeviceId()
-
+async function hantarKehadiran() {
+  if (sedangMenghantar || !lokasiGPS || !lokasiDibenarkan) return;
+  sedangMenghantar = true; setProsesGps(false, true, "Sedang menyimpan rekod kehadiran...");
+  const payload = {
+    p_penugasan_id: tugas.id, p_latitude: lokasiGPS.lat, p_longitude: lokasiGPS.lng,
+    p_ketepatan_gps: lokasiGPS.accuracy, p_device_id: dapatkanDeviceId()
   };
-
-
-  google.script.run
-
-    .withSuccessHandler(function(res){
-
-      sedangMenghantar = false;
-      btnKembali.disabled = false;
-
-
-      if(res && res.status === true){
-
-        lokasiDibenarkan = false;
-
-        btnHantar.disabled = true;
-        btnGPS.disabled = true;
-
-        btnHantar.textContent =
-          "CHECK-IN BERJAYA";
-
-
-        statusHantar.className =
-          "status-box success";
-
-        statusHantar.innerHTML =
-
-          "<strong>Check-In berjaya dihantar.</strong><br>" +
-
-          "Masa: " +
-          escapeHtml(res.masa || "-") +
-
-          "<br>Status: " +
-          escapeHtml(
-            res.statusKehadiran ||
-            "MENUNGGU PENGESAHAN PENYELIA"
-          );
-
-
-        document.getElementById(
-          "gpsStatus"
-        ).innerHTML =
-
-          '<span class="status-success">' +
-          'Rekod kehadiran telah disimpan.' +
-          '</span>';
-
-
-        setTimeout(function(){
-
-          kembaliDashboard();
-
-          semakStatusCheckInPetugas();
-
-        }, 1800);
-
-      }else{
-
-        if(
-          res &&
-          res.ditolakAutomatik === true
-        ){
-
-          lokasiDibenarkan = false;
-
-          btnGPS.disabled = true;
-          btnHantar.disabled = true;
-
-          btnHantar.textContent =
-            "CHECK-IN DITOLAK";
-
-          statusHantar.className =
-            "status-box error";
-
-          statusHantar.innerHTML =
-
-            "<strong>CHECK-IN DITOLAK SECARA AUTOMATIK</strong><br>" +
-
-            escapeHtml(
-              res.mesej ||
-              "Device ID yang sama telah digunakan oleh No Badan lain."
-            ) +
-
-            "<br><br>Status: DITOLAK";
-
-          document.getElementById(
-            "gpsStatus"
-          ).innerHTML =
-            '<span class="status-error">' +
-            'Rekod telah dihantar terus ke Pentadbir.' +
-            '</span>';
-
-          setTimeout(function(){
-
-            kembaliDashboard();
-            semakStatusCheckInPetugas();
-
-          }, 2500);
-
-          return;
-
-        }
-
-        btnGPS.disabled = false;
-
-        btnHantar.disabled =
-          !lokasiDibenarkan;
-
-        btnHantar.textContent =
-          "HANTAR KEHADIRAN";
-
-
-        statusHantar.className =
-          "status-box error";
-
-        statusHantar.innerHTML =
-          escapeHtml(
-            res && res.mesej
-              ? res.mesej
-              : "Check-In tidak berjaya dihantar."
-          );
-
-
-        if(
-          res &&
-          res.sudahCheckIn === true
-        ){
-
-          btnGPS.disabled = true;
-          btnHantar.disabled = true;
-
-          btnHantar.textContent =
-            "CHECK-IN TELAH DIREKODKAN";
-
-        }
-
-      }
-
-    })
-
-    .withFailureHandler(function(error){
-
-      sedangMenghantar = false;
-
-      btnGPS.disabled = false;
-      btnKembali.disabled = false;
-
-      btnHantar.disabled =
-        !lokasiDibenarkan;
-
-      btnHantar.textContent =
-        "HANTAR KEHADIRAN";
-
-
-      statusHantar.className =
-        "status-box error";
-
-      statusHantar.innerHTML =
-        "Ralat sistem: " +
-        escapeHtml(error.message);
-
-    })
-
-    .simpanCheckIn(
-      dataKehadiran
-    );
-
+  try {
+    let data;
+    const rpc = await db.rpc("rekod_checkin_petugas", payload);
+    if (rpc.error && rpcTiada(rpc.error)) {
+      const ins = await db.from("checkin").insert({
+        penugasan_id: tugas.id, petugas_id: userLogin.id, tarikh: hariIniMalaysia(),
+        latitude: lokasiGPS.lat, longitude: lokasiGPS.lng, ketepatan_gps: lokasiGPS.accuracy,
+        jarak_meter: jarakSemasa, device_id: dapatkanDeviceId(), status: "MENUNGGU"
+      }).select("*").single();
+      if (ins.error) throw ins.error; data = ins.data;
+    } else { if (rpc.error) throw rpc.error; if (rpc.data?.success === false) throw new Error(rpc.data.message); data = rpc.data; }
+    paparStatus("statusHantar", `<strong>Check-In berjaya dihantar.</strong><br>Status: MENUNGGU PENGESAHAN URUSETIA`, "success");
+    el("btnHantar").textContent = "CHECK-IN BERJAYA";
+    setTimeout(async () => { kembaliDashboard(); await refreshDashboard(); }, 1500);
+    return data;
+  } catch (err) { paparStatus("statusHantar", escapeHtml(err.message), "error"); setProsesGps(false, false); }
+  finally { sedangMenghantar = false; }
 }
 
-
-
-
-// ===============================
-// SEMAK STATUS CHECK-OUT
-// ===============================
-
-function semakStatusCheckOutPetugas(){
-
-  if(!userLogin){
-    return;
-  }
-
-  const btnCheckout =
-    document.getElementById(
-      "btnCheckout"
-    );
-
-  const statusCheckout =
-    document.getElementById(
-      "statusCheckout"
-    );
-
-  btnCheckout.disabled = true;
-
-  statusCheckout.className =
-    "status-box warning";
-
-  statusCheckout.innerHTML =
-    "Sedang menyemak status Check-Out...";
-
-  google.script.run
-
-    .withSuccessHandler(function(res){
-
-      if(
-        res &&
-        res.status === true &&
-        res.sudahCheckOut === true
-      ){
-
-        sudahCheckOutSemasa = true;
-
-        kemasKiniButangPelaporan(
-          tugas
-        );
-
-        btnCheckout.disabled = true;
-
-        btnCheckout.textContent =
-          "CHECK-OUT TELAH DIREKODKAN";
-
-        statusCheckout.className =
-          "status-box success";
-
-        statusCheckout.innerHTML =
-
-          "<strong>Check-Out telah direkodkan.</strong><br>" +
-
-          "Masa: " +
-          escapeHtml(res.masa || "-") +
-
-          "<br>Tempoh Bertugas: " +
-          escapeHtml(res.tempohBertugas || "-") +
-
-          "<br>Status: <strong>SELESAI TUGAS</strong>";
-
-      }else if(
-        res &&
-        res.checkOutDibenarkan === true
-      ){
-
-        sudahCheckOutSemasa = false;
-
-        kemasKiniButangPelaporan(
-          tugas
-        );
-
-        btnCheckout.disabled = false;
-
-        btnCheckout.textContent =
-          "CHECK-OUT KEHADIRAN";
-
-        statusCheckout.className =
-          "status-box warning";
-
-        statusCheckout.innerHTML =
-          "Check-Out boleh dibuat selepas selesai tugas. GPS perlu berada dalam lingkungan radius 30 meter dari SUBTEK.";
-
-      }else{
-
-        sudahCheckOutSemasa =
-          Boolean(
-            res &&
-            res.sudahCheckOut === true
-          );
-
-        kemasKiniButangPelaporan(
-          tugas
-        );
-
-        btnCheckout.disabled = true;
-
-        btnCheckout.textContent =
-          "CHECK-OUT TIDAK DIBENARKAN";
-
-        statusCheckout.className =
-          "status-box error";
-
-        statusCheckout.innerHTML =
-          escapeHtml(
-            res && res.mesej
-              ? res.mesej
-              : "Check-Out tidak dibenarkan."
-          );
-
-      }
-
-    })
-
-    .withFailureHandler(function(error){
-
-      btnCheckout.disabled = true;
-
-      statusCheckout.className =
-        "status-box error";
-
-      statusCheckout.innerHTML =
-        "Ralat menyemak Check-Out: " +
-        escapeHtml(error.message);
-
-    })
-
-    .semakStatusCheckOut(
-      userLogin.noBadan
-    );
-
+async function hantarCheckout() {
+  if (sedangMenghantarCheckout || !lokasiGPSCheckout || !lokasiCheckoutDibenarkan) return;
+  sedangMenghantarCheckout = true; setProsesGps(true, true, "Sedang menyimpan rekod Check-Out...");
+  try {
+    const payload = {
+      p_penugasan_id: tugas.id, p_latitude: lokasiGPSCheckout.lat, p_longitude: lokasiGPSCheckout.lng,
+      p_ketepatan_gps: lokasiGPSCheckout.accuracy, p_device_id: dapatkanDeviceId()
+    };
+    const rpc = await db.rpc("rekod_checkout_petugas", payload);
+    if (rpc.error && rpcTiada(rpc.error)) {
+      const mula = new Date(rekodCheckinSemasa.masa_checkin).getTime();
+      const tempoh = Number.isFinite(mula) ? Math.max(0, Math.round((Date.now() - mula) / 60000)) : null;
+      const ins = await db.from("checkout").insert({
+        checkin_id: rekodCheckinSemasa.id, penugasan_id: tugas.id, petugas_id: userLogin.id,
+        tarikh: hariIniMalaysia(), latitude: lokasiGPSCheckout.lat, longitude: lokasiGPSCheckout.lng,
+        ketepatan_gps: lokasiGPSCheckout.accuracy, jarak_meter: jarakCheckout,
+        tempoh_minit: tempoh, status: "SELESAI TUGAS"
+      }).select("*").single();
+      if (ins.error) throw ins.error;
+    } else { if (rpc.error) throw rpc.error; if (rpc.data?.success === false) throw new Error(rpc.data.message); }
+    paparStatus("statusHantarCheckout", "<strong>Check-Out berjaya.</strong><br>Status: SELESAI TUGAS", "success");
+    el("btnHantarCheckout").textContent = "CHECK-OUT BERJAYA";
+    setTimeout(async () => { kembaliDashboardCheckout(); await refreshDashboard(); }, 1500);
+  } catch (err) { paparStatus("statusHantarCheckout", escapeHtml(err.message), "error"); setProsesGps(true, false); }
+  finally { sedangMenghantarCheckout = false; }
+}
+function rpcTiada(err) { return /does not exist|not found|PGRST202|schema cache/i.test(`${err?.code || ""} ${err?.message || ""}`); }
+function setProsesGps(keluar, proses, mesej = "") {
+  const h = el(keluar ? "btnHantarCheckout" : "btnHantar");
+  const g = el(keluar ? "btnDapatGPSCheckout" : "btnDapatGPS");
+  const k = el(keluar ? "btnKembaliCheckout" : "btnKembali");
+  h.disabled = proses; g.disabled = proses; k.disabled = proses;
+  h.textContent = proses ? "SEDANG MENGHANTAR..." : (keluar ? "HANTAR CHECK-OUT" : "HANTAR KEHADIRAN");
+  if (mesej) paparStatus(keluar ? "statusHantarCheckout" : "statusHantar", mesej, "warning");
 }
 
-
-// ===============================
-// BUKA CHECK-OUT
-// ===============================
-
-function mulaCheckout(){
-
-  if(!tugas || tugas.status !== true){
-
-    alert(
-      "Tiada tugasan yang sah untuk hari ini."
-    );
-
-    return;
-
+function bukaLaporan() {
+  if (!petugasLayakHantarLaporan(tugas) || statusKehadiranSemasa !== "HADIR" || sudahCheckOutSemasa) {
+    alert("Pelaporan hanya dibenarkan selepas kehadiran disahkan, sebelum Check-Out, kepada Penyelia atau Pemegang Set."); return;
   }
-
-  lokasiGPSCheckout = null;
-  jarakCheckout = null;
-  lokasiCheckoutDibenarkan = false;
-  sedangMenghantarCheckout = false;
-
-  document.getElementById(
-    "dashboard"
-  ).style.display = "none";
-
-  document.getElementById(
-    "checkout"
-  ).style.display = "block";
-
-  document.getElementById(
-    "tugasCheckout"
-  ).innerHTML =
-
-    binaBarisMaklumat(
-      "Call Sign:",
-      tugas.callSign
-    ) +
-
-    binaBarisMaklumat(
-      "Jenis Tugas:",
-      tugas.jenisTugas
-    ) +
-
-    binaBarisMaklumat(
-      "Tempat Tugas:",
-      tugas.lokasi
-    );
-
-  document.getElementById(
-    "gpsStatusCheckout"
-  ).innerHTML =
-    "Sila dapatkan lokasi GPS semasa.";
-
-  document.getElementById(
-    "koordinatCheckout"
-  ).innerHTML = "";
-
-  document.getElementById(
-    "jarakStatusCheckout"
-  ).innerHTML = "";
-
-  const statusHantar =
-    document.getElementById(
-      "statusHantarCheckout"
-    );
-
-  statusHantar.style.display = "none";
-  statusHantar.innerHTML = "";
-
-  document.getElementById(
-    "btnDapatGPSCheckout"
-  ).disabled = false;
-
-  const btnHantar =
-    document.getElementById(
-      "btnHantarCheckout"
-    );
-
-  btnHantar.disabled = true;
-  btnHantar.textContent =
-    "HANTAR CHECK-OUT";
-
-}
-
-
-// ===============================
-// DAPATKAN GPS CHECK-OUT
-// ===============================
-
-function dapatkanGPSCheckout(){
-
-  const gpsStatus =
-    document.getElementById(
-      "gpsStatusCheckout"
-    );
-
-  const koordinat =
-    document.getElementById(
-      "koordinatCheckout"
-    );
-
-  const jarakStatus =
-    document.getElementById(
-      "jarakStatusCheckout"
-    );
-
-  const btnGPS =
-    document.getElementById(
-      "btnDapatGPSCheckout"
-    );
-
-  const btnHantar =
-    document.getElementById(
-      "btnHantarCheckout"
-    );
-
-  lokasiGPSCheckout = null;
-  jarakCheckout = null;
-  lokasiCheckoutDibenarkan = false;
-
-  btnHantar.disabled = true;
-
-  if(!navigator.geolocation){
-
-    gpsStatus.innerHTML =
-      '<span class="status-error">' +
-      'Peranti ini tidak menyokong GPS.' +
-      '</span>';
-
-    return;
-
-  }
-
-  gpsStatus.innerHTML =
-    '<span class="status-warning">' +
-    'Mendapatkan lokasi GPS...' +
-    '</span>';
-
-  koordinat.innerHTML = "";
-  jarakStatus.innerHTML = "";
-  btnGPS.disabled = true;
-
-  navigator.geolocation.getCurrentPosition(
-
-    function(position){
-
-      btnGPS.disabled = false;
-
-      lokasiGPSCheckout = {
-        lat:Number(position.coords.latitude),
-        lng:Number(position.coords.longitude),
-        accuracy:Number(position.coords.accuracy)
-      };
-
-      gpsStatus.innerHTML =
-        '<span class="status-success">' +
-        'GPS Check-Out berjaya diperoleh.' +
-        '</span>';
-
-      koordinat.innerHTML =
-
-        "Latitude: " +
-        lokasiGPSCheckout.lat.toFixed(7) +
-
-        "<br>Longitude: " +
-        lokasiGPSCheckout.lng.toFixed(7) +
-
-        "<br>Ketepatan GPS: " +
-        lokasiGPSCheckout.accuracy.toFixed(1) +
-        " meter";
-
-      semakRadiusCheckout();
-
-    },
-
-    function(error){
-
-      btnGPS.disabled = false;
-
-      let mesej =
-        "Lokasi GPS tidak berjaya diperoleh.";
-
-      if(error.code === 1){
-        mesej =
-          "Kebenaran lokasi ditolak. Sila benarkan akses lokasi.";
-      }else if(error.code === 2){
-        mesej =
-          "Lokasi tidak dapat dikesan. Sila aktifkan GPS.";
-      }else if(error.code === 3){
-        mesej =
-          "Masa mendapatkan GPS tamat. Sila cuba semula.";
-      }
-
-      gpsStatus.innerHTML =
-        '<span class="status-error">' +
-        escapeHtml(mesej) +
-        '</span>';
-
-    },
-
-    {
-      enableHighAccuracy:true,
-      timeout:20000,
-      maximumAge:0
-    }
-
-  );
-
-}
-
-
-// ===============================
-// SEMAK RADIUS CHECK-OUT
-// ===============================
-
-function semakRadiusCheckout(){
-
-  if(!lokasiGPSCheckout || !tugas){
-    return;
-  }
-
-  const latSubtek = Number(tugas.lat);
-  const lngSubtek = Number(tugas.lng);
-
-  jarakCheckout = kiraJarakMeter(
-    lokasiGPSCheckout.lat,
-    lokasiGPSCheckout.lng,
-    latSubtek,
-    lngSubtek
-  );
-
-  let html = "";
-
-  if(lokasiGPSCheckout.accuracy > 50){
-
-    lokasiCheckoutDibenarkan = false;
-
-    html =
-      "<span class='status-error'>" +
-      "Ketepatan GPS terlalu lemah.<br>" +
-      "Sila dapatkan lokasi sekali lagi di kawasan terbuka." +
-      "</span>";
-
-  }else if(jarakCheckout <= RADIUS_SUBTEK){
-
-    lokasiCheckoutDibenarkan = true;
-
-    html =
-      "<span class='status-success'>" +
-      "Lokasi Check-Out berjaya disahkan.<br>" +
-      "Sila tekan pada butang hantar check-out." +
-      "</span>";
-
-  }else{
-
-    lokasiCheckoutDibenarkan = false;
-
-    html =
-      "<span class='status-error'>" +
-      "Anda berada di luar lingkungan 30 meter dari SUBTEK." +
-      "</span>";
-
-  }
-
-  document.getElementById(
-    "jarakStatusCheckout"
-  ).innerHTML = html;
-
-  document.getElementById(
-    "btnHantarCheckout"
-  ).disabled =
-    !lokasiCheckoutDibenarkan;
-
-}
-
-
-// ===============================
-// HANTAR CHECK-OUT
-// ===============================
-
-function hantarCheckout(){
-
-  if(sedangMenghantarCheckout){
-    return;
-  }
-
-  if(
-    !userLogin ||
-    !tugas ||
-    !lokasiGPSCheckout ||
-    !lokasiCheckoutDibenarkan
-  ){
-
-    alert(
-      "Sila lengkapkan pengesahan GPS Check-Out."
-    );
-
-    return;
-
-  }
-
-  const btnHantar =
-    document.getElementById(
-      "btnHantarCheckout"
-    );
-
-  const btnGPS =
-    document.getElementById(
-      "btnDapatGPSCheckout"
-    );
-
-  const btnKembali =
-    document.getElementById(
-      "btnKembaliCheckout"
-    );
-
-  const statusHantar =
-    document.getElementById(
-      "statusHantarCheckout"
-    );
-
-  sedangMenghantarCheckout = true;
-
-  btnHantar.disabled = true;
-  btnGPS.disabled = true;
-  btnKembali.disabled = true;
-
-  btnHantar.textContent =
-    "SEDANG MENGHANTAR...";
-
-  statusHantar.className =
-    "status-box warning";
-
-  statusHantar.innerHTML =
-    "Sedang menyimpan rekod Check-Out...";
-
-  google.script.run
-
-    .withSuccessHandler(function(res){
-
-      sedangMenghantarCheckout = false;
-      btnKembali.disabled = false;
-
-      if(res && res.status === true){
-
-        lokasiCheckoutDibenarkan = false;
-
-        btnHantar.disabled = true;
-        btnGPS.disabled = true;
-
-        btnHantar.textContent =
-          "CHECK-OUT BERJAYA";
-
-        statusHantar.className =
-          "status-box success";
-
-        statusHantar.innerHTML =
-
-          "<strong>Check-Out berjaya.</strong><br>" +
-
-          "Masa: " +
-          escapeHtml(res.masa || "-") +
-
-          "<br>Tempoh Bertugas: " +
-          escapeHtml(res.tempohBertugas || "-") +
-
-          "<br>Status: <strong>SELESAI TUGAS</strong>";
-
-        setTimeout(function(){
-
-          kembaliDashboardCheckout();
-          semakStatusCheckInPetugas();
-
-        }, 1800);
-
-      }else{
-
-        btnGPS.disabled = false;
-
-        btnHantar.disabled =
-          !lokasiCheckoutDibenarkan;
-
-        btnHantar.textContent =
-          "HANTAR CHECK-OUT";
-
-        statusHantar.className =
-          "status-box error";
-
-        statusHantar.innerHTML =
-          escapeHtml(
-            res && res.mesej
-              ? res.mesej
-              : "Check-Out tidak berjaya."
-          );
-
-        if(res && res.sudahCheckOut === true){
-
-          btnGPS.disabled = true;
-          btnHantar.disabled = true;
-
-          btnHantar.textContent =
-            "CHECK-OUT TELAH DIREKODKAN";
-
-        }
-
-      }
-
-    })
-
-    .withFailureHandler(function(error){
-
-      sedangMenghantarCheckout = false;
-
-      btnGPS.disabled = false;
-      btnKembali.disabled = false;
-
-      btnHantar.disabled =
-        !lokasiCheckoutDibenarkan;
-
-      btnHantar.textContent =
-        "HANTAR CHECK-OUT";
-
-      statusHantar.className =
-        "status-box error";
-
-      statusHantar.innerHTML =
-        "Ralat sistem: " +
-        escapeHtml(error.message);
-
-    })
-
-    .simpanCheckOut({
-      noBadan:userLogin.noBadan,
-      lat:lokasiGPSCheckout.lat,
-      lng:lokasiGPSCheckout.lng,
-      accuracy:lokasiGPSCheckout.accuracy,
-      deviceId:dapatkanDeviceId()
-    });
-
-}
-
-
-// ===============================
-// KEMBALI DARIPADA CHECK-OUT
-// ===============================
-
-function kembaliDashboardCheckout(){
-
-  document.getElementById(
-    "checkout"
-  ).style.display = "none";
-
-  document.getElementById(
-    "laporan"
-  ).style.display = "none";
-
-  document.getElementById(
-    "dashboard"
-  ).style.display = "block";
-
-}
-
-
-
-// ===============================
-// PELAPORAN PETUGAS
-// ===============================
-
-function bukaLaporan(){
-
-  if(
-    !userLogin ||
-    !tugas ||
-    tugas.status !== true
-  ){
-    alert(
-      "Tiada tugasan yang sah untuk membuat laporan."
-    );
-    return;
-  }
-
-  if(
-    !petugasLayakHantarLaporan(
-      tugas
-    )
-  ){
-    alert(
-      "Pelaporan hanya dibenarkan kepada petugas " +
-      "yang ditetapkan sebagai PENYELIA atau " +
-      "PEMEGANG SET bagi penugasan hari ini."
-    );
-    return;
-  }
-
-  if(
-    String(
-      statusKehadiranSemasa || ""
-    ).trim().toUpperCase() !== "HADIR"
-  ){
-    alert(
-      "Pelaporan hanya boleh dibuat selepas " +
-      "kehadiran disahkan oleh Urusetia."
-    );
-    return;
-  }
-
-  if(sudahCheckOutSemasa === true){
-    alert(
-      "Pelaporan tidak boleh dibuat selepas Check-Out direkodkan."
-    );
-    return;
-  }
-
-  document.getElementById("dashboard").style.display = "none";
-  document.getElementById("laporan").style.display = "block";
-
-  document.getElementById("tugasLaporan").innerHTML =
-    binaBarisMaklumat("Call Sign:",tugas.callSign) +
-    binaBarisMaklumat("Jenis Tugas:",tugas.jenisTugas) +
-    binaBarisMaklumat("Tempat Tugas:",tugas.lokasi) +
-    binaBarisMaklumat("Penyelia:",tugas.penyelia);
-
+  el("dashboard").style.display = "none"; el("laporan").style.display = "block";
+  el("tugasLaporan").innerHTML = binaBarisMaklumat("Call Sign:", tugas.callSign) + binaBarisMaklumat("Jenis Tugas:", tugas.jenisTugas) + binaBarisMaklumat("Tempat Tugas:", tugas.lokasi) + binaBarisMaklumat("Penyelia:", tugas.penyelia);
   kemasKiniTarikhMasaLaporan();
-
-  document.getElementById("jumlahPengunjung").value = "";
-  document.getElementById("jumlahKenderaan").value = "";
-  document.getElementById("vvipVip").value = "";
-  document.getElementById("perkaraMenarik").value = "";
-
-  const statusLaporan = document.getElementById("statusLaporan");
-  statusLaporan.style.display = "none";
-  statusLaporan.innerHTML = "";
-
-  const btn = document.getElementById("btnHantarLaporan");
-  btn.disabled = false;
-  btn.textContent = "HANTAR LAPORAN KEPADA URUSETIA";
+  ["jumlahPengunjung", "jumlahKenderaan", "vvipVip", "perkaraMenarik"].forEach(id => el(id).value = "");
+  el("statusLaporan").style.display = "none"; el("btnHantarLaporan").disabled = false;
 }
-
-function kemasKiniTarikhMasaLaporan(){
-  document.getElementById("tarikhMasaLaporan").textContent =
-    new Date().toLocaleString("ms-MY",{
-      day:"2-digit",month:"2-digit",year:"numeric",
-      hour:"2-digit",minute:"2-digit",second:"2-digit"
+function kemasKiniTarikhMasaLaporan() { el("tarikhMasaLaporan").textContent = formatTarikhMasa(new Date()); }
+function tutupLaporan() { el("laporan").style.display = "none"; el("dashboard").style.display = "block"; }
+async function hantarLaporan() {
+  const jp = Number(el("jumlahPengunjung").value), jk = Number(el("jumlahKenderaan").value);
+  const vip = teks(el("vvipVip").value), menarik = teks(el("perkaraMenarik").value), btn = el("btnHantarLaporan");
+  if (!petugasLayakHantarLaporan(tugas) || statusKehadiranSemasa !== "HADIR" || sudahCheckOutSemasa) return paparStatus("statusLaporan", "Pelaporan tidak dibenarkan.", "error");
+  if (!Number.isInteger(jp) || jp < 0 || !Number.isInteger(jk) || jk < 0 || !vip || !menarik) return paparStatus("statusLaporan", "Sila lengkapkan semua ruangan dengan nilai yang sah.", "error");
+  if (!confirm("Hantar laporan ini kepada URUSETIA?")) return;
+  btn.disabled = true; btn.textContent = "SEDANG MENGHANTAR...";
+  try {
+    const { error } = await db.from("pelaporan").insert({
+      penugasan_id: tugas.id, petugas_id: userLogin.id, jumlah_pengunjung: jp,
+      jumlah_kenderaan: jk, vvip_vip: vip, perkara_menarik: menarik
     });
+    if (error) throw error;
+    paparStatus("statusLaporan", "<strong>LAPORAN BERJAYA DIHANTAR.</strong>", "success");
+    btn.textContent = "LAPORAN TELAH DIHANTAR"; setTimeout(tutupLaporan, 1800);
+  } catch (err) { btn.disabled = false; btn.textContent = "HANTAR LAPORAN KEPADA URUSETIA"; paparStatus("statusLaporan", escapeHtml(err.message), "error"); }
 }
 
-function tutupLaporan(){
-  document.getElementById("laporan").style.display = "none";
-  document.getElementById("dashboard").style.display = "block";
+async function refreshDashboard() {
+  if (!userLogin) return;
+  const b = el("btnRefreshStatus"); if (b) { b.disabled = true; b.textContent = "SEDANG MENYEMAK..."; }
+  try {
+    const ada = await dapatkanTugasHariIni();
+    if (ada) await semakStatusCheckInPetugas();
+    if (window.SKPOWalkie?.muatSemula) await window.SKPOWalkie.muatSemula();
+  } finally { if (b) { b.disabled = false; b.textContent = "SEMAK SEMULA STATUS"; } }
 }
-
-function hantarLaporan(){
-
-  if(
-    !userLogin ||
-    !tugas
-  ){
-    return;
-  }
-
-  const statusLaporan =
-    document.getElementById(
-      "statusLaporan"
-    );
-
-  if(
-    !petugasLayakHantarLaporan(
-      tugas
-    )
-  ){
-
-    statusLaporan.className =
-      "status-box error";
-
-    statusLaporan.innerHTML =
-      "Pelaporan hanya dibenarkan kepada " +
-      "petugas yang ditetapkan sebagai " +
-      "PENYELIA atau PEMEGANG SET.";
-
-    return;
-  }
-
-  if(
-    String(
-      statusKehadiranSemasa || ""
-    ).trim().toUpperCase() !== "HADIR"
-  ){
-
-    statusLaporan.className =
-      "status-box error";
-
-    statusLaporan.innerHTML =
-      "Pelaporan hanya boleh dihantar selepas " +
-      "kehadiran disahkan oleh Urusetia.";
-
-    return;
-  }
-
-  if(sudahCheckOutSemasa === true){
-
-    statusLaporan.className =
-      "status-box error";
-
-    statusLaporan.innerHTML =
-      "Pelaporan tidak boleh dibuat selepas " +
-      "Check-Out direkodkan.";
-
-    return;
-  }
-
-  const jumlahPengunjung = document.getElementById("jumlahPengunjung").value.trim();
-  const jumlahKenderaan = document.getElementById("jumlahKenderaan").value.trim();
-  const vvipVip = document.getElementById("vvipVip").value.trim();
-  const perkaraMenarik = document.getElementById("perkaraMenarik").value.trim();
-  const btn = document.getElementById("btnHantarLaporan");
-
-  if(jumlahPengunjung === "" || jumlahKenderaan === ""){
-    statusLaporan.className = "status-box error";
-    statusLaporan.innerHTML = "Sila masukkan jumlah pengunjung dan jumlah kenderaan.";
-    return;
-  }
-
-  if(Number(jumlahPengunjung) < 0 || Number(jumlahKenderaan) < 0){
-    statusLaporan.className = "status-box error";
-    statusLaporan.innerHTML = "Jumlah pengunjung dan kenderaan tidak boleh kurang daripada 0.";
-    return;
-  }
-
-  if(!vvipVip || !perkaraMenarik){
-    statusLaporan.className = "status-box error";
-    statusLaporan.innerHTML =
-      'Ruangan VVIP / VIP dan Perkara Menarik wajib diisi. Jika tiada, masukkan "TIADA".';
-    return;
-  }
-
-  if(!confirm("Hantar laporan ini terus kepada URUSETIA?")) return;
-
-  btn.disabled = true;
-  btn.textContent = "SEDANG MENGHANTAR...";
-  statusLaporan.className = "status-box warning";
-  statusLaporan.innerHTML = "Sedang menyimpan dan menghantar laporan kepada URUSETIA...";
-
-  google.script.run
-    .withSuccessHandler(function(res){
-      if(res && res.status === true){
-        statusLaporan.className = "status-box success";
-        statusLaporan.innerHTML =
-          "<strong>LAPORAN BERJAYA DIHANTAR.</strong><br>" +
-          "Tarikh: " + escapeHtml(res.tarikh || "-") +
-          "<br>Masa: " + escapeHtml(res.masa || "-") +
-          "<br>Status: BELUM DIBACA";
-
-        btn.textContent = "LAPORAN TELAH DIHANTAR";
-
-        setTimeout(function(){
-          tutupLaporan();
-        },2200);
-      }else{
-        btn.disabled = false;
-        btn.textContent = "HANTAR LAPORAN KEPADA URUSETIA";
-        statusLaporan.className = "status-box error";
-        statusLaporan.innerHTML =
-          escapeHtml(res && res.mesej ? res.mesej : "Laporan gagal dihantar.");
-      }
-    })
-    .withFailureHandler(function(error){
-      btn.disabled = false;
-      btn.textContent = "HANTAR LAPORAN KEPADA URUSETIA";
-      statusLaporan.className = "status-box error";
-      statusLaporan.innerHTML = "Ralat sistem: " + escapeHtml(error.message);
-    })
-    .simpanLaporanPetugas({
-      noBadan:userLogin.noBadan,
-      jumlahPengunjung:Number(jumlahPengunjung),
-      jumlahKenderaan:Number(jumlahKenderaan),
-      vvipVip:vvipVip,
-      perkaraMenarik:perkaraMenarik
-    });
-}
-
-// ===============================
-// KIRA JARAK
-// ===============================
-
-function kiraJarakMeter(
-  lat1,
-  lng1,
-  lat2,
-  lng2
-){
-
-  const radiusBumi =
-    6371000;
-
-
-  const dLat =
-    darjahKeRadian(
-      lat2 - lat1
-    );
-
-
-  const dLng =
-    darjahKeRadian(
-      lng2 - lng1
-    );
-
-
-  const a =
-
-    Math.sin(dLat / 2) *
-    Math.sin(dLat / 2) +
-
-    Math.cos(
-      darjahKeRadian(lat1)
-    ) *
-
-    Math.cos(
-      darjahKeRadian(lat2)
-    ) *
-
-    Math.sin(dLng / 2) *
-    Math.sin(dLng / 2);
-
-
-  const c =
-    2 *
-    Math.atan2(
-      Math.sqrt(a),
-      Math.sqrt(1 - a)
-    );
-
-
-  return radiusBumi * c;
-
-}
-
-
-function darjahKeRadian(nilai){
-
-  return nilai *
-    Math.PI /
-    180;
-
-}
-
-
-// ===============================
-// SEMAK SEMULA DASHBOARD
-// ===============================
-
-
-// ===============================
-// MODUL SET WALKIE-TALKIE
-// ===============================
-
-let rekodSetSemasa = null;
-
-
-function resetPaparanSetWalkieTalkie(){
-
-  rekodSetSemasa = null;
-
-  const statusSet =
-    document.getElementById("statusSetWalkie");
-
-  const btnDaftar =
-    document.getElementById("btnDaftarSet");
-
-  const btnPulang =
-    document.getElementById("btnPulangSet");
-
-  statusSet.style.display = "none";
-  statusSet.innerHTML = "";
-
-  btnDaftar.style.display = "none";
-  btnDaftar.disabled = true;
-
-  btnPulang.style.display = "none";
-  btnPulang.disabled = true;
-
-}
-
-
-function semakStatusSetWalkieTalkie(){
-
-  if(!userLogin || !tugas){
-    resetPaparanSetWalkieTalkie();
-    return;
-  }
-
-  const statusSet =
-    document.getElementById("statusSetWalkie");
-
-  const btnDaftar =
-    document.getElementById("btnDaftarSet");
-
-  const btnPulang =
-    document.getElementById("btnPulangSet");
-
-  statusSet.className = "status-box warning";
-  statusSet.innerHTML =
-    "Sedang menyemak status set Walkie-Talkie...";
-
-  btnDaftar.style.display = "none";
-  btnDaftar.disabled = true;
-
-  btnPulang.style.display = "none";
-  btnPulang.disabled = true;
-
-  google.script.run
-
-    .withSuccessHandler(function(res){
-
-      if(!res || res.status !== true){
-
-        resetPaparanSetWalkieTalkie();
-
-        if(res && res.mesej){
-          statusSet.className = "status-box error";
-          statusSet.innerHTML = escapeHtml(res.mesej);
-        }
-
-        return;
-      }
-
-      if(res.pemegangSet !== true){
-
-        resetPaparanSetWalkieTalkie();
-        return;
-      }
-
-      rekodSetSemasa = res;
-
-      const statusSemasa =
-        String(res.statusSet || "").toUpperCase();
-
-      if(
-        res.sudahMendaftar !== true ||
-        statusSemasa === "BELUM MENDAFTAR"
-      ){
-
-        statusSet.className = "status-box warning";
-        statusSet.innerHTML =
-          "<strong>Status Set: BELUM MENDAFTAR</strong><br>" +
-          "Anda merupakan Pemegang Set bagi penugasan hari ini.";
-
-        btnDaftar.style.display = "block";
-        btnDaftar.disabled = false;
-
-        return;
-      }
-
-      let kelas = "warning";
-
-      if(
-        statusSemasa === "SET DILEPASKAN" ||
-        statusSemasa === "SET TELAH DIPULANGKAN"
-      ){
-        kelas = "success";
-      }else if(
-        statusSemasa === "PERMOHONAN DITOLAK"
-      ){
-        kelas = "error";
-      }
-
-      statusSet.className = "status-box " + kelas;
-
-      let html =
-        "<strong>Status Set: " +
-        escapeHtml(res.statusSet || "-") +
-        "</strong>";
-
-      if(res.noSiriSet){
-        html +=
-          "<br>No Siri Set: " +
-          escapeHtml(res.noSiriSet);
-      }
-
-      if(res.masaPelepasan){
-        html +=
-          "<br>Masa Pelepasan: " +
-          escapeHtml(res.masaPelepasan);
-      }
-
-      if(res.disahkanOleh){
-        html +=
-          "<br>Disahkan Oleh: " +
-          escapeHtml(res.disahkanOleh);
-      }
-
-      if(res.sebabDitolak){
-        html +=
-          "<br>Sebab Ditolak: " +
-          escapeHtml(res.sebabDitolak);
-      }
-
-      if(res.masaPemulangan){
-        html +=
-          "<br>Masa Pemulangan: " +
-          escapeHtml(res.masaPemulangan);
-      }
-
-      if(res.diterimaOleh){
-        html +=
-          "<br>Diterima Oleh: " +
-          escapeHtml(res.diterimaOleh);
-      }
-
-      statusSet.innerHTML = html;
-
-      if(statusSemasa === "PERMOHONAN DITOLAK"){
-
-        btnDaftar.style.display = "block";
-        btnDaftar.disabled = true;
-        btnDaftar.textContent =
-          "PERMOHONAN SET DITOLAK";
-
-      }else if(statusSemasa === "SET DILEPASKAN"){
-
-        btnPulang.style.display = "block";
-        btnPulang.disabled = false;
-
-      }else if(
-        statusSemasa ===
-        "MENUNGGU PENGESAHAN PEMULANGAN"
-      ){
-
-        btnPulang.style.display = "block";
-        btnPulang.disabled = true;
-        btnPulang.textContent =
-          "MENUNGGU PENGESAHAN PEMULANGAN";
-
-      }
-
-    })
-
-    .withFailureHandler(function(error){
-
-      statusSet.className = "status-box error";
-      statusSet.innerHTML =
-        "Ralat menyemak status set: " +
-        escapeHtml(error.message);
-
-    })
-
-    .semakStatusSetPetugas(
-      userLogin.noBadan
-    );
-
-}
-
-
-function bukaPendaftaranSet(){
-
-  if(!userLogin || !tugas){
-    alert("Maklumat petugas atau tugasan tidak dijumpai.");
-    return;
-  }
-
-  document.getElementById(
-    "dashboard"
-  ).style.display = "none";
-
-  document.getElementById(
-    "pendaftaranSet"
-  ).style.display = "block";
-
-  document.getElementById(
-    "maklumatPendaftaranSet"
-  ).innerHTML =
-
-    binaBarisMaklumat(
-      "No Badan:",
-      userLogin.noBadan
-    ) +
-
-    binaBarisMaklumat(
-      "Nama:",
-      userLogin.nama
-    ) +
-
-    binaBarisMaklumat(
-      "Call Sign:",
-      tugas.callSign
-    ) +
-
-    binaBarisMaklumat(
-      "Jenis Tugas:",
-      tugas.jenisTugas
-    ) +
-
-    binaBarisMaklumat(
-      "Tempat Tugas:",
-      tugas.lokasi
-    );
-
-  document.getElementById("noSiriSet").value = "";
-  document.getElementById("noSiriBateri").value = "";
-  document.getElementById("noSiriCharger").value = "";
-  document.getElementById("catatanSet").value = "";
-
-  document
-    .querySelectorAll(
-      'input[name="aksesoriSet"]'
-    )
-    .forEach(function(input){
-      input.checked = false;
-    });
-
-  const status =
-    document.getElementById(
-      "statusPendaftaranSet"
-    );
-
-  status.style.display = "none";
-  status.innerHTML = "";
-
-  const btn =
-    document.getElementById(
-      "btnHantarPendaftaranSet"
-    );
-
-  btn.disabled = false;
-  btn.textContent =
-    "HANTAR PENDAFTARAN KEPADA TSM";
-
-}
-
-
-function tutupPendaftaranSet(){
-
-  document.getElementById(
-    "pendaftaranSet"
-  ).style.display = "none";
-
-  document.getElementById(
-    "dashboard"
-  ).style.display = "block";
-
-}
-
-
-function hantarPendaftaranSet(){
-
-  if(!userLogin || !tugas){
-    return;
-  }
-
-  const noSiriSet =
-    document.getElementById(
-      "noSiriSet"
-    ).value.trim();
-
-  const noSiriBateri =
-    document.getElementById(
-      "noSiriBateri"
-    ).value.trim();
-
-  const noSiriCharger =
-    document.getElementById(
-      "noSiriCharger"
-    ).value.trim();
-
-  const catatan =
-    document.getElementById(
-      "catatanSet"
-    ).value.trim();
-
-  const aksesori =
-    Array.from(
-      document.querySelectorAll(
-        'input[name="aksesoriSet"]:checked'
-      )
-    ).map(function(input){
-      return input.value;
-    });
-
-  const status =
-    document.getElementById(
-      "statusPendaftaranSet"
-    );
-
-  const btn =
-    document.getElementById(
-      "btnHantarPendaftaranSet"
-    );
-
-  const btnKembali =
-    document.getElementById(
-      "btnKembaliPendaftaranSet"
-    );
-
-  if(!noSiriSet){
-
-    status.className = "status-box error";
-    status.innerHTML =
-      "Sila masukkan No Siri Set.";
-
-    return;
-  }
-
-  if(!catatan){
-
-    status.className = "status-box error";
-    status.innerHTML =
-      'Sila isi ruangan Catatan. Jika tiada, masukkan "TIADA".';
-
-    return;
-  }
-
-  const pasti = confirm(
-    "Adakah anda pasti mahu menghantar pendaftaran set Walkie-Talkie ini kepada TSM?"
-  );
-
-  if(!pasti){
-    return;
-  }
-
-  btn.disabled = true;
-  btnKembali.disabled = true;
-
-  btn.textContent =
-    "SEDANG MENGHANTAR...";
-
-  status.className = "status-box warning";
-  status.innerHTML =
-    "Sedang menghantar pendaftaran set...";
-
-  google.script.run
-
-    .withSuccessHandler(function(res){
-
-      btnKembali.disabled = false;
-
-      if(res && res.status === true){
-
-        btn.disabled = true;
-        btn.textContent =
-          "PENDAFTARAN TELAH DIHANTAR";
-
-        status.className = "status-box success";
-        status.innerHTML =
-          "<strong>Pendaftaran berjaya dihantar.</strong><br>" +
-          "Status: " +
-          escapeHtml(
-            res.statusSet ||
-            "MENUNGGU PENGESAHAN TSM"
-          );
-
-        setTimeout(function(){
-
-          tutupPendaftaranSet();
-          semakStatusSetWalkieTalkie();
-
-        }, 1800);
-
-      }else{
-
-        btn.disabled = false;
-        btn.textContent =
-          "HANTAR PENDAFTARAN KEPADA TSM";
-
-        status.className = "status-box error";
-        status.innerHTML =
-          escapeHtml(
-            res && res.mesej
-              ? res.mesej
-              : "Pendaftaran set tidak berjaya."
-          );
-
-      }
-
-    })
-
-    .withFailureHandler(function(error){
-
-      btn.disabled = false;
-      btnKembali.disabled = false;
-
-      btn.textContent =
-        "HANTAR PENDAFTARAN KEPADA TSM";
-
-      status.className = "status-box error";
-      status.innerHTML =
-        "Ralat sistem: " +
-        escapeHtml(error.message);
-
-    })
-
-    .daftarSetWalkieTalkie({
-
-      noBadan:
-        userLogin.noBadan,
-
-      noSiriSet:
-        noSiriSet,
-
-      noSiriBateri:
-        noSiriBateri,
-
-      noSiriCharger:
-        noSiriCharger,
-
-      aksesori:
-        aksesori,
-
-      catatan:
-        catatan
-
-    });
-
-}
-
-
-function mohonPemulanganSetPetugas(){
-
-  if(
-    !userLogin ||
-    !rekodSetSemasa ||
-    !rekodSetSemasa.idPendaftaran
-  ){
-
-    alert(
-      "Maklumat pendaftaran set tidak dijumpai."
-    );
-
-    return;
-  }
-
-  const pasti = confirm(
-    "Adakah anda pasti mahu menghantar permohonan pemulangan set kepada TSM?"
-  );
-
-  if(!pasti){
-    return;
-  }
-
-  const btn =
-    document.getElementById(
-      "btnPulangSet"
-    );
-
-  btn.disabled = true;
-  btn.textContent =
-    "SEDANG MENGHANTAR...";
-
-  google.script.run
-
-    .withSuccessHandler(function(res){
-
-      if(res && res.status === true){
-
-        alert(
-          res.mesej ||
-          "Permohonan pemulangan berjaya dihantar."
-        );
-
-        semakStatusSetWalkieTalkie();
-
-      }else{
-
-        btn.disabled = false;
-        btn.textContent =
-          "PULANGKAN SET WALKIE-TALKIE";
-
-        alert(
-          res && res.mesej
-            ? res.mesej
-            : "Permohonan pemulangan tidak berjaya."
-        );
-
-      }
-
-    })
-
-    .withFailureHandler(function(error){
-
-      btn.disabled = false;
-      btn.textContent =
-        "PULANGKAN SET WALKIE-TALKIE";
-
-      alert(
-        "Ralat sistem: " +
-        error.message
-      );
-
-    })
-
-    .mohonPemulanganSet(
-      rekodSetSemasa.idPendaftaran,
-      userLogin.noBadan
-    );
-
-}
-
-
-function refreshDashboard(){
-
-  if(!userLogin){
-    return;
-  }
-
-  const btn =
-    document.getElementById(
-      "btnRefreshStatus"
-    );
-
-  btn.disabled = true;
-  btn.textContent =
-    "SEDANG MENYEMAK...";
-
-
-  dapatkanTugasHariIni(
-    userLogin.noBadan
-  );
-
-  semakStatusSetWalkieTalkie();
-
-
-  setTimeout(function(){
-
-    btn.disabled = false;
-    btn.textContent =
-      "SEMAK SEMULA STATUS";
-
-  }, 1200);
-
-}
-
-
-// ===============================
-// SEMAK STATUS SECARA AUTOMATIK
-// ===============================
-
-function mulaSemakanStatusAutomatik(){
-
+function mulaSemakanStatusAutomatik() {
   hentikanSemakanStatusAutomatik();
-
-
-  timerSemakStatus =
-    setInterval(function(){
-
-      if(
-        userLogin &&
-        document.getElementById(
-          "dashboard"
-        ).style.display === "block"
-      ){
-
-        /*
-          Muat semula tugasan dan status supaya perubahan
-          RESET DEVICE oleh Pentadbir dipaparkan secara automatik.
-        */
-        dapatkanTugasHariIni(
-          userLogin.noBadan
-        );
-
-      }
-
-    }, SELANG_SEMAKAN_STATUS);
-
+  timerSemakStatus = setInterval(() => {
+    if (userLogin && el("dashboard")?.style.display === "block") refreshDashboard();
+  }, SELANG_SEMAKAN_STATUS);
 }
-
-
-function hentikanSemakanStatusAutomatik(){
-
-  if(timerSemakStatus){
-
-    clearInterval(
-      timerSemakStatus
-    );
-
-    timerSemakStatus = null;
-
-  }
-
+function hentikanSemakanStatusAutomatik() { if (timerSemakStatus) clearInterval(timerSemakStatus); timerSemakStatus = null; }
+function kembaliDashboard() { el("checkin").style.display = "none"; el("dashboard").style.display = "block"; }
+function kembaliDashboardCheckout() { el("checkout").style.display = "none"; el("dashboard").style.display = "block"; }
+async function logout() {
+  hentikanSemakanStatusAutomatik(); await db.auth.signOut().catch(() => {}); localStorage.removeItem("user");
+  userLogin = tugas = lokasiGPS = lokasiGPSCheckout = rekodCheckinSemasa = null;
+  ["dashboard", "checkin", "checkout", "laporan"].forEach(id => { if (el(id)) el(id).style.display = "none"; });
+  el("loginBox").style.display = "block"; el("password").value = ""; el("status").innerHTML = "";
 }
-
-
-// ===============================
-// KEMBALI
-// ===============================
-
-function kembaliDashboard(){
-
-  document.getElementById(
-    "checkin"
-  ).style.display = "none";
-
-
-  document.getElementById(
-    "dashboard"
-  ).style.display = "block";
-
+function kosongkanMaklumatTugas() { ["callSignTugas", "jenisTugas", "lokasiTugas", "penyeliaTugas", "pemegangSetTugas"].forEach(id => el(id).textContent = "-"); }
+function binaBarisMaklumat(label, nilai) { return `<div class="info-row"><div class="info-label">${escapeHtml(label)}</div><div class="info-value">${escapeHtml(nilai || "-")}</div></div>`; }
+function kiraJarakMeter(lat1, lng1, lat2, lng2) {
+  const R = 6371000, dLat = darjahKeRadian(lat2 - lat1), dLng = darjahKeRadian(lng2 - lng1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(darjahKeRadian(lat1)) * Math.cos(darjahKeRadian(lat2)) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
+function darjahKeRadian(v) { return v * Math.PI / 180; }
 
+document.addEventListener("DOMContentLoaded", () => {
+  el("password")?.addEventListener("keydown", e => { if (e.key === "Enter") login(); });
+  pulihkanSesi();
+});
 
-// ===============================
-// LOG KELUAR
-// ===============================
-
-function logout(){
-
-  hentikanSemakanStatusAutomatik();
-
-  localStorage.removeItem("user");
-
-
-  userLogin = null;
-  lokasiGPS = null;
-  tugas = null;
-  jarakSemasa = null;
-  lokasiDibenarkan = false;
-  sedangMenghantar = false;
-
-
-  document.getElementById(
-    "dashboard"
-  ).style.display = "none";
-
-
-  document.getElementById(
-    "checkin"
-  ).style.display = "none";
-
-
-  document.getElementById(
-    "checkout"
-  ).style.display = "none";
-
-
-  document.getElementById(
-    "loginBox"
-  ).style.display = "block";
-
-
-  document.getElementById(
-    "password"
-  ).value = "";
-
-
-  document.getElementById(
-    "status"
-  ).innerHTML = "";
-
-}
-
-
-// ===============================
-// SEMAK STATUS PETUGAS DIGANTI
-// ===============================
-
-function adakahStatusDiganti(data){
-
-  if(!data){
-    return false;
-  }
-
-  const statusPetugas =
-    String(
-      data.statusPetugas ||
-      data.statusPenugasan ||
-      data.statusTugas ||
-      ""
-    )
-      .trim()
-      .toUpperCase();
-
-  const mesej =
-    String(
-      data.mesej || ""
-    )
-      .trim()
-      .toUpperCase();
-
-  return (
-    data.diganti === true ||
-    statusPetugas === "DIGANTI" ||
-    mesej.indexOf("DIGANTI") !== -1
-  );
-
-}
-
-
-// ===============================
-// KOSONGKAN MAKLUMAT TUGAS
-// ===============================
-
-function kosongkanMaklumatTugas(){
-
-  document.getElementById(
-    "callSignTugas"
-  ).textContent = "-";
-
-  document.getElementById(
-    "jenisTugas"
-  ).textContent = "-";
-
-  document.getElementById(
-    "lokasiTugas"
-  ).textContent = "-";
-
-  document.getElementById(
-    "penyeliaTugas"
-  ).textContent = "-";
-
-  document.getElementById(
-    "pemegangSetTugas"
-  ).textContent = "-";
-
-}
-
-
-// ===============================
-// BINA BARIS MAKLUMAT
-// ===============================
-
-function binaBarisMaklumat(
-  label,
-  nilai
-){
-
-  return (
-
-    "<div class='info-row'>" +
-
-      "<div class='info-label'>" +
-        escapeHtml(label) +
-      "</div>" +
-
-      "<div class='info-value'>" +
-        escapeHtml(nilai || "-") +
-      "</div>" +
-
-    "</div>"
-
-  );
-
-}
-
-
-// ===============================
-// ENTER UNTUK LOGIN
-// ===============================
-
-document.getElementById(
-  "password"
-).addEventListener(
-  "keydown",
-  function(event){
-
-    if(event.key === "Enter"){
-
-      login();
-
-    }
-
-  }
-);
-
-
-// ===============================
-// KESELAMATAN TEKS
-// ===============================
-
-function escapeHtml(value){
-
-  return String(value || "")
-
-    .replace(/&/g, "&amp;")
-
-    .replace(/</g, "&lt;")
-
-    .replace(/>/g, "&gt;")
-
-    .replace(/"/g, "&quot;")
-
-    .replace(/'/g, "&#039;");
-
-}
