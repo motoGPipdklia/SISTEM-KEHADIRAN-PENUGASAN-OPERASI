@@ -823,4 +823,23 @@ tbody tr:hover{
     color:#000 !important;
   }
 
+.notification-item.notification-warning{
+  border-right:3px solid #d4af37;
+}
+
+.notification-item.notification-success{
+  border-right:3px solid #277a49;
+}
+
+.notification-item.notification-danger{
+  border-right:3px solid #8f2e2e;
+}
+
+.notification-item.notification-info{
+  border-right:3px solid #356da4;
+}
+
+.notification-read-all:disabled{
+  opacity:.5;
+  cursor:not-allowed;
 }
