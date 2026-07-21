@@ -290,7 +290,11 @@
       <!-- ===============================================
            DAFTAR PENGGUNA BAHARU
       ================================================ -->
-      <section class="card user-registration" id="modulDaftarPengguna">
+      <section
+  class="card user-registration"
+  id="modulDaftarPengguna"
+  hidden
+>
         <div class="section-heading">
           <div>
             <h2>Daftar Pengguna Baharu</h2>
@@ -305,14 +309,14 @@
             type="button"
             onclick="toggleDaftarPengguna()"
             id="btnToggleDaftarPengguna"
-            aria-expanded="true"
+            aria-expanded="false"
             aria-controls="borangDaftarPengguna"
           >
-            SEMBUNYIKAN BORANG
+            PAPARKAN BORANG
           </button>
         </div>
 
-        <div id="borangDaftarPengguna">
+        <div id="borangDaftarPengguna" hidden>
           <div class="form-grid">
             <div class="form-group">
               <label for="penggunaNoBadan">No Badan *</label>
@@ -428,7 +432,11 @@
       <!-- ===============================================
            IMPORT PENGGUNA CSV
       ================================================ -->
-      <section class="card import-assignment import-users" id="modulImportPengguna">
+      <section
+  class="card import-assignment import-users"
+  id="modulImportPengguna"
+  hidden
+>
         <div class="section-heading">
           <div>
             <h2>Import Pengguna CSV</h2>
@@ -452,15 +460,15 @@
               id="btnToggleImportPengguna"
               type="button"
               onclick="toggleImportPengguna()"
-              aria-expanded="true"
+              aria-expanded="false"
               aria-controls="kandunganImportPengguna"
             >
-              SEMBUNYIKAN IMPORT
+              PAPARKAN IMPORT
             </button>
           </div>
         </div>
 
-        <div id="kandunganImportPengguna">
+        <div id="kandunganImportPengguna" hidden>
 
         <div class="import-guide">
           <span><strong>1.</strong> Isi maklumat dan kata laluan</span>
@@ -552,7 +560,11 @@
       <!-- ===============================================
            IMPORT PENUGASAN CSV
       ================================================ -->
-      <section class="card import-assignment" id="modulImportPenugasan">
+      <section
+  class="card import-assignment"
+  id="modulImportPenugasan"
+  hidden
+>
         <div class="section-heading">
           <div>
             <h2>Import Penugasan CSV</h2>
@@ -576,15 +588,15 @@
               id="btnToggleImportPenugasan"
               type="button"
               onclick="toggleImportPenugasan()"
-              aria-expanded="true"
+              aria-expanded="false"
               aria-controls="kandunganImportPenugasan"
             >
-              SEMBUNYIKAN IMPORT
+              PAPARKAN IMPORT
             </button>
           </div>
         </div>
 
-        <div id="kandunganImportPenugasan">
+        <div id="kandunganImportPenugasan" hidden>
 
         <div class="import-guide">
           <span><strong>1.</strong> Muat turun dan isi templat</span>
@@ -710,47 +722,114 @@
 <script src="js/admin.js?v=20260722-0045"></script>
 
   <script>
-    function toggleDaftarPengguna() {
-      const borang = document.getElementById("borangDaftarPengguna");
-      const butang = document.getElementById("btnToggleDaftarPengguna");
-      const sedangTersembunyi = borang.hidden;
+  function toggleDaftarPengguna() {
+    const modul =
+      document.getElementById("modulDaftarPengguna");
 
-      borang.hidden = !sedangTersembunyi;
-      butang.setAttribute("aria-expanded", String(sedangTersembunyi));
-      butang.textContent = sedangTersembunyi
-        ? "SEMBUNYIKAN BORANG"
-        : "PAPARKAN BORANG";
-    }
+    const borang =
+      document.getElementById("borangDaftarPengguna");
 
-    function toggleBahagianImport(idKandungan, idButang) {
-      const kandungan = document.getElementById(idKandungan);
-      const butang = document.getElementById(idButang);
-      const sedangTersembunyi = kandungan.hidden;
+    const butang =
+      document.getElementById("btnToggleDaftarPengguna");
 
-      kandungan.hidden = !sedangTersembunyi;
-      butang.setAttribute("aria-expanded", String(sedangTersembunyi));
-      butang.textContent = sedangTersembunyi
-        ? "SEMBUNYIKAN IMPORT"
-        : "PAPARKAN IMPORT";
-    }
+    const sedangTerbuka =
+      !borang.hidden;
 
-    function toggleImportPengguna() {
-      toggleBahagianImport(
-        "kandunganImportPengguna",
-        "btnToggleImportPengguna"
+    if (sedangTerbuka) {
+      borang.hidden = true;
+      modul.hidden = true;
+
+      butang.setAttribute(
+        "aria-expanded",
+        "false"
       );
+
+      butang.textContent =
+        "PAPARKAN BORANG";
+
+      return;
     }
 
-    function toggleImportPenugasan() {
-      toggleBahagianImport(
-        "kandunganImportPenugasan",
-        "btnToggleImportPenugasan"
+    modul.hidden = false;
+    borang.hidden = false;
+
+    butang.setAttribute(
+      "aria-expanded",
+      "true"
+    );
+
+    butang.textContent =
+      "SEMBUNYIKAN BORANG";
+  }
+
+
+  function toggleBahagianImport(
+    idModul,
+    idKandungan,
+    idButang
+  ) {
+    const modul =
+      document.getElementById(idModul);
+
+    const kandungan =
+      document.getElementById(idKandungan);
+
+    const butang =
+      document.getElementById(idButang);
+
+    const sedangTerbuka =
+      !kandungan.hidden;
+
+    if (sedangTerbuka) {
+      kandungan.hidden = true;
+      modul.hidden = true;
+
+      butang.setAttribute(
+        "aria-expanded",
+        "false"
       );
+
+      butang.textContent =
+        "PAPARKAN IMPORT";
+
+      return;
     }
 
-    function bukaModulTSM() {
-      window.location.href = "tsm.html";
-    }
-  </script>
+    modul.hidden = false;
+    kandungan.hidden = false;
+
+    butang.setAttribute(
+      "aria-expanded",
+      "true"
+    );
+
+    butang.textContent =
+      "SEMBUNYIKAN IMPORT";
+  }
+
+
+  function toggleImportPengguna() {
+    toggleBahagianImport(
+      "modulImportPengguna",
+      "kandunganImportPengguna",
+      "btnToggleImportPengguna"
+    );
+  }
+
+
+  function toggleImportPenugasan() {
+    toggleBahagianImport(
+      "modulImportPenugasan",
+      "kandunganImportPenugasan",
+      "btnToggleImportPenugasan"
+    );
+  }
+
+
+  function bukaModulTSM() {
+    window.location.href =
+      "tsm.html";
+  }
+</script>
 </body>
 </html>
