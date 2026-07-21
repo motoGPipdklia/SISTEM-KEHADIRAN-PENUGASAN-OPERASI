@@ -636,6 +636,43 @@ tbody tr:hover{
 }
 
 /* ================================================================
+   HIGHLIGHT MODUL
+================================================================ */
+
+.modul-disorot{
+  animation:sorotModulPentadbir 1.8s ease;
+}
+
+@keyframes sorotModulPentadbir{
+  0%{
+    border-color:var(--gold);
+    box-shadow:
+      0 0 0 3px rgba(212,175,55,.38),
+      0 12px 35px rgba(0,0,0,.55);
+  }
+
+  55%{
+    border-color:var(--gold);
+    box-shadow:
+      0 0 0 5px rgba(212,175,55,.18),
+      0 12px 35px rgba(0,0,0,.55);
+  }
+
+  100%{
+    border-color:#2d2d2d;
+    box-shadow:var(--shadow);
+  }
+}
+
+/* ================================================================
+   IMPORT PENUGASAN CSV
+================================================================ */
+
+.import-assignment{
+  margin-top:20px;
+}
+
+/* ================================================================
    IMPORT PENUGASAN CSV
 ================================================================ */
 
