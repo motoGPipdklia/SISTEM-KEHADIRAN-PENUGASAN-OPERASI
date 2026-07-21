@@ -955,3 +955,123 @@ button:disabled{
     color:#000;
   }
 }
+
+/* ================================================================
+   PEMBETULAN PAPARAN LOGIN URUSETIA
+   Diletakkan paling bawah supaya mengatasi style.css global
+================================================================ */
+
+body .container > header .logo{
+  color:var(--gold) !important;
+}
+
+body #loginSection.card{
+  width:min(100%,480px) !important;
+  margin:15px auto !important;
+  padding:28px 24px !important;
+  border:1px solid var(--border) !important;
+  border-radius:15px !important;
+  background:var(--surface) !important;
+  color:var(--text) !important;
+  box-shadow:var(--shadow) !important;
+  text-align:center !important;
+}
+
+body #loginSection h1{
+  margin:0 0 24px !important;
+  color:var(--gold) !important;
+}
+
+body #loginSection input{
+  display:block !important;
+  width:100% !important;
+  min-height:58px !important;
+  margin:0 0 14px !important;
+  padding:14px 16px !important;
+  border:1px solid #4a4a4a !important;
+  border-radius:9px !important;
+  background:#121212 !important;
+  color:#fff !important;
+  opacity:1 !important;
+  visibility:visible !important;
+}
+
+body #loginSection input::placeholder{
+  color:#9b9b9b !important;
+  opacity:1 !important;
+}
+
+body #loginSection #btnLogin.btn-main{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:100% !important;
+  min-height:58px !important;
+  margin:8px 0 0 !important;
+  padding:15px 20px !important;
+  border:1px solid var(--gold) !important;
+  border-radius:9px !important;
+  background:var(--gold) !important;
+  color:#111 !important;
+  font-size:17px !important;
+  font-weight:800 !important;
+  letter-spacing:.4px !important;
+  line-height:1.2 !important;
+  text-align:center !important;
+  text-indent:0 !important;
+  opacity:1 !important;
+  visibility:visible !important;
+  filter:none !important;
+  cursor:pointer !important;
+}
+
+body #loginSection #btnLogin.btn-main:hover:not(:disabled){
+  background:#e6c34c !important;
+  border-color:#e6c34c !important;
+  color:#111 !important;
+  filter:none !important;
+  transform:translateY(-1px);
+}
+
+body #loginSection #btnLogin.btn-main:active:not(:disabled){
+  transform:translateY(0);
+}
+
+body #loginSection #btnLogin.btn-main:disabled{
+  background:#75621f !important;
+  border-color:#75621f !important;
+  color:#f2f2f2 !important;
+  opacity:.8 !important;
+  cursor:wait !important;
+}
+
+body #loginSection .btn-secondary.link{
+  display:block !important;
+  width:100% !important;
+  margin-top:16px !important;
+  padding:14px 16px !important;
+  border:1px solid #505050 !important;
+  border-radius:9px !important;
+  background:#333 !important;
+  color:#fff !important;
+  text-align:center !important;
+  text-decoration:none !important;
+  opacity:1 !important;
+  visibility:visible !important;
+}
+
+body #loginSection .btn-secondary.link:hover{
+  background:#444 !important;
+  border-color:#666 !important;
+}
+
+@media(max-width:520px){
+  body #loginSection.card{
+    padding:22px 16px !important;
+  }
+
+  body #loginSection #btnLogin.btn-main,
+  body #loginSection input{
+    min-height:54px !important;
+  }
+}
