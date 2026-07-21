@@ -186,17 +186,45 @@ function bukaModalPelepasan(id) {
   ["noSiriSet", "noSiriBateri", "noSiriCharger", "catatanTSM"].forEach(idElemen => elTSM(idElemen).value = "");
   document.querySelectorAll('input[name="aksesoriTSM"]').forEach(x => x.checked = false);
   elTSM("statusPelepasan").className = "status hidden";
+  const btn = elTSM("btnSahkanPelepasan");
+  btn.disabled = false;
+  btn.textContent = "SAHKAN & LEPASKAN";
   elTSM("modalPelepasan").classList.remove("hidden");
+  const kotakModal = elTSM("modalPelepasan").querySelector(".modal-box");
+  if (kotakModal) kotakModal.scrollTop = 0;
+  setTimeout(() => elTSM("noSiriSet")?.focus(), 50);
 }
 function tutupModalPelepasan() { rekodAktifTSM = null; elTSM("modalPelepasan").classList.add("hidden"); }
 
 async function sahkanPelepasan() {
-  if (!rekodAktifTSM) return;
-  const noSet = atasTSM(elTSM("noSiriSet").value);
-  if (!noSet) return paparStatusTSM("statusPelepasan", "No Siri Set wajib diisi.", "error");
+  const status = elTSM("statusPelepasan");
+  const btn = elTSM("btnSahkanPelepasan");
+
+  if (!rekodAktifTSM) {
+    paparStatusTSM("statusPelepasan", "Rekod permohonan tidak dijumpai. Tutup borang dan cuba semula.", "error");
+    status?.scrollIntoView({ behavior: "smooth", block: "center" });
+    return;
+  }
+
+  const medanNoSet = elTSM("noSiriSet");
+  const noSet = atasTSM(medanNoSet.value);
+
+  if (!noSet) {
+    paparStatusTSM("statusPelepasan", "No Siri Set wajib diisi sebelum set boleh dilepaskan.", "error");
+    medanNoSet.focus();
+    medanNoSet.scrollIntoView({ behavior: "smooth", block: "center" });
+    return;
+  }
+
   const aksesori = [...document.querySelectorAll('input[name="aksesoriTSM"]:checked')].map(x => x.value);
+
+  btn.disabled = true;
+  btn.textContent = "SEDANG MENYIMPAN...";
+  paparStatusTSM("statusPelepasan", "Sedang merekodkan nombor siri dan pelepasan set...", "warning");
+  status?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+
   try {
-    const { error } = await dbTSM.from("walkie_talkie").update({
+    const { data, error } = await dbTSM.from("walkie_talkie").update({
       no_siri_set: noSet,
       no_siri_bateri: atasTSM(elTSM("noSiriBateri").value) || null,
       no_siri_charger: atasTSM(elTSM("noSiriCharger").value) || null,
@@ -205,10 +233,32 @@ async function sahkanPelepasan() {
       status: "DILEPASKAN",
       masa_pelepasan: new Date().toISOString(),
       disahkan_oleh: penggunaTSM.authUserId
-    }).eq("id", rekodAktifTSM.rekod.id);
+    })
+      .eq("id", rekodAktifTSM.rekod.id)
+      .select("id,status,no_siri_set")
+      .maybeSingle();
+
     if (error) throw error;
-    tutupModalPelepasan(); await muatDataTSM();
-  } catch (error) { paparStatusTSM("statusPelepasan", htmlTSM(error.message), "error"); }
+    if (!data) {
+      throw new Error("Rekod tidak dikemas kini. Pastikan akaun mempunyai peranan TSM/PENTADBIR dan polisi RLS membenarkan kemas kini.");
+    }
+
+    paparStatusTSM(
+      "statusPelepasan",
+      `Set ${htmlTSM(data.no_siri_set || noSet)} berjaya dilepaskan.`,
+      "success"
+    );
+    status?.scrollIntoView({ behavior: "smooth", block: "center" });
+
+    await new Promise(resolve => setTimeout(resolve, 700));
+    tutupModalPelepasan();
+    await muatDataTSM();
+  } catch (error) {
+    paparStatusTSM("statusPelepasan", `Pelepasan gagal: ${htmlTSM(error.message)}`, "error");
+    status?.scrollIntoView({ behavior: "smooth", block: "center" });
+    btn.disabled = false;
+    btn.textContent = "SAHKAN & LEPASKAN";
+  }
 }
 
 async function tolakPermohonan(id) {
