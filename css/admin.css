@@ -595,6 +595,112 @@ tbody tr:hover{
   margin-top:14px;
 }
 
+/* ================================================================
+   IMPORT PENUGASAN CSV
+================================================================ */
+
+.import-assignment{
+  margin-top:20px;
+}
+
+.import-guide{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(170px,1fr));
+  gap:10px;
+  margin:15px 0;
+}
+
+.import-guide span{
+  padding:12px;
+  border:1px solid #3d3d3d;
+  border-radius:10px;
+  color:#ddd;
+  background:#171717;
+  font-size:13px;
+}
+
+.import-guide strong{
+  color:#d4af37;
+}
+
+.import-file-row{
+  display:grid;
+  grid-template-columns:minmax(280px,1fr) auto;
+  gap:12px;
+  align-items:end;
+}
+
+.import-file-row button{
+  min-height:46px;
+}
+
+.import-summary{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(140px,1fr));
+  gap:10px;
+  margin:15px 0;
+}
+
+.import-summary > div{
+  min-width:0;
+  padding:13px;
+  border:1px solid #333;
+  border-radius:10px;
+  background:#171717;
+}
+
+.import-summary strong,
+.import-summary span{
+  display:block;
+}
+
+.import-summary strong{
+  overflow:hidden;
+  color:#d4af37;
+  font-size:22px;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.import-summary span{
+  margin-top:4px;
+  color:#bbb;
+  font-size:12px;
+}
+
+.import-preview{
+  margin-top:14px;
+}
+
+.import-table-wrap{
+  max-height:420px;
+}
+
+.import-table{
+  min-width:1450px;
+}
+
+.import-table td:last-child{
+  min-width:230px;
+  white-space:normal;
+}
+
+.import-button{
+  width:100%;
+  margin-top:14px;
+}
+
+#statusImportPenugasan details{
+  margin-top:8px;
+}
+
+#statusImportPenugasan ul{
+  max-height:220px;
+  overflow:auto;
+  margin:8px 0 0;
+  padding-left:22px;
+}
+
 @media(max-width:1250px){
   .stats{
     grid-template-columns:repeat(4,1fr);
@@ -607,7 +713,9 @@ tbody tr:hover{
 
 @media(max-width:900px){
   .filters,
-  .actions{
+  .actions,
+  .import-guide,
+  .import-summary{
     grid-template-columns:repeat(2,1fr);
   }
 
@@ -640,7 +748,10 @@ tbody tr:hover{
   .filters,
   .actions,
   .form-grid,
-  .modal-actions{
+  .modal-actions,
+  .import-guide,
+  .import-summary,
+  .import-file-row{
     grid-template-columns:1fr;
   }
 
@@ -684,6 +795,7 @@ tbody tr:hover{
   .actions,
   .tools,
   .user-registration,
+  .import-assignment,
   .modal{
     display:none !important;
   }
