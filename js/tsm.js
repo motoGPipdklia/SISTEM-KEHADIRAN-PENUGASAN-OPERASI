@@ -11,6 +11,18 @@ let penggunaTSM = null;
 let dataTSM = [];
 let rekodAktifTSM = null;
 
+/* ================================================================
+   NOTIFIKASI TSM
+================================================================ */
+
+let dataNotifikasiTSM = [];
+let saluranNotifikasiTSM = null;
+let pemasaAlertTSM = null;
+let notifikasiTSMSedangDimuatkan = false;
+
+const PERANAN_NOTIFIKASI_TSM = "TSM";
+const HAD_NOTIFIKASI_TSM = 50;
+
 function elTSM(id) { return document.getElementById(id); }
 function teksTSM(v) { return String(v ?? "").trim(); }
 function atasTSM(v) { return teksTSM(v).toUpperCase(); }
@@ -48,6 +60,546 @@ async function ambilProfilTSM(userId) {
   return r.data;
 }
 function perananTSM(v) { return ["TSM", "PENTADBIR", "ADMIN"].includes(atasTSM(v)); }
+/* ================================================================
+   NOTIFICATION CENTER TSM
+================================================================ */
+
+function normalisasiNotifikasiTSM(rekod) {
+  return {
+    id: rekod?.id || "",
+    penerima_peranan: atasTSM(rekod?.penerima_peranan),
+    tajuk: teksTSM(rekod?.tajuk) || "Notifikasi",
+    mesej: teksTSM(rekod?.mesej),
+    jenis: atasTSM(rekod?.jenis) || "INFO",
+    sumber_jadual: teksTSM(rekod?.sumber_jadual),
+    rujukan_id: rekod?.rujukan_id || null,
+    petugas_id: rekod?.petugas_id || null,
+    dibaca: rekod?.dibaca === true,
+    created_at: rekod?.created_at || null,
+    updated_at: rekod?.updated_at || null
+  };
+}
+
+function kiraNotifikasiBelumDibacaTSM() {
+  return dataNotifikasiTSM.filter(item => !item.dibaca).length;
+}
+
+function formatMasaRelatifTSM(nilai) {
+  if (!nilai) return "-";
+
+  const tarikh = new Date(nilai);
+  if (Number.isNaN(tarikh.getTime())) return masaTSM(nilai);
+
+  const bezaSaat = Math.max(
+    0,
+    Math.floor((Date.now() - tarikh.getTime()) / 1000)
+  );
+
+  if (bezaSaat < 10) return "Baru sahaja";
+  if (bezaSaat < 60) return `${bezaSaat} saat lalu`;
+
+  const bezaMinit = Math.floor(bezaSaat / 60);
+  if (bezaMinit < 60) return `${bezaMinit} minit lalu`;
+
+  const bezaJam = Math.floor(bezaMinit / 60);
+  if (bezaJam < 24) return `${bezaJam} jam lalu`;
+
+  const bezaHari = Math.floor(bezaJam / 24);
+  if (bezaHari < 7) return `${bezaHari} hari lalu`;
+
+  return masaTSM(nilai);
+}
+
+function kelasJenisNotifikasiTSM(jenis) {
+  const nilai = atasTSM(jenis);
+
+  if (
+    nilai.includes("TOLAK") ||
+    nilai.includes("RALAT") ||
+    nilai.includes("ROSAK")
+  ) {
+    return "notification-danger";
+  }
+
+  if (
+    nilai.includes("PULANG") ||
+    nilai.includes("SELESAI") ||
+    nilai.includes("LULUS")
+  ) {
+    return "notification-success";
+  }
+
+  if (
+    nilai.includes("PERMOHONAN") ||
+    nilai.includes("MENUNGGU")
+  ) {
+    return "notification-warning";
+  }
+
+  return "notification-info";
+}
+
+function ikonJenisNotifikasiTSM(jenis) {
+  const nilai = atasTSM(jenis);
+
+  if (
+    nilai.includes("TOLAK") ||
+    nilai.includes("RALAT") ||
+    nilai.includes("ROSAK")
+  ) {
+    return "🔴";
+  }
+
+  if (
+    nilai.includes("PULANG") ||
+    nilai.includes("SELESAI") ||
+    nilai.includes("LULUS")
+  ) {
+    return "🟢";
+  }
+
+  if (
+    nilai.includes("PERMOHONAN") ||
+    nilai.includes("MENUNGGU")
+  ) {
+    return "🟡";
+  }
+
+  return "🔔";
+}
+
+function kemasKiniBadgeNotifikasiTSM() {
+  const badge = elTSM("jumlahNotifikasiTSM");
+  const ringkasan = elTSM("ringkasanNotifikasiTSM");
+  const butangBacaSemua = elTSM("btnBacaSemuaNotifikasiTSM");
+
+  const jumlah = kiraNotifikasiBelumDibacaTSM();
+
+  if (badge) {
+    badge.textContent = jumlah > 99 ? "99+" : String(jumlah);
+    badge.hidden = jumlah === 0;
+  }
+
+  if (ringkasan) {
+    ringkasan.textContent = jumlah
+      ? `${jumlah} notifikasi belum dibaca`
+      : "Tiada notifikasi baharu";
+  }
+
+  if (butangBacaSemua) {
+    butangBacaSemua.disabled = jumlah === 0;
+  }
+
+  document.title = jumlah
+    ? `(${jumlah}) SKPO TSM`
+    : "SKPO TSM";
+}
+
+function paparSenaraiNotifikasiTSM() {
+  const senarai = elTSM("senaraiNotifikasiTSM");
+  if (!senarai) return;
+
+  kemasKiniBadgeNotifikasiTSM();
+
+  if (!dataNotifikasiTSM.length) {
+    senarai.innerHTML = `
+      <div class="notification-empty">
+        Tiada notifikasi untuk dipaparkan.
+      </div>
+    `;
+    return;
+  }
+
+  senarai.innerHTML = dataNotifikasiTSM.map(item => {
+    const kelasBaca = item.dibaca ? "" : " unread";
+    const kelasJenis = kelasJenisNotifikasiTSM(item.jenis);
+    const ikon = ikonJenisNotifikasiTSM(item.jenis);
+
+    return `
+      <article
+        class="notification-item${kelasBaca} ${kelasJenis}"
+        role="listitem"
+        tabindex="0"
+        data-notifikasi-id="${htmlTSM(item.id)}"
+        onclick="bukaNotifikasiTSM('${htmlTSM(item.id)}')"
+        onkeydown="urusKekunciNotifikasiTSM(event, '${htmlTSM(item.id)}')"
+      >
+        <div class="notification-title">
+          <span aria-hidden="true">${ikon}</span>
+          ${htmlTSM(item.tajuk)}
+        </div>
+
+        <div class="notification-message">
+          ${htmlTSM(item.mesej || "-")}
+        </div>
+
+        <div class="notification-time">
+          ${htmlTSM(formatMasaRelatifTSM(item.created_at))}
+        </div>
+      </article>
+    `;
+  }).join("");
+}
+
+function urusKekunciNotifikasiTSM(event, id) {
+  if (event.key === "Enter" || event.key === " ") {
+    event.preventDefault();
+    bukaNotifikasiTSM(id);
+  }
+}
+
+async function muatNotifikasiTSM() {
+  if (!penggunaTSM || notifikasiTSMSedangDimuatkan) return;
+
+  notifikasiTSMSedangDimuatkan = true;
+
+  try {
+    const { data, error } = await dbTSM
+      .from("notifications")
+      .select(`
+        id,
+        penerima_peranan,
+        tajuk,
+        mesej,
+        jenis,
+        sumber_jadual,
+        rujukan_id,
+        petugas_id,
+        dibaca,
+        created_at,
+        updated_at
+      `)
+      .eq("penerima_peranan", PERANAN_NOTIFIKASI_TSM)
+      .order("created_at", { ascending: false })
+      .limit(HAD_NOTIFIKASI_TSM);
+
+    if (error) throw error;
+
+    dataNotifikasiTSM = (data || []).map(normalisasiNotifikasiTSM);
+    paparSenaraiNotifikasiTSM();
+  } catch (error) {
+    console.error("Ralat mendapatkan notifikasi TSM:", error);
+
+    const senarai = elTSM("senaraiNotifikasiTSM");
+
+    if (senarai) {
+      senarai.innerHTML = `
+        <div class="notification-empty">
+          Notifikasi tidak dapat dimuatkan.<br>
+          ${htmlTSM(error.message)}
+        </div>
+      `;
+    }
+  } finally {
+    notifikasiTSMSedangDimuatkan = false;
+  }
+}
+
+function togglePanelNotifikasiTSM() {
+  const panel = elTSM("panelNotifikasiTSM");
+  const butang = elTSM("btnNotifikasiTSM");
+
+  if (!panel) return;
+
+  const akanDibuka = panel.hidden;
+
+  panel.hidden = !akanDibuka;
+
+  if (butang) {
+    butang.setAttribute(
+      "aria-expanded",
+      akanDibuka ? "true" : "false"
+    );
+  }
+
+  if (akanDibuka) {
+    muatNotifikasiTSM();
+  }
+}
+
+function tutupPanelNotifikasiTSM() {
+  const panel = elTSM("panelNotifikasiTSM");
+  const butang = elTSM("btnNotifikasiTSM");
+
+  if (panel) panel.hidden = true;
+  if (butang) butang.setAttribute("aria-expanded", "false");
+}
+
+async function bukaNotifikasiTSM(id) {
+  const notifikasi = dataNotifikasiTSM.find(
+    item => String(item.id) === String(id)
+  );
+
+  if (!notifikasi) return;
+
+  if (!notifikasi.dibaca) {
+    try {
+      const { error } = await dbTSM
+        .from("notifications")
+        .update({
+          dibaca: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", notifikasi.id);
+
+      if (error) throw error;
+
+      notifikasi.dibaca = true;
+      paparSenaraiNotifikasiTSM();
+    } catch (error) {
+      console.error("Gagal menandakan notifikasi dibaca:", error);
+    }
+  }
+
+  tutupPanelNotifikasiTSM();
+
+  if (atasTSM(notifikasi.sumber_jadual) === "WALKIE_TALKIE") {
+    elTSM("statusFilter").value = "";
+
+    const tarikh = elTSM("tarikh");
+    if (tarikh && !tarikh.value) {
+      tarikh.value = hariIniTSM();
+    }
+
+    await muatDataTSM();
+
+    const jadual = elTSM("tbodyTSM");
+    if (jadual) {
+      jadual.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+    }
+  }
+}
+
+async function tandakanSemuaNotifikasiTSMDibaca() {
+  const belumDibaca = dataNotifikasiTSM
+    .filter(item => !item.dibaca)
+    .map(item => item.id)
+    .filter(Boolean);
+
+  if (!belumDibaca.length) return;
+
+  const butang = elTSM("btnBacaSemuaNotifikasiTSM");
+
+  if (butang) {
+    butang.disabled = true;
+    butang.textContent = "SEDANG MENYIMPAN...";
+  }
+
+  try {
+    const { error } = await dbTSM
+      .from("notifications")
+      .update({
+        dibaca: true,
+        updated_at: new Date().toISOString()
+      })
+      .in("id", belumDibaca);
+
+    if (error) throw error;
+
+    dataNotifikasiTSM.forEach(item => {
+      if (belumDibaca.includes(item.id)) {
+        item.dibaca = true;
+      }
+    });
+
+    paparSenaraiNotifikasiTSM();
+  } catch (error) {
+    alert(`Gagal menandakan notifikasi: ${error.message}`);
+  } finally {
+    if (butang) {
+      butang.textContent = "TANDA SEMUA DIBACA";
+      butang.disabled = kiraNotifikasiBelumDibacaTSM() === 0;
+    }
+  }
+}
+
+function paparPemberitahuanLangsungTSM(notifikasi) {
+  const kotak = elTSM("realtimeAlertTSM");
+  const tajuk = elTSM("realtimeAlertTitleTSM");
+  const mesej = elTSM("realtimeAlertMessageTSM");
+
+  if (!kotak) return;
+
+  if (tajuk) {
+    tajuk.textContent = notifikasi.tajuk || "Notifikasi Baharu";
+  }
+
+  if (mesej) {
+    mesej.textContent =
+      notifikasi.mesej ||
+      "Permohonan Walkie Talkie baharu diterima.";
+  }
+
+  kotak.hidden = false;
+
+  if (pemasaAlertTSM) {
+    clearTimeout(pemasaAlertTSM);
+  }
+
+  pemasaAlertTSM = setTimeout(() => {
+    tutupPemberitahuanLangsungTSM();
+  }, 10000);
+}
+
+function tutupPemberitahuanLangsungTSM() {
+  const kotak = elTSM("realtimeAlertTSM");
+
+  if (kotak) kotak.hidden = true;
+
+  if (pemasaAlertTSM) {
+    clearTimeout(pemasaAlertTSM);
+    pemasaAlertTSM = null;
+  }
+}
+
+function tambahNotifikasiRealtimeTSM(rekod) {
+  const notifikasi = normalisasiNotifikasiTSM(rekod);
+
+  if (
+    notifikasi.penerima_peranan !== PERANAN_NOTIFIKASI_TSM
+  ) {
+    return;
+  }
+
+  const indeks = dataNotifikasiTSM.findIndex(
+    item => String(item.id) === String(notifikasi.id)
+  );
+
+  if (indeks >= 0) {
+    dataNotifikasiTSM[indeks] = notifikasi;
+  } else {
+    dataNotifikasiTSM.unshift(notifikasi);
+  }
+
+  dataNotifikasiTSM = dataNotifikasiTSM
+    .sort((a, b) => {
+      return new Date(b.created_at || 0) -
+        new Date(a.created_at || 0);
+    })
+    .slice(0, HAD_NOTIFIKASI_TSM);
+
+  paparSenaraiNotifikasiTSM();
+
+  if (!notifikasi.dibaca) {
+    paparPemberitahuanLangsungTSM(notifikasi);
+  }
+
+  if (
+    atasTSM(notifikasi.sumber_jadual) === "WALKIE_TALKIE"
+  ) {
+    muatDataTSM().catch(error => {
+      console.error("Auto refresh TSM gagal:", error);
+    });
+  }
+}
+
+function kemasKiniNotifikasiRealtimeTSM(rekod) {
+  const notifikasi = normalisasiNotifikasiTSM(rekod);
+
+  if (
+    notifikasi.penerima_peranan !== PERANAN_NOTIFIKASI_TSM
+  ) {
+    return;
+  }
+
+  const indeks = dataNotifikasiTSM.findIndex(
+    item => String(item.id) === String(notifikasi.id)
+  );
+
+  if (indeks >= 0) {
+    dataNotifikasiTSM[indeks] = notifikasi;
+  } else {
+    dataNotifikasiTSM.unshift(notifikasi);
+  }
+
+  paparSenaraiNotifikasiTSM();
+}
+
+function padamNotifikasiRealtimeTSM(rekodLama) {
+  const id = rekodLama?.id;
+  if (!id) return;
+
+  dataNotifikasiTSM = dataNotifikasiTSM.filter(
+    item => String(item.id) !== String(id)
+  );
+
+  paparSenaraiNotifikasiTSM();
+}
+
+async function hentikanRealtimeNotifikasiTSM() {
+  if (!saluranNotifikasiTSM) return;
+
+  try {
+    await dbTSM.removeChannel(saluranNotifikasiTSM);
+  } catch (error) {
+    console.warn("Saluran notifikasi gagal dihentikan:", error);
+  } finally {
+    saluranNotifikasiTSM = null;
+  }
+}
+
+async function mulakanRealtimeNotifikasiTSM() {
+  if (!penggunaTSM || !dbTSM?.channel) return;
+
+  await hentikanRealtimeNotifikasiTSM();
+
+  saluranNotifikasiTSM = dbTSM
+    .channel(`notifikasi-tsm-${penggunaTSM.authUserId}-${Date.now()}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "notifications",
+        filter: `penerima_peranan=eq.${PERANAN_NOTIFIKASI_TSM}`
+      },
+      payload => {
+        tambahNotifikasiRealtimeTSM(payload.new);
+      }
+    )
+    .on(
+      "postgres_changes",
+      {
+        event: "UPDATE",
+        schema: "public",
+        table: "notifications",
+        filter: `penerima_peranan=eq.${PERANAN_NOTIFIKASI_TSM}`
+      },
+      payload => {
+        kemasKiniNotifikasiRealtimeTSM(payload.new);
+      }
+    )
+    .on(
+      "postgres_changes",
+      {
+        event: "DELETE",
+        schema: "public",
+        table: "notifications"
+      },
+      payload => {
+        padamNotifikasiRealtimeTSM(payload.old);
+      }
+    )
+    .subscribe(status => {
+      console.log("Status Realtime Notifikasi TSM:", status);
+
+      if (status === "CHANNEL_ERROR") {
+        console.error(
+          "Realtime notifikasi gagal. Pastikan jadual notifications telah ditambah ke publication supabase_realtime."
+        );
+      }
+    });
+}
+
+async function mulakanSistemNotifikasiTSM() {
+  if (!penggunaTSM) return;
+
+  await muatNotifikasiTSM();
+  await mulakanRealtimeNotifikasiTSM();
+}
 
 async function loginTSM() {
   const noBadan = atasTSM(elTSM("noBadan").value);
@@ -74,7 +626,12 @@ if (!perananTSM(peranan)) {
 
 }
     penggunaTSM = { ...profil, authUserId: data.user.id };
-    paparDashboardTSM(); await muatDataTSM();
+    paparDashboardTSM();
+
+await Promise.all([
+  muatDataTSM(),
+  mulakanSistemNotifikasiTSM()
+]);
   } catch (error) {
     await dbTSM?.auth?.signOut().catch(() => {});
     paparStatusTSM("loginStatus", htmlTSM(error.message), "error");
@@ -110,8 +667,17 @@ if (!perananTSM(peranan)) {
     return;
 
 }
-    penggunaTSM = { ...profil, authUserId: data.session.user.id };
-    paparDashboardTSM(); await muatDataTSM();
+    penggunaTSM = {
+  ...profil,
+  authUserId: data.session.user.id
+};
+
+paparDashboardTSM();
+
+await Promise.all([
+  muatDataTSM(),
+  mulakanSistemNotifikasiTSM()
+]);
   } catch (error) { paparStatusTSM("loginStatus", htmlTSM(error.message), "error"); }
 }
 
@@ -322,15 +888,70 @@ async function sahkanPemulangan() {
 }
 
 async function logoutTSM() {
+  await hentikanRealtimeNotifikasiTSM();
+  tutupPanelNotifikasiTSM();
+  tutupPemberitahuanLangsungTSM();
+
   await dbTSM?.auth?.signOut().catch(() => {});
-  penggunaTSM = null; dataTSM = [];
+
+  penggunaTSM = null;
+  dataTSM = [];
+  dataNotifikasiTSM = [];
+  rekodAktifTSM = null;
+
+  paparSenaraiNotifikasiTSM();
+
   elTSM("dashboardSection").style.display = "none";
   elTSM("loginSection").style.display = "block";
   elTSM("password").value = "";
+
+  document.title = "SKPO TSM";
 }
 
 document.addEventListener("DOMContentLoaded", () => {
   elTSM("tarikh").value = hariIniTSM();
-  elTSM("password").addEventListener("keydown", e => { if (e.key === "Enter") loginTSM(); });
+
+  elTSM("password")?.addEventListener("keydown", event => {
+    if (event.key === "Enter") {
+      loginTSM();
+    }
+  });
+
+  document.addEventListener("click", event => {
+    const wrapper = elTSM("notificationWrapper");
+    const panel = elTSM("panelNotifikasiTSM");
+
+    if (
+      wrapper &&
+      panel &&
+      !panel.hidden &&
+      !wrapper.contains(event.target)
+    ) {
+      tutupPanelNotifikasiTSM();
+    }
+  });
+
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape") {
+      tutupPanelNotifikasiTSM();
+      tutupPemberitahuanLangsungTSM();
+
+      if (!elTSM("modalPelepasan")?.classList.contains("hidden")) {
+        tutupModalPelepasan();
+      }
+
+      if (!elTSM("modalPemulangan")?.classList.contains("hidden")) {
+        tutupModalPemulangan();
+      }
+    }
+  });
+
+  window.addEventListener("beforeunload", () => {
+    if (saluranNotifikasiTSM) {
+      dbTSM.removeChannel(saluranNotifikasiTSM);
+      saluranNotifikasiTSM = null;
+    }
+  });
+
   pulihkanSesiTSM();
 });
