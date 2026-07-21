@@ -64,9 +64,47 @@
       </div>
 
       <nav class="topbar-actions" aria-label="Tindakan Pentadbir">
-        <a class="tsm-button nav-button" href="tsm.html">MODUL TSM</a>
-        <button class="logout" type="button" onclick="logout()">LOG KELUAR</button>
-      </nav>
+
+  <button
+    class="header-action-button header-import-user"
+    type="button"
+    onclick="bukaImportPengguna()"
+  >
+    IMPORT PENGGUNA CSV
+  </button>
+
+  <button
+    class="header-action-button header-import-assignment"
+    type="button"
+    onclick="bukaImportPenugasan()"
+  >
+    IMPORT PENUGASAN CSV
+  </button>
+
+  <button
+    class="header-action-button header-register-user"
+    type="button"
+    onclick="bukaDaftarPengguna()"
+  >
+    DAFTAR PENGGUNA
+  </button>
+
+  <a
+    class="tsm-button nav-button"
+    href="tsm.html"
+  >
+    MODUL TSM
+  </a>
+
+  <button
+    class="logout"
+    type="button"
+    onclick="logout()"
+  >
+    LOG KELUAR
+  </button>
+
+</nav>
     </header>
 
     <main class="content">
