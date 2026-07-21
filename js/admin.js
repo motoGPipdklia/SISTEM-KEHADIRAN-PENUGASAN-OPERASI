@@ -526,6 +526,12 @@ function binaPilihanPenapis() {
     "SEMUA TEMPAT TUGAS",
     dataDashboard.map(item => item.tempatTugas)
   );
+
+  isiPilihan(
+    "pangkatPenapis",
+    "SEMUA PANGKAT",
+    dataDashboard.map(item => item.pangkat)
+  );
 }
 
 function isiPilihan(id, labelSemua, nilai) {
@@ -546,12 +552,14 @@ function papar() {
   const jenis = atas(el("jenisTugas")?.value);
   const tempat = atas(el("tempatTugas")?.value);
   const status = atas(el("statusPenapis")?.value);
+  const pangkat = atas(el("pangkatPenapis")?.value);
   const carian = atas(el("carian")?.value);
 
   dataPaparan = dataDashboard.filter(item => {
     if (jenis && atas(item.jenisTugas) !== jenis) return false;
     if (tempat && atas(item.tempatTugas) !== tempat) return false;
-
+    if (pangkat && atas(item.pangkat) !== pangkat) return false;
+     
     if (status) {
       if (status === "CHECK-OUT" && !item.checkout) return false;
       if (status !== "CHECK-OUT" && item.statusKehadiran !== status) return false;
