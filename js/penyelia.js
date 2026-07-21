@@ -903,7 +903,7 @@ function paparSenarai() {
 
           </div>
 
-         ${
+${
   bolehTindak || bolehGanti
     ? `
       <div class="actions">
@@ -955,6 +955,7 @@ function paparSenarai() {
     : ""
 }
 
+        </article>
         </article>
       `;
     }).join("");
