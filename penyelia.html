@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>SKPO Penyelia</title>
+
+<link href="css/style.css" rel="stylesheet"/><link href="css/penyelia.css" rel="stylesheet"/></head>
+<body>
+<div class="container">
+<div class="logo">OPS LITAR (MOTOGP 2026)</div>
+<div class="sub">Modul Pengesahan Penyelia</div>
+<section class="card" id="loginSection">
+<h2>Login Penyelia</h2>
+<input autocomplete="username" id="noBadan" placeholder="No Badan"/>
+<input autocomplete="current-password" id="password" placeholder="Password" type="password"/>
+<button class="btn-main" id="btnLogin" onclick="loginPenyeliaUI()">LOGIN PENYELIA</button>
+<div id="loginStatus"></div>
+<button class="btn-main btn-secondary" onclick="window.top.location.href='index.html';">KEMBALI KE LOGIN PETUGAS</button>
+</section>
+<section class="hidden" id="dashboardSection">
+<div class="card">
+<div class="topbar">
+<div>
+<h2 style="margin:0">Dashboard Penyelia</h2>
+<div class="profile" id="profile" style="margin-top:12px"></div>
+</div>
+<button class="btn-secondary" onclick="logoutPenyelia()">LOG KELUAR</button>
+</div>
+<div class="toolbar">
+<input id="carian" oninput="paparRekod()" placeholder="Cari nama, No Badan, tugas atau lokasi"/>
+<button class="btn-refresh" id="btnRefresh" onclick="muatSenarai()">SEMAK SEMULA</button>
+</div>
+<div class="status warning" id="senaraiStatus">Sedang mendapatkan rekod...</div>
+<p>Menunggu pengesahan: <span class="count" id="jumlah">0</span></p>
+<div class="list" id="senarai"></div>
+</div>
+</section>
+</div>
+<div class="modal hidden" id="modalTukar">
+<div class="modal-box">
+<h2>Tukar Petugas</h2>
+<div class="petugas-preview" id="petugasAsalPreview"></div>
+<div class="mode-tabs">
+<button class="active" id="tabCari" onclick="pilihModPetugas('CARI')">CARI PETUGAS SEDIA ADA</button>
+<button id="tabDaftar" onclick="pilihModPetugas('DAFTAR')">DAFTAR PETUGAS BAHARU</button>
+</div>
+<div id="modCari">
+<label><strong>No Badan Petugas Ganti</strong></label>
+<input id="noBadanGanti" placeholder="Masukkan No Badan"/>
+<button class="btn-refresh" id="btnCariGanti" onclick="cariGanti()" style="width:100%;margin-top:5px">CARI PETUGAS</button>
+<div class="petugas-preview hidden" id="petugasGantiPreview"></div>
+</div>
+<div class="hidden" id="modDaftar">
+<div class="info-note">
+        Petugas baharu akan dimasukkan ke Sheet PETUGAS. Maklumat petugas lama dalam baris PENUGASAN akan digantikan secara automatik. Rekod audit asal tetap disimpan.
+      </div>
+<div class="form-grid">
+<div>
+<label><strong>No Badan *</strong></label>
+<input id="daftarNoBadan" placeholder="No Badan"/>
+</div>
+<div>
+<label><strong>Pangkat *</strong></label>
+<input id="daftarPangkat" placeholder="Contoh: KONSTABEL"/>
+</div>
+<div class="full">
+<label><strong>Nama Penuh *</strong></label>
+<input id="daftarNama" placeholder="Nama penuh petugas"/>
+</div>
+<div>
+<label><strong>Kata Laluan *</strong></label>
+<input id="daftarPassword" placeholder="Kata laluan login" type="password"/>
+</div>
+<div>
+<label><strong>Telefon</strong></label>
+<input id="daftarTelefon" placeholder="No telefon"/>
+</div>
+<div>
+<label><strong>Bahagian/Balai/Cawangan</strong></label>
+<input id="daftarBahagian" placeholder="Bahagian atau balai"/>
+</div>
+<div>
+<label><strong>Daerah</strong></label>
+<input id="daftarDaerah" placeholder="Daerah"/>
+</div>
+</div>
+</div>
+<label><strong>Sebab Pertukaran</strong></label>
+<select id="sebabPertukaran">
+<option value="">-- Pilih sebab --</option>
+<option value="CUTI">CUTI</option>
+<option value="SAKIT">SAKIT</option>
+<option value="KURSUS">KURSUS</option>
+<option value="BERTUGAS LAIN">BERTUGAS LAIN</option>
+<option value="KECEMASAN">KECEMASAN</option>
+<option value="LAIN-LAIN">LAIN-LAIN</option>
+</select>
+<label><strong>Catatan</strong></label>
+<textarea id="catatanPertukaran" placeholder="Catatan tambahan"></textarea>
+<div id="statusPertukaran"></div>
+<div class="modal-actions">
+<button class="btn-secondary" onclick="tutupModalTukar()">BATAL</button>
+<button class="btn-change" disabled="" id="btnSimpanTukar" onclick="simpanPertukaran()">SIMPAN PERTUKARAN</button>
+</div>
+</div>
+</div>
+
+<script src="js/api-config.js"></script><script src="js/penyelia.js"></script></body>
+</html>

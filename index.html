@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>SKPO</title>
+
+<link href="css/style.css" rel="stylesheet"/><link href="css/index.css" rel="stylesheet"/></head>
+<body>
+<!-- ===============================
+LOGIN
+=============================== -->
+<div class="container" id="loginBox">
+<div class="logo">
+    OPS LITAR (MOTOGP 2026)
+  </div>
+<p>
+    Sistem Kehadiran &amp; Penugasan Operasi
+  </p>
+<input autocomplete="username" id="noBadan" placeholder="No Badan"/>
+<input autocomplete="current-password" id="password" placeholder="Password" type="password"/>
+<button id="btnLogin" onclick="login()">
+    LOGIN
+  </button>
+<h3 id="status"></h3>
+<a class="supervisor-link" href="admin.html" target="_top">
+    LOGIN PENTADBIR
+  </a>
+<a class="supervisor-link" href="penyelia.html" target="_top">
+    LOGIN URUSETIA
+  </a>
+</div>
+<!-- ===============================
+DASHBOARD
+=============================== -->
+<div class="dashboard" id="dashboard">
+<div class="card">
+<h2>Dashboard Petugas</h2>
+<div class="profile-box">
+<div class="profile-rank" id="pangkatPetugas">
+        -
+      </div>
+<div class="profile-name" id="namaPetugas">
+        -
+      </div>
+<div class="profile-number" id="noBadanPetugas">
+        No Badan: -
+      </div>
+</div>
+<hr/>
+<h3>Maklumat Tugas Hari Ini</h3>
+<div class="info-box">
+<div class="info-row">
+<div class="info-label">
+          Call Sign:
+        </div>
+<div class="info-value" id="callSignTugas">
+          Memuatkan...
+        </div>
+</div>
+<div class="info-row">
+<div class="info-label">
+          Jenis Tugas:
+        </div>
+<div class="info-value" id="jenisTugas">
+          Memuatkan...
+        </div>
+</div>
+<div class="info-row">
+<div class="info-label">
+          Tempat Tugas:
+        </div>
+<div class="info-value" id="lokasiTugas">
+          Memuatkan...
+        </div>
+</div>
+<div class="info-row">
+<div class="info-label">
+          Penyelia:
+        </div>
+<div class="info-value" id="penyeliaTugas">
+          Memuatkan...
+        </div>
+</div>
+<div class="info-row">
+<div class="info-label">
+          Pemegang Set:
+        </div>
+<div class="info-value" id="pemegangSetTugas">
+          Memuatkan...
+        </div>
+</div>
+</div>
+<p id="statusTugas"></p>
+<div class="status-box" id="statusKehadiran">
+</div>
+<div class="status-box" id="statusCheckout">
+</div>
+<button disabled="" id="btnCheckin" onclick="mulaCheckin()">
+      CHECK-IN KEHADIRAN
+    </button>
+<button disabled="" id="btnCheckout" onclick="mulaCheckout()">
+      CHECK-OUT KEHADIRAN
+    </button>
+<div class="status-box" id="statusSetWalkie">
+</div>
+<button class="walkie-button" disabled="" id="btnDaftarSet" onclick="bukaPendaftaranSet()" style="display:none">
+      DAFTAR SET WALKIE-TALKIE
+    </button>
+<button class="return-set-button" disabled="" id="btnPulangSet" onclick="mohonPemulanganSetPetugas()" style="display:none">
+      PULANGKAN SET WALKIE-TALKIE
+    </button>
+<button class="gold-report" disabled="" id="btnLaporan" onclick="bukaLaporan()" style="display:none">
+      HANTAR PELAPORAN
+    </button>
+<button class="refresh-button" id="btnRefreshStatus" onclick="refreshDashboard()">
+      SEMAK SEMULA STATUS
+    </button>
+<button class="secondary" onclick="logout()">
+      LOG KELUAR
+    </button>
+</div>
+</div>
+<!-- ===============================
+CHECK-IN
+=============================== -->
+<div class="checkin" id="checkin">
+<div class="card">
+<h2>Pengesahan Kehadiran</h2>
+<div class="info-box">
+<div id="tugasCheckin"></div>
+</div>
+<h3 id="gpsStatus">
+      Tekan butang untuk mendapatkan lokasi.
+    </h3>
+<p id="koordinat"></p>
+<p id="jarakStatus"></p>
+<div class="status-box" id="statusHantar">
+</div>
+<button id="btnDapatGPS" onclick="dapatkanGPS()">
+      DAPATKAN LOKASI GPS
+    </button>
+<button disabled="" id="btnHantar" onclick="hantarKehadiran()">
+      HANTAR KEHADIRAN
+    </button>
+<button class="secondary" id="btnKembali" onclick="kembaliDashboard()">
+      KEMBALI
+    </button>
+</div>
+</div>
+<!-- ===============================
+CHECK-OUT
+=============================== -->
+<div class="checkout" id="checkout">
+<div class="card">
+<h2>Check-Out Kehadiran</h2>
+<div class="info-box">
+<div id="tugasCheckout"></div>
+</div>
+<h3 id="gpsStatusCheckout">
+      Tekan butang untuk mendapatkan lokasi.
+    </h3>
+<p id="koordinatCheckout"></p>
+<p id="jarakStatusCheckout"></p>
+<div class="status-box" id="statusHantarCheckout">
+</div>
+<button id="btnDapatGPSCheckout" onclick="dapatkanGPSCheckout()">
+      DAPATKAN LOKASI GPS
+    </button>
+<button disabled="" id="btnHantarCheckout" onclick="hantarCheckout()">
+      HANTAR CHECK-OUT
+    </button>
+<button class="secondary" id="btnKembaliCheckout" onclick="kembaliDashboardCheckout()">
+      KEMBALI
+    </button>
+</div>
+</div>
+<!-- ===============================
+PELAPORAN PETUGAS
+=============================== -->
+<div class="laporan" id="laporan">
+<div class="card">
+<h2>Pelaporan Petugas</h2>
+<div class="info-box">
+<div id="tugasLaporan"></div>
+</div>
+<div class="info-box">
+<div class="info-row">
+<div class="info-label">Tarikh / Masa:</div>
+<div class="info-value" id="tarikhMasaLaporan">-</div>
+</div>
+</div>
+<label><strong>Jumlah Pengunjung</strong></label>
+<input id="jumlahPengunjung" inputmode="numeric" min="0" placeholder="Contoh: 150" step="1" type="number"/>
+<label><strong>Jumlah Kenderaan</strong></label>
+<input id="jumlahKenderaan" inputmode="numeric" min="0" placeholder="Contoh: 45" step="1" type="number"/>
+<label><strong>VVIP / VIP</strong></label>
+<textarea id="vvipVip" placeholder="Nyatakan nama/jawatan VVIP atau VIP. Jika tiada, masukkan TIADA."></textarea>
+<label><strong>Perkara Menarik</strong></label>
+<textarea id="perkaraMenarik" placeholder="Nyatakan kejadian, aktiviti atau perkara menarik. Jika tiada, masukkan TIADA."></textarea>
+<div class="status-box" id="statusLaporan"></div>
+<button id="btnHantarLaporan" onclick="hantarLaporan()">
+      HANTAR LAPORAN KEPADA URUSETIA
+    </button>
+<button class="secondary" id="btnKembaliLaporan" onclick="tutupLaporan()">
+      KEMBALI
+    </button>
+</div>
+</div>
+<!-- ===============================
+PENDAFTARAN SET WALKIE-TALKIE
+=============================== -->
+<div class="pendaftaran-set" id="pendaftaranSet">
+<div class="card">
+<h2>Pendaftaran Set Walkie-Talkie</h2>
+<div class="info-box">
+<div id="maklumatPendaftaranSet"></div>
+</div>
+<label><strong>No Siri Set</strong></label>
+<input autocomplete="off" id="noSiriSet" placeholder="Contoh: WT-001" type="text"/>
+<label><strong>No Siri Bateri</strong></label>
+<input autocomplete="off" id="noSiriBateri" placeholder="Contoh: BAT-001" type="text"/>
+<label><strong>No Siri Charger</strong></label>
+<input autocomplete="off" id="noSiriCharger" placeholder="Contoh: CHG-001" type="text"/>
+<label><strong>Aksesori Diterima</strong></label>
+<div class="checkbox-grid">
+<label class="checkbox-item">
+<input name="aksesoriSet" type="checkbox" value="BATERI"/>
+        Bateri
+      </label>
+<label class="checkbox-item">
+<input name="aksesoriSet" type="checkbox" value="CHARGER"/>
+        Charger
+      </label>
+<label class="checkbox-item">
+<input name="aksesoriSet" type="checkbox" value="EARPIECE"/>
+        Earpiece
+      </label>
+<label class="checkbox-item">
+<input name="aksesoriSet" type="checkbox" value="ANTENA"/>
+        Antena
+      </label>
+<label class="checkbox-item">
+<input name="aksesoriSet" type="checkbox" value="BELT CLIP"/>
+        Belt Clip
+      </label>
+<label class="checkbox-item">
+<input name="aksesoriSet" type="checkbox" value="LAIN-LAIN"/>
+        Lain-lain
+      </label>
+</div>
+<label><strong>Catatan</strong></label>
+<textarea id="catatanSet" placeholder="Nyatakan catatan berkaitan set. Jika tiada, masukkan TIADA."></textarea>
+<div class="status-box" id="statusPendaftaranSet">
+</div>
+<button id="btnHantarPendaftaranSet" onclick="hantarPendaftaranSet()">
+      HANTAR PENDAFTARAN KEPADA TSM
+    </button>
+<button class="secondary" id="btnKembaliPendaftaranSet" onclick="tutupPendaftaranSet()">
+      KEMBALI
+    </button>
+</div>
+</div>
+
+<script src="js/api-config.js"></script><script src="js/index.js"></script></body>
+</html>

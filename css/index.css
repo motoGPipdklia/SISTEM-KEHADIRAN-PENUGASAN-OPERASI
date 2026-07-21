@@ -1,0 +1,248 @@
+*{
+  box-sizing:border-box;
+}
+
+body{
+  font-family:Arial, sans-serif;
+  background:#111;
+  color:white;
+  text-align:center;
+  margin:0;
+}
+
+.container{
+  max-width:480px;
+  margin:80px auto 0;
+  padding:20px;
+}
+
+input,
+textarea{
+  width:100%;
+  padding:15px;
+  margin:8px 0;
+  border:none;
+  border-radius:8px;
+  font-size:16px;
+}
+
+textarea{
+  min-height:110px;
+  resize:vertical;
+  font-family:Arial,sans-serif;
+}
+
+button{
+  width:100%;
+  padding:15px;
+  margin-top:12px;
+  background:#d4af37;
+  color:#111;
+  border:none;
+  border-radius:8px;
+  font-size:18px;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+button:disabled{
+  background:#666;
+  color:#bbb;
+  cursor:not-allowed;
+}
+
+.logo{
+  font-size:28px;
+  font-weight:bold;
+  color:#d4af37;
+}
+
+.dashboard,
+.checkin,
+.checkout,
+.laporan,
+.pendaftaran-set{
+  display:none;
+  max-width:480px;
+  margin:30px auto;
+  padding:20px;
+}
+
+.card{
+  background:#222;
+  padding:22px;
+  border-radius:15px;
+  margin:15px 0;
+  box-shadow:0 5px 18px rgba(0,0,0,.35);
+}
+
+.info-box{
+  background:#181818;
+  padding:15px;
+  margin:12px 0;
+  border-radius:10px;
+  text-align:left;
+  line-height:1.6;
+}
+
+.info-row{
+  display:grid;
+  grid-template-columns:130px 1fr;
+  gap:8px;
+  padding:6px 0;
+  align-items:start;
+}
+
+.info-label{
+  font-weight:bold;
+  color:#fff;
+}
+
+.info-value{
+  color:#f2f2f2;
+  word-break:break-word;
+}
+
+.profile-box{
+  background:#181818;
+  padding:18px;
+  margin:12px 0;
+  border-radius:12px;
+}
+
+.profile-rank{
+  color:#d4af37;
+  font-size:17px;
+  font-weight:bold;
+  text-transform:uppercase;
+}
+
+.profile-name{
+  margin-top:7px;
+  color:white;
+  font-size:21px;
+  font-weight:bold;
+  line-height:1.4;
+}
+
+.profile-number{
+  margin-top:7px;
+  color:#ccc;
+  font-size:14px;
+}
+
+.status-box{
+  display:none;
+  padding:15px;
+  margin-top:14px;
+  border-radius:10px;
+  line-height:1.6;
+}
+
+.status-box.success{
+  display:block;
+  color:#b9f6ca;
+  background:#123a24;
+  border:1px solid #2b7043;
+}
+
+.status-box.warning{
+  display:block;
+  color:#ffe29a;
+  background:#3a3013;
+  border:1px solid #766126;
+}
+
+.status-box.error{
+  display:block;
+  color:#ffc1c1;
+  background:#401b1b;
+  border:1px solid #7b3232;
+}
+
+.status-success{
+  color:#65d68a;
+}
+
+.status-error{
+  color:#ff6b6b;
+}
+
+.status-warning{
+  color:#ffd166;
+}
+
+.secondary{
+  background:#444;
+  color:white;
+}
+
+.supervisor-link{
+  display:block;
+  margin-top:14px;
+  color:#d4af37;
+  text-decoration:none;
+  font-weight:bold;
+  font-size:15px;
+}
+
+.supervisor-link:hover{
+  text-decoration:underline;
+}
+
+.refresh-button{
+  background:#2f5f8f;
+  color:white;
+}
+
+.gold-report{
+  background:#8a6d17;
+  color:white;
+}
+
+.walkie-button{
+  background:#315f78;
+  color:white;
+}
+
+.return-set-button{
+  background:#7a4f1d;
+  color:white;
+}
+
+.checkbox-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin:12px 0;
+  text-align:left;
+}
+
+.checkbox-item{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  background:#181818;
+  padding:10px;
+  border-radius:8px;
+}
+
+.checkbox-item input{
+  width:auto;
+  margin:0;
+}
+
+hr{
+  border:none;
+  border-top:1px solid #444;
+  margin:20px 0;
+}
+
+@media(max-width:420px){
+
+  .info-row{
+    grid-template-columns:115px 1fr;
+    font-size:14px;
+  }
+
+}

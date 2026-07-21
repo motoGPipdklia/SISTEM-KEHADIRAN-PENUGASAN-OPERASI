@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>SKPO TSM</title>
+
+<link href="css/style.css" rel="stylesheet"/><link href="css/tsm.css" rel="stylesheet"/></head>
+<body>
+<div class="login" id="loginPage">
+<div class="card">
+<div class="logo">
+        SKPO TSM
+      </div>
+<p>
+        Pengurusan Set Walkie-Talkie
+      </p>
+<input autocomplete="username" id="noBadan" placeholder="No Badan TSM"/>
+<input autocomplete="current-password" id="password" placeholder="Password" type="password"/>
+<button class="primary" id="btnLogin" onclick="login()">
+        LOGIN TSM
+      </button>
+<p id="loginStatus"></p>
+<a class="link" href="index.html" target="_top">
+        KEMBALI KE LOGIN PETUGAS
+      </a>
+</div>
+</div>
+<div class="dashboard" id="dashboard">
+<div class="topbar">
+<div>
+<div class="brand">
+          SKPO MODUL TSM
+        </div>
+<div id="tsmName"></div>
+</div>
+<button class="logout" onclick="logout()">
+        LOG KELUAR
+      </button>
+</div>
+<div class="content">
+<div class="filters">
+<div>
+<label>Status Set</label>
+<select id="statusPenapis" onchange="papar()">
+<option value="">
+              SEMUA STATUS
+            </option>
+<option value="MENUNGGU PENGESAHAN TSM">
+              MENUNGGU PENGESAHAN
+            </option>
+<option value="SET DILEPASKAN">
+              SET DILEPASKAN
+            </option>
+<option value="PERMOHONAN DITOLAK">
+              PERMOHONAN DITOLAK
+            </option>
+<option value="MENUNGGU PENGESAHAN PEMULANGAN">
+              MENUNGGU PEMULANGAN
+            </option>
+<option value="SET TELAH DIPULANGKAN">
+              SET TELAH DIPULANGKAN
+            </option>
+</select>
+</div>
+<div>
+<label>Tarikh</label>
+<input id="tarikhPenapis" onchange="papar()" type="date"/>
+</div>
+<div>
+<label>Carian</label>
+<input id="carian" oninput="papar()" placeholder="Cari nama, No Badan, Call Sign atau No Siri Set..."/>
+</div>
+</div>
+<div class="actions">
+<button class="blue" onclick="muatData()">
+          PAPAR / KEMAS KINI DATA
+        </button>
+<button class="gray" onclick="kosongkanPenapis()">
+          KOSONGKAN PENAPIS
+        </button>
+<button class="gold" onclick="window.print()">
+          CETAK
+        </button>
+</div>
+<div class="stats">
+<div class="stat">
+<div class="value" id="jumlahSemua">0</div>
+<div class="label">Jumlah Pendaftaran</div>
+</div>
+<div class="stat">
+<div class="value" id="jumlahMenunggu">0</div>
+<div class="label">Menunggu Pengesahan</div>
+</div>
+<div class="stat">
+<div class="value" id="jumlahDilepaskan">0</div>
+<div class="label">Set Dilepaskan</div>
+</div>
+<div class="stat">
+<div class="value" id="jumlahMenungguPulang">0</div>
+<div class="label">Menunggu Pemulangan</div>
+</div>
+<div class="stat">
+<div class="value" id="jumlahDipulangkan">0</div>
+<div class="label">Set Dipulangkan</div>
+</div>
+</div>
+<div class="table-card">
+<div class="tools">
+<div>
+<strong>Senarai Pendaftaran Set</strong>
+</div>
+<div id="status"></div>
+</div>
+<div class="wrap">
+<table>
+<thead>
+<tr>
+<th>Bil.</th>
+<th>Tarikh / Masa</th>
+<th>No Badan</th>
+<th>Pangkat / Nama</th>
+<th>Call Sign</th>
+<th>Jenis / Tempat Tugas</th>
+<th>No Siri Set</th>
+<th>Bateri / Charger</th>
+<th>Aksesori</th>
+<th>Catatan Petugas</th>
+<th>Status</th>
+<th>Pelepasan / Pemulangan</th>
+<th>Tindakan</th>
+</tr>
+</thead>
+<tbody id="tbody"></tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="modal" id="modalTolak">
+<div class="modal-card">
+<h2>Tolak Permohonan Set</h2>
+<div class="info-box" id="maklumatTolak"></div>
+<label><strong>Sebab Ditolak</strong></label>
+<textarea id="sebabDitolak" placeholder="Nyatakan sebab permohonan ditolak."></textarea>
+<div id="statusModalTolak"></div>
+<div class="modal-actions">
+<button class="red" id="btnSahkanTolak" onclick="hantarTolak()">
+          TOLAK PERMOHONAN
+        </button>
+<button class="gray" onclick="tutupModalTolak()">
+          BATAL
+        </button>
+</div>
+</div>
+</div>
+<div class="modal" id="modalPemulangan">
+<div class="modal-card">
+<h2>Pengesahan Pemulangan Set</h2>
+<div class="info-box" id="maklumatPemulangan"></div>
+<label><strong>Keadaan Set</strong></label>
+<select id="keadaanSet">
+<option value="">PILIH KEADAAN SET</option>
+<option value="BAIK DAN LENGKAP">BAIK DAN LENGKAP</option>
+<option value="BAIK TETAPI TIDAK LENGKAP">BAIK TETAPI TIDAK LENGKAP</option>
+<option value="ROSAK">ROSAK</option>
+</select>
+<label><strong>Kerosakan / Kekurangan</strong></label>
+<textarea id="kerosakan" placeholder="Jika tiada, masukkan TIADA."></textarea>
+<label><strong>Catatan TSM</strong></label>
+<textarea id="catatanTSM" placeholder="Catatan tambahan TSM. Jika tiada, masukkan TIADA."></textarea>
+<div id="statusModalPemulangan"></div>
+<div class="modal-actions">
+<button class="green" id="btnSahkanPemulangan" onclick="hantarPengesahanPemulangan()">
+          SAHKAN PEMULANGAN
+        </button>
+<button class="gray" onclick="tutupModalPemulangan()">
+          BATAL
+        </button>
+</div>
+</div>
+</div>
+
+<script src="js/api-config.js"></script><script src="js/tsm.js"></script></body>
+</html>
