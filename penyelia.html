@@ -22,7 +22,7 @@
 
   <link
     rel="stylesheet"
-    href="css/penyelia.css?v=20260721-1605"
+    href="css/penyelia.css?v=20260722-1140"
   >
 </head>
 
@@ -411,6 +411,7 @@
     role="dialog"
     aria-modal="true"
     aria-labelledby="tajukModalLaporan"
+    onclick="if(event.target===this)tutupModalLaporan()"
   >
 
     <div
@@ -470,14 +471,18 @@
   class="modal hidden"
   role="dialog"
   aria-modal="true"
-  aria-labelledby="tajukModalPengganti">
+  aria-labelledby="tajukModalPengganti"
+  onclick="if(event.target===this)tutupModalPengganti()">
 
   <div
     class="modal-backdrop"
+    style="z-index:0"
     onclick="tutupModalPengganti()">
   </div>
 
-  <div class="modal-box">
+  <div
+    class="modal-box"
+    style="position:relative;z-index:2">
 
     <h2 id="tajukModalPengganti">GANTI PETUGAS</h2>
 
@@ -597,7 +602,7 @@
   ></script>
 
   <script
-    src="js/penyelia.js?v=20260722-0555"
+    src="js/penyelia.js?v=20260722-1140"
   ></script>
 
 </body>
