@@ -471,17 +471,27 @@ async function muatData(kemasKiniPenapis = false) {
       profil = profilRes.data || [];
     }
 
-    const [checkinRes, checkoutRes] = await Promise.all([
+    const [checkinRes, checkoutRes, deviceRes] = await Promise.all([
       denganHadMasa(
         db.from("checkin").select("*").eq("tarikh", tarikh)
       ),
       denganHadMasa(
         db.from("checkout").select("*").eq("tarikh", tarikh)
+      ),
+      denganHadMasa(
+        db.rpc("senarai_device_petugas", {
+          p_petugas_ids: petugasIds
+        })
       )
     ]);
 
     if (checkinRes.error) throw checkinRes.error;
     if (checkoutRes.error) throw checkoutRes.error;
+    if (deviceRes.error) {
+      throw new Error(
+        `Status Device gagal dimuatkan: ${deviceRes.error.message}. Jalankan semula device-binding.sql.`
+      );
+    }
 
     const profilMap = new Map(profil.map(item => [item.id, item]));
     const checkinMap = new Map(
@@ -490,12 +500,16 @@ async function muatData(kemasKiniPenapis = false) {
     const checkoutMap = new Map(
       (checkoutRes.data || []).map(item => [item.penugasan_id, item])
     );
+    const deviceMap = new Map(
+      (deviceRes.data || []).map(item => [item.profile_id, item])
+    );
 
     dataDashboard = senaraiTugas.map(item => {
       const petugasId = item.petugas_id || item.profile_id;
       const pengguna = profilMap.get(petugasId) || {};
       const checkin = checkinMap.get(item.id) || null;
       const checkout = checkoutMap.get(item.id) || null;
+      const ikatanDevice = deviceMap.get(petugasId) || null;
       const statusTugas = atas(item.status);
       const statusKehadiran = statusTugas === "DIGANTI"
         ? "DIGANTI"
@@ -509,7 +523,9 @@ async function muatData(kemasKiniPenapis = false) {
         noBadan: pengguna.no_badan || "-",
         pangkat: pengguna.pangkat || "-",
         nama: pengguna.nama || "-",
-        deviceId: pengguna.device_id || "",
+        deviceId: ikatanDevice?.device_id || "",
+        deviceDiikatPada: ikatanDevice?.diikat_pada || null,
+        deviceKaliTerakhir: ikatanDevice?.kali_terakhir || null,
         callSign: item.call_sign || "-",
         jenisTugas: item.jenis_tugas || "-",
         tempatTugas: item.tempat_tugas || item.lokasi || "-",
@@ -1644,6 +1660,9 @@ async function hantarResetDevice() {
     }
 
     if (hasil.error) throw hasil.error;
+    if (!hasil.data || hasil.data.success !== true) {
+      throw new Error(hasil.data?.message || "Device ID gagal direset.");
+    }
 
     paparMesej("statusModalResetDevice", "Device ID berjaya direset.", "success");
     setTimeout(async () => {
@@ -1934,4 +1953,3 @@ document.addEventListener("DOMContentLoaded", () => {
 
   pulihkanSesiPentadbir();
 });
-
