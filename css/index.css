@@ -24,18 +24,15 @@ html{
   background:var(--bg);
 }
 
-body {
-  margin: 0;
-  min-height: 100vh;
-
+body{
+  min-height:100vh;
+  margin:0;
+  font-family:Arial,sans-serif;
   background:
-    linear-gradient(
-      rgba(0, 0, 0, 0.60),
-      rgba(0, 0, 0, 0.60)
-    ),
-    url("images/background.jpg") center center / cover no-repeat fixed;
-
-  color: #fff;
+    linear-gradient(rgba(0,0,0,.58),rgba(0,0,0,.58)),
+    url("../images/background.jpg") center center / cover no-repeat fixed;
+  color:var(--text);
+  text-align:center;
 }
 
 button,
@@ -51,8 +48,35 @@ textarea{
 
 .container{
   width:min(100%,480px);
-  margin:80px auto 0;
+  min-height:100vh;
+  margin:0 auto;
   padding:20px;
+}
+
+/* Susun semua kandungan halaman login tepat di tengah. */
+#loginBox{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  width:min(100%,660px);
+  text-align:center;
+}
+
+#loginBox > *{
+  flex-shrink:0;
+}
+
+#loginBox p,
+#loginBox .logo,
+#loginBox .supervisor-link,
+#loginBox #status{
+  width:100%;
+  text-align:center;
+}
+
+#loginBox input{
+  text-align:center;
 }
 
 .logo{
@@ -542,7 +566,7 @@ hr{
   align-items:center;
   justify-content:center;
   width:100%;
-  margin-top:105px;
+  margin-top:70px;
   padding:0;
 }
 
@@ -663,10 +687,7 @@ body.peta-terbuka{ overflow:hidden; }
    RESPONSIVE
 ========================================== */
 
-@media (max-width: 768px) {
-  body {
-    background-attachment: scroll;
-    background-position: center;
+@media(max-width:520px){
   .container,
   .dashboard,
   .checkin,
@@ -679,7 +700,8 @@ body.peta-terbuka{ overflow:hidden; }
   }
 
   .container{
-    margin-top:35px;
+    min-height:100svh;
+    margin:0 auto;
   }
 
   .card{
@@ -705,12 +727,18 @@ body.peta-terbuka{ overflow:hidden; }
   .peta-controls{ grid-template-columns:1fr; }
 
   .login-logos{
-    margin-top:55px;
+    margin-top:45px;
   }
 
   .login-logo{
     max-width:100%;
     height:auto;
+  }
+}
+
+@media(max-width:768px){
+  body{
+    background-attachment:scroll;
   }
 }
 
