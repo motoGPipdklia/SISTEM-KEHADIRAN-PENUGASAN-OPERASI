@@ -1645,7 +1645,7 @@ async function hantarResetDevice() {
   butang.textContent = "SEDANG RESET...";
 
   try {
-    let hasil = await denganHadMasa(
+    const hasil = await denganHadMasa(
       db.rpc("reset_device_petugas", {
         p_petugas_id: rekodResetDevice.petugasId,
         p_sebab: sebab,
@@ -1653,20 +1653,16 @@ async function hantarResetDevice() {
       })
     );
 
-    if (
-      hasil.error &&
-      /does not exist|not found|PGRST202|schema cache/i.test(
+    if (hasil.error) {
+      if (/PGRST202|schema cache|does not exist/i.test(
         `${hasil.error.code || ""} ${hasil.error.message || ""}`
-      )
-    ) {
-      hasil = await denganHadMasa(
-        db.from("profiles")
-          .update({ device_id: null })
-          .eq("id", rekodResetDevice.petugasId)
-      );
+      )) {
+        throw new Error(
+          "Fungsi reset terbaru belum tersedia. Jalankan semula device-binding.sql dan muat semula halaman."
+        );
+      }
+      throw hasil.error;
     }
-
-    if (hasil.error) throw hasil.error;
     if (!hasil.data || hasil.data.success !== true) {
       throw new Error(hasil.data?.message || "Device ID gagal direset.");
     }
