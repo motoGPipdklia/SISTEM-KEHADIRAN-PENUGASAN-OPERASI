@@ -529,6 +529,27 @@ hr{
 }
 
 /* ==========================================
+   LOGO BAHAGIAN BAWAH LOGIN
+========================================== */
+
+.login-logos{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  margin-top:105px;
+  padding:0;
+}
+
+.login-logo{
+  display:block;
+  width:100%;
+  max-width:460px;
+  height:auto;
+  object-fit:contain;
+}
+
+/* ==========================================
    PAPARAN PETA OPERASI
 ========================================== */
 
@@ -674,6 +695,15 @@ body.peta-terbuka{ overflow:hidden; }
   .peta-dialog{ max-height:96vh; padding:12px; }
   .peta-header p{ display:none; }
   .peta-controls{ grid-template-columns:1fr; }
+
+  .login-logos{
+    margin-top:55px;
+  }
+
+  .login-logo{
+    max-width:100%;
+    height:auto;
+  }
 }
 
 @media(max-width:390px){
