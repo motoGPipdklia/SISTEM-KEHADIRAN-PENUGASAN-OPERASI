@@ -24,13 +24,18 @@ html{
   background:var(--bg);
 }
 
-body{
-  min-height:100vh;
-  margin:0;
-  font-family:Arial,sans-serif;
-  background:var(--bg);
-  color:var(--text);
-  text-align:center;
+body {
+  margin: 0;
+  min-height: 100vh;
+
+  background:
+    linear-gradient(
+      rgba(0, 0, 0, 0.60),
+      rgba(0, 0, 0, 0.60)
+    ),
+    url("images/background.jpg") center center / cover no-repeat fixed;
+
+  color: #fff;
 }
 
 button,
@@ -658,7 +663,10 @@ body.peta-terbuka{ overflow:hidden; }
    RESPONSIVE
 ========================================== */
 
-@media(max-width:520px){
+@media (max-width: 768px) {
+  body {
+    background-attachment: scroll;
+    background-position: center;
   .container,
   .dashboard,
   .checkin,
