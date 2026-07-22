@@ -2154,6 +2154,7 @@ document.addEventListener(
   event => {
     if (event.key === "Escape") {
       tutupModalLaporan();
+      tutupModalPengganti();
     }
   }
 );
@@ -2320,6 +2321,77 @@ function bukaModalPengganti(idPenugasan) {
     noBadan?.focus();
   }, 50);
 }
+
+function tutupModalPengganti() {
+  elemenPenyelia("modalPengganti")
+    ?.classList.add("hidden");
+
+  document.body.classList.remove(
+    "modal-open"
+  );
+
+  penugasanDipilih = null;
+}
+
+
+/* ================================================================
+   SEMAK PETUGAS PENGGANTI
+================================================================ */
+
+async function semakPetugasPengganti() {
+  if (!penugasanDipilih) {
+    alert(
+      "Sila pilih penugasan yang hendak diganti."
+    );
+    return;
+  }
+
+  const inputNoBadan =
+    elemenPenyelia("noBadanPengganti");
+
+  const noBadan = atasPenyelia(
+    inputNoBadan?.value || ""
+  );
+
+  const preview =
+    elemenPenyelia("previewPengganti");
+
+  const borang =
+    elemenPenyelia("borangPengganti");
+
+  if (!noBadan) {
+    statusPenyelia(
+      "statusPertukaran",
+      "Sila masukkan No Badan petugas pengganti.",
+      "error"
+    );
+    inputNoBadan?.focus();
+    return;
+  }
+
+  penugasanDipilih.petugasBaru = null;
+  penugasanDipilih.modPengganti = null;
+
+  preview?.classList.add("hidden");
+  borang?.classList.add("hidden");
+
+  statusPenyelia(
+    "statusPertukaran",
+    "Sedang menyemak petugas...",
+    "warning"
+  );
+
+  try {
+    const { data, error } =
+      await dbPenyelia
+        .from("profiles")
+        .select("*")
+        .eq("no_badan", noBadan)
+        .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
 
     /* ============================================================
        PETUGAS TIDAK DITEMUI — PAPAR BORANG DAFTAR BAHARU
@@ -2489,12 +2561,351 @@ function bukaModalPengganti(idPenugasan) {
   }
 }
 
-function gantiPetugas(){
 
-  alert(
-    "PATCH 3 akan menyimpan penggantian ke pangkalan data."
+/* ================================================================
+   DAFTAR PETUGAS BAHARU TANPA KEHILANGAN SESI PENYELIA
+================================================================ */
+
+async function daftarPetugasPengganti(noBadan) {
+  const nama = teksPenyelia(
+    elemenPenyelia("namaPengganti")?.value
   );
 
+  const pangkat = teksPenyelia(
+    elemenPenyelia("pangkatPengganti")?.value
+  );
+
+  const telefon = teksPenyelia(
+    elemenPenyelia("telefonPengganti")?.value
+  );
+
+  const bahagian = teksPenyelia(
+    elemenPenyelia("bahagianPengganti")?.value
+  );
+
+  const password =
+    elemenPenyelia("passwordPengganti")?.value || "";
+
+  if (!nama || !pangkat || !password) {
+    throw new Error(
+      "Nama, pangkat dan kata laluan petugas baharu wajib diisi."
+    );
+  }
+
+  if (password.length < 6) {
+    throw new Error(
+      "Kata laluan petugas baharu mestilah sekurang-kurangnya 6 aksara."
+    );
+  }
+
+  const { data: sesiData, error: sesiError } =
+    await dbPenyelia.auth.getSession();
+
+  if (sesiError || !sesiData.session) {
+    throw sesiError || new Error(
+      "Sesi Penyelia tidak ditemui."
+    );
+  }
+
+  const sesiPenyelia = sesiData.session;
+  let penggunaBaharu = null;
+
+  try {
+    const { data: daftarData, error: daftarError } =
+      await dbPenyelia.auth.signUp({
+        email: emailPenyelia(noBadan),
+        password
+      });
+
+    if (daftarError || !daftarData?.user) {
+      throw daftarError || new Error(
+        "Akaun petugas baharu gagal didaftarkan."
+      );
+    }
+
+    penggunaBaharu = daftarData.user;
+
+    const profilBaharu = {
+      id: penggunaBaharu.id,
+      auth_user_id: penggunaBaharu.id,
+      no_badan: noBadan,
+      nama,
+      pangkat,
+      telefon: telefon || null,
+      bahagian: bahagian || null,
+      peranan: "PETUGAS",
+      aktif: true
+    };
+
+    let hasilProfil = await dbPenyelia
+      .from("profiles")
+      .insert(profilBaharu)
+      .select("*")
+      .single();
+
+    /* Sesetengah pemasangan menggunakan id sahaja dan tiada auth_user_id. */
+    if (
+      hasilProfil.error &&
+      /auth_user_id/i.test(hasilProfil.error.message || "")
+    ) {
+      delete profilBaharu.auth_user_id;
+
+      hasilProfil = await dbPenyelia
+        .from("profiles")
+        .insert(profilBaharu)
+        .select("*")
+        .single();
+    }
+
+    if (hasilProfil.error || !hasilProfil.data) {
+      throw hasilProfil.error || new Error(
+        "Profil petugas baharu gagal disimpan."
+      );
+    }
+
+    return hasilProfil.data;
+
+  } finally {
+    const { error: pulihError } =
+      await dbPenyelia.auth.setSession({
+        access_token: sesiPenyelia.access_token,
+        refresh_token: sesiPenyelia.refresh_token
+      });
+
+    if (pulihError) {
+      console.error(
+        "Sesi Penyelia gagal dipulihkan:",
+        pulihError
+      );
+    }
+  }
+}
+
+
+/* ================================================================
+   BINA REKOD PENUGASAN PENGGANTI
+================================================================ */
+
+function rekodPenugasanPengganti(
+  tugasanAsal,
+  petugasBaruId,
+  catatan
+) {
+  const rekod = { ...tugasanAsal };
+
+  [
+    "id",
+    "created_at",
+    "updated_at",
+    "masa_dicipta",
+    "masa_kemaskini",
+    "diganti_oleh",
+    "diganti_pada",
+    "petugas_pengganti_id"
+  ].forEach(kunci => {
+    delete rekod[kunci];
+  });
+
+  if (Object.prototype.hasOwnProperty.call(
+    tugasanAsal,
+    "petugas_id"
+  )) {
+    rekod.petugas_id = petugasBaruId;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(
+    tugasanAsal,
+    "profile_id"
+  )) {
+    rekod.profile_id = petugasBaruId;
+  }
+
+  rekod.status = "DITUGASKAN";
+
+  if (Object.prototype.hasOwnProperty.call(
+    tugasanAsal,
+    "catatan"
+  )) {
+    rekod.catatan = catatan || null;
+  }
+
+  return rekod;
+}
+
+
+/* ================================================================
+   SIMPAN PENGGANTIAN PETUGAS
+================================================================ */
+
+async function gantiPetugas() {
+  if (!penggunaPenyelia || !penugasanDipilih) {
+    alert(
+      "Sesi atau maklumat penugasan tidak ditemui."
+    );
+    return;
+  }
+
+  if (penugasanDipilih.status !== "BELUM HADIR") {
+    alert(
+      "Penugasan ini tidak lagi boleh diganti."
+    );
+    return;
+  }
+
+  const noBadan = atasPenyelia(
+    elemenPenyelia("noBadanPengganti")?.value || ""
+  );
+
+  const catatan = teksPenyelia(
+    elemenPenyelia("catatanPenggantian")?.value
+  );
+
+  if (!noBadan || !penugasanDipilih.modPengganti) {
+    statusPenyelia(
+      "statusPertukaran",
+      "Semak No Badan petugas pengganti terlebih dahulu.",
+      "error"
+    );
+    return;
+  }
+
+  const pasti = confirm(
+    "Sahkan penggantian petugas ini?"
+  );
+
+  if (!pasti) {
+    return;
+  }
+
+  const butang =
+    elemenPenyelia("btnGantiPetugas");
+
+  if (butang) {
+    butang.disabled = true;
+    butang.textContent = "SEDANG MENYIMPAN...";
+  }
+
+  statusPenyelia(
+    "statusPertukaran",
+    "Sedang menyimpan penggantian...",
+    "warning"
+  );
+
+  let rekodBaharuId = null;
+
+  try {
+    let petugasBaru =
+      penugasanDipilih.petugasBaru;
+
+    if (penugasanDipilih.modPengganti === "BARU") {
+      petugasBaru = await daftarPetugasPengganti(
+        noBadan
+      );
+    }
+
+    if (!petugasBaru?.id) {
+      throw new Error(
+        "ID profil petugas pengganti tidak ditemui."
+      );
+    }
+
+    const rekodBaharu = rekodPenugasanPengganti(
+      penugasanDipilih.tugas,
+      petugasBaru.id,
+      catatan
+    );
+
+    const { data: penugasanBaharu, error: insertError } =
+      await dbPenyelia
+        .from("penugasan")
+        .insert(rekodBaharu)
+        .select("id")
+        .single();
+
+    if (insertError || !penugasanBaharu) {
+      throw insertError || new Error(
+        "Penugasan pengganti gagal diwujudkan."
+      );
+    }
+
+    rekodBaharuId = penugasanBaharu.id;
+
+    let pertanyaanKemaskini = dbPenyelia
+      .from("penugasan")
+      .update({ status: "DIGANTI" })
+      .eq("id", penugasanDipilih.idPenugasan);
+
+    /* Elak dua Penyelia mengganti rekod yang sama serentak. */
+    if (Object.prototype.hasOwnProperty.call(
+      penugasanDipilih.tugas,
+      "status"
+    )) {
+      pertanyaanKemaskini =
+        penugasanDipilih.tugas.status === null
+          ? pertanyaanKemaskini.is("status", null)
+          : pertanyaanKemaskini.eq(
+              "status",
+              penugasanDipilih.tugas.status
+            );
+    }
+
+    const { data: tugasanAsal, error: updateError } =
+      await pertanyaanKemaskini
+        .select("id")
+        .maybeSingle();
+
+    if (updateError || !tugasanAsal) {
+      throw updateError || new Error(
+        "Status penugasan asal telah berubah. Muat semula dan cuba lagi."
+      );
+    }
+
+    statusPenyelia(
+      "statusData",
+      `Petugas berjaya diganti kepada ${htmlPenyelia(
+        petugasBaru.pangkat || ""
+      )} ${htmlPenyelia(petugasBaru.nama || noBadan)}.`,
+      "success"
+    );
+
+    tutupModalPengganti();
+    await muatSemuaDataPenyelia();
+
+  } catch (error) {
+    console.error(
+      "Ralat ganti petugas:",
+      error
+    );
+
+    /* Rollback rekod baharu jika rekod asal gagal dikemas kini. */
+    if (rekodBaharuId) {
+      try {
+        await dbPenyelia
+          .from("penugasan")
+          .delete()
+          .eq("id", rekodBaharuId);
+      } catch (rollbackError) {
+        console.error(
+          "Rollback penugasan pengganti gagal:",
+          rollbackError
+        );
+      }
+    }
+
+    statusPenyelia(
+      "statusPertukaran",
+      `Penggantian gagal: ${htmlPenyelia(
+        error.message || "Ralat tidak diketahui."
+      )}`,
+      "error"
+    );
+
+  } finally {
+    if (butang) {
+      butang.disabled = false;
+      butang.textContent = "SAHKAN PENGGANTIAN";
+    }
+  }
 }
 
 document.addEventListener(
