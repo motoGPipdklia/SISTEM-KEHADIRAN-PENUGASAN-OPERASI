@@ -2911,6 +2911,25 @@ async function gantiPetugas() {
 document.addEventListener(
   "DOMContentLoaded",
   () => {
+    const butangLogin =
+      elemenPenyelia("btnLogin");
+
+    /*
+      Pasang acara terus dari JavaScript supaya login tidak bergantung
+      pada atribut onclick di dalam HTML atau jenis pemuatan skrip.
+    */
+    if (butangLogin) {
+      butangLogin.removeAttribute("onclick");
+
+      butangLogin.addEventListener(
+        "click",
+        event => {
+          event.preventDefault();
+          loginPenyelia();
+        }
+      );
+    }
+
     const inputTarikh =
       elemenPenyelia(
         "tarikh"
@@ -2941,6 +2960,7 @@ document.addEventListener(
         "keydown",
         event => {
           if (event.key === "Enter") {
+            event.preventDefault();
             loginPenyelia();
           }
         }
@@ -2952,6 +2972,7 @@ document.addEventListener(
         "keydown",
         event => {
           if (event.key === "Enter") {
+            event.preventDefault();
             loginPenyelia();
           }
         }
