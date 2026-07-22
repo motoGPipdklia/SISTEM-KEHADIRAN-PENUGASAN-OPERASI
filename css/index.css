@@ -80,9 +80,15 @@ textarea{
 }
 
 .logo{
-  color:var(--gold);
-  font-size:28px;
-  font-weight:700;
+  color:#fff;
+  font-family:Impact,Haettenschweiler,"Arial Narrow Bold",sans-serif;
+  font-size:34px;
+  font-weight:900;
+  font-style:italic;
+  letter-spacing:2px;
+  line-height:1.1;
+  text-transform:uppercase;
+  text-shadow:0 3px 8px rgba(0,0,0,.9);
 }
 
 input,
@@ -744,7 +750,8 @@ body.peta-terbuka{ overflow:hidden; }
 
 @media(max-width:390px){
   .logo{
-    font-size:24px;
+    font-size:27px;
+    letter-spacing:1.3px;
   }
 
   .info-row,
