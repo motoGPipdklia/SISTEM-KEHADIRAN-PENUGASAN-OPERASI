@@ -417,7 +417,61 @@ function mulaSemakanStatusAutomatik() {
 function hentikanSemakanStatusAutomatik() { if (timerSemakStatus) clearInterval(timerSemakStatus); timerSemakStatus = null; }
 function kembaliDashboard() { el("checkin").style.display = "none"; el("dashboard").style.display = "block"; }
 function kembaliDashboardCheckout() { el("checkout").style.display = "none"; el("dashboard").style.display = "block"; }
+
+/* PAPARAN PETA OPERASI */
+let skalaPeta = 1;
+
+function bukaPeta() {
+  const modal = el("modalPeta");
+  if (!modal) return;
+  resetZumPeta();
+  modal.hidden = false;
+  modal.setAttribute("aria-hidden", "false");
+  document.body.classList.add("peta-terbuka");
+}
+
+function tutupPeta() {
+  const modal = el("modalPeta");
+  if (!modal) return;
+  modal.hidden = true;
+  modal.setAttribute("aria-hidden", "true");
+  document.body.classList.remove("peta-terbuka");
+  el("btnPaparPeta")?.focus();
+}
+
+function paparSkalaPeta() {
+  const imej = el("imejPeta");
+  const status = el("statusPeta");
+  if (imej) imej.style.width = `${Math.round(skalaPeta * 100)}%`;
+  if (status) {
+    status.textContent = `Zum: ${Math.round(skalaPeta * 100)}%`;
+    status.classList.remove("error");
+  }
+}
+
+function ubahZumPeta(perubahan) {
+  skalaPeta = Math.min(3, Math.max(0.5, skalaPeta + perubahan));
+  paparSkalaPeta();
+}
+
+function resetZumPeta() {
+  skalaPeta = 1;
+  paparSkalaPeta();
+  const ruang = el("ruangPeta");
+  if (ruang) { ruang.scrollTop = 0; ruang.scrollLeft = 0; }
+}
+
+function petaBerjayaDimuatkan() { paparSkalaPeta(); }
+
+function petaGagalDimuatkan() {
+  const status = el("statusPeta");
+  if (!status) return;
+  status.textContent = "Peta belum ditemui. Muat naik fail images/peta.png ke GitHub.";
+  status.classList.add("error");
+}
+
 async function logout() {
+  tutupPeta();
   hentikanSemakanStatusAutomatik(); await db.auth.signOut().catch(() => {}); localStorage.removeItem("user");
   userLogin = tugas = lokasiGPS = lokasiGPSCheckout = rekodCheckinSemasa = null;
   ["dashboard", "checkin", "checkout", "laporan"].forEach(id => { if (el(id)) el(id).style.display = "none"; });
@@ -437,3 +491,6 @@ document.addEventListener("DOMContentLoaded", () => {
   pulihkanSesi();
 });
 
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape" && !el("modalPeta")?.hidden) tutupPeta();
+});
