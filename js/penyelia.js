@@ -2778,6 +2778,7 @@ async function gantiPetugas() {
   }
 
   const butang =
+    elemenPenyelia("btnSimpanPengganti") ||
     elemenPenyelia("btnGantiPetugas");
 
   if (butang) {
