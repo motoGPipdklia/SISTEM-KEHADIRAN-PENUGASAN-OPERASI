@@ -66,6 +66,30 @@ function dapatkanDeviceId() {
   return id;
 }
 
+async function sahkanIkatanPeranti() {
+  const { data, error } = await db.rpc(
+    "ikat_peranti_petugas",
+    { p_device_id: dapatkanDeviceId() }
+  );
+
+  if (error) {
+    if (/ikat_peranti_petugas|function.*does not exist/i.test(error.message || "")) {
+      throw new Error(
+        "Kawalan peranti belum dipasang dalam Supabase. Hubungi Pentadbir."
+      );
+    }
+    throw error;
+  }
+
+  if (!data || data.success !== true) {
+    throw new Error(
+      data?.message || "Peranti ini tidak dibenarkan untuk akaun tersebut."
+    );
+  }
+
+  return data;
+}
+
 async function ambilProfil(userId) {
   let hasil = await db.from("profiles").select("*").eq("id", userId).maybeSingle();
   if (hasil.error && /auth_user_id/i.test(hasil.error.message || "")) {
@@ -91,6 +115,7 @@ async function login() {
     const profil = await ambilProfil(data.user.id);
     if (!profil) throw new Error("Profil petugas tidak dijumpai.");
     if (profil.aktif === false) throw new Error("Akaun petugas tidak aktif.");
+    await sahkanIkatanPeranti();
     userLogin = {
       id: profil.id, authUserId: data.user.id, noBadan: profil.no_badan,
       pangkat: profil.pangkat || "", nama: profil.nama || "", peranan: profil.peranan || "PETUGAS"
@@ -121,13 +146,19 @@ async function pulihkanSesi() {
     if (error || !data.session?.user) return;
     const profil = await ambilProfil(data.session.user.id);
     if (!profil || profil.aktif === false) { await db.auth.signOut(); return; }
+    await sahkanIkatanPeranti();
     userLogin = {
       id: profil.id, authUserId: data.session.user.id, noBadan: profil.no_badan,
       pangkat: profil.pangkat || "", nama: profil.nama || "", peranan: profil.peranan || "PETUGAS"
     };
     localStorage.setItem("user", JSON.stringify(userLogin));
     paparDashboardProfil(); await refreshDashboard(); mulaSemakanStatusAutomatik();
-  } catch (err) { console.error("Pemulihan sesi gagal:", err); }
+  } catch (err) {
+    console.error("Pemulihan sesi gagal:", err);
+    await db.auth.signOut().catch(() => {});
+    localStorage.removeItem("user");
+    el("status").innerHTML = `<span class="status-error">${escapeHtml(err.message)}</span>`;
+  }
 }
 
 async function dapatkanTugasHariIni() {
