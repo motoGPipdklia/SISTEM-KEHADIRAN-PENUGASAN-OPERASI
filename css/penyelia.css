@@ -611,10 +611,14 @@ button:disabled{
   position:fixed;
   inset:0;
   z-index:9999;
+  isolation:isolate;
   display:flex;
   align-items:center;
   justify-content:center;
   padding:18px;
+  background:rgba(0,0,0,.82);
+  backdrop-filter:blur(2px);
+  -webkit-backdrop-filter:blur(2px);
 }
 
 .modal.hidden{
@@ -622,16 +626,12 @@ button:disabled{
 }
 
 .modal-backdrop{
-  position:absolute;
-  inset:0;
-  z-index:0;
-  background:rgba(0,0,0,.82);
-  backdrop-filter:blur(2px);
+  display:none !important;
 }
 
 .modal-panel{
   position:relative;
-  z-index:1;
+  z-index:2 !important;
   width:min(100%,720px);
   max-height:92vh;
   overflow:auto;
@@ -697,7 +697,7 @@ button:disabled{
 
 .modal-box{
   position:relative;
-  z-index:1;
+  z-index:2 !important;
   width:min(100%,620px);
   max-height:92vh;
   overflow:auto;
