@@ -610,7 +610,7 @@ button:disabled{
 .modal{
   position:fixed;
   inset:0;
-  z-index:9999;
+  z-index:2147483646 !important;
   isolation:isolate;
   display:flex;
   align-items:center;
@@ -619,6 +619,13 @@ button:disabled{
   background:rgba(0,0,0,.82);
   backdrop-filter:blur(2px);
   -webkit-backdrop-filter:blur(2px);
+}
+
+/* Pastikan style umum tidak menghasilkan lapisan di atas dialog. */
+.modal::before,
+.modal::after{
+  display:none !important;
+  content:none !important;
 }
 
 .modal.hidden{
@@ -631,7 +638,9 @@ button:disabled{
 
 .modal-panel{
   position:relative;
-  z-index:2 !important;
+  z-index:2147483647 !important;
+  filter:none !important;
+  opacity:1 !important;
   width:min(100%,720px);
   max-height:92vh;
   overflow:auto;
@@ -697,7 +706,10 @@ button:disabled{
 
 .modal-box{
   position:relative;
-  z-index:2 !important;
+  z-index:2147483647 !important;
+  filter:none !important;
+  opacity:1 !important;
+  visibility:visible !important;
   width:min(100%,620px);
   max-height:92vh;
   overflow:auto;
