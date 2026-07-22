@@ -22,7 +22,7 @@
 
   <link
     rel="stylesheet"
-    href="css/penyelia.css?v=20260722-1140"
+    href="css/penyelia.css?v=20260722-1145"
   >
 </head>
 
@@ -414,12 +414,6 @@
     onclick="if(event.target===this)tutupModalLaporan()"
   >
 
-    <div
-      class="modal-backdrop"
-      onclick="tutupModalLaporan()"
-    ></div>
-
-
     <div class="modal-panel">
 
       <div class="modal-header">
@@ -475,14 +469,8 @@
   onclick="if(event.target===this)tutupModalPengganti()">
 
   <div
-    class="modal-backdrop"
-    style="z-index:0"
-    onclick="tutupModalPengganti()">
-  </div>
-
-  <div
     class="modal-box"
-    style="position:relative;z-index:2">
+    style="position:relative !important;z-index:2147483647 !important;filter:none !important;opacity:1 !important;visibility:visible !important">
 
     <h2 id="tajukModalPengganti">GANTI PETUGAS</h2>
 
@@ -602,7 +590,7 @@
   ></script>
 
   <script
-    src="js/penyelia.js?v=20260722-1140"
+    src="js/penyelia.js?v=20260722-1145"
   ></script>
 
 </body>
