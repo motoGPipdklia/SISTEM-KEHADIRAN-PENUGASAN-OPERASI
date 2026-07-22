@@ -529,6 +529,111 @@ hr{
 }
 
 /* ==========================================
+   PAPARAN PETA OPERASI
+========================================== */
+
+.map-button{ background:#23824c; color:#fff; }
+body.peta-terbuka{ overflow:hidden; }
+
+.peta-modal{
+  position:fixed;
+  inset:0;
+  z-index:2147483646;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+  background:rgba(0,0,0,.86);
+}
+
+.peta-modal[hidden]{ display:none !important; }
+
+.peta-dialog{
+  position:relative;
+  z-index:2147483647;
+  display:flex;
+  flex-direction:column;
+  width:min(1100px,100%);
+  max-height:94vh;
+  padding:18px;
+  border:1px solid #555;
+  border-radius:15px;
+  background:var(--surface);
+  box-shadow:0 18px 55px rgba(0,0,0,.65);
+}
+
+.peta-header{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:15px;
+  margin-bottom:12px;
+}
+
+.peta-header h2{ margin:0; color:var(--gold); }
+.peta-header p{ margin:6px 0 0; color:#ccc; }
+
+.peta-close{
+  flex:0 0 42px;
+  width:42px;
+  height:42px;
+  margin:0;
+  padding:0;
+  border-radius:50%;
+  background:#444;
+  color:#fff;
+  font-size:27px;
+  line-height:1;
+}
+
+.peta-controls{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:9px;
+  margin-bottom:10px;
+}
+
+.peta-controls button{
+  margin:0;
+  padding:11px;
+  background:#3a6fa5;
+  color:#fff;
+  font-size:14px;
+}
+
+.peta-status{
+  margin-bottom:9px;
+  color:#ddd;
+  font-size:14px;
+  text-align:center;
+}
+
+.peta-status.error{
+  padding:10px;
+  border:1px solid #7b3232;
+  border-radius:8px;
+  background:#401b1b;
+  color:#ffc1c1;
+}
+
+.peta-viewport{
+  min-height:260px;
+  overflow:auto;
+  border:1px solid #444;
+  border-radius:10px;
+  background:#111;
+  text-align:center;
+}
+
+.peta-viewport img{
+  display:block;
+  width:100%;
+  height:auto;
+  margin:0 auto;
+  object-fit:contain;
+}
+
+/* ==========================================
    RESPONSIVE
 ========================================== */
 
@@ -564,6 +669,11 @@ hr{
   .walkie-refresh-button{
     width:100%;
   }
+
+  .peta-modal{ padding:8px; }
+  .peta-dialog{ max-height:96vh; padding:12px; }
+  .peta-header p{ display:none; }
+  .peta-controls{ grid-template-columns:1fr; }
 }
 
 @media(max-width:390px){
@@ -594,7 +704,8 @@ hr{
   }
 
   button,
-  .supervisor-link{
+  .supervisor-link,
+  .peta-modal{
     display:none !important;
   }
 
