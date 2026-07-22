@@ -467,7 +467,10 @@
 
 <div
   id="modalPengganti"
-  class="modal hidden">
+  class="modal hidden"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="tajukModalPengganti">
 
   <div
     class="modal-backdrop"
@@ -476,7 +479,7 @@
 
   <div class="modal-box">
 
-    <h2>GANTI PETUGAS</h2>
+    <h2 id="tajukModalPengganti">GANTI PETUGAS</h2>
 
     <div
       id="petugasAsal"
@@ -530,6 +533,8 @@
 
         <input
           id="passwordPengganti"
+          type="password"
+          autocomplete="new-password"
           placeholder="Kata Laluan">
 
       </div>
@@ -552,6 +557,7 @@
 
       <button
         class="btn-secondary"
+        type="button"
         onclick="tutupModalPengganti()">
 
         TUTUP
@@ -561,6 +567,7 @@
       <button
         class="btn-change"
         id="btnSimpanPengganti"
+        type="button"
         onclick="gantiPetugas()">
 
         SIMPAN
