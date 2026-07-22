@@ -682,7 +682,7 @@ function paparJadual() {
             ${item.deviceId ? "" : "disabled"}
             onclick="bukaModalResetDevice('${escapeHtml(item.petugasId)}')"
           >
-            RESET DEVICE
+            RESET DEVICE &amp; KEHADIRAN
           </button>
         </td>
       </tr>
@@ -1610,7 +1610,10 @@ function bukaModalResetDevice(petugasId) {
   el("maklumatResetDevice").innerHTML = `
     <strong>${escapeHtml(rekod.pangkat)} ${escapeHtml(rekod.nama)}</strong><br>
     No Badan: ${escapeHtml(rekod.noBadan)}<br>
-    Device ID: ${escapeHtml(rekod.deviceId || "-")}
+    Device ID: ${escapeHtml(rekod.deviceId || "-")}<br>
+    Tarikh Kehadiran: ${escapeHtml(el("tarikh").value || hariIniMalaysia())}<br><br>
+    <strong>Perhatian:</strong> Status petugas akan ditukar kepada BELUM HADIR
+    dan petugas perlu membuat check-in semula.
   `;
   el("sebabResetDevice").value = "";
   el("statusModalResetDevice").innerHTML = "";
@@ -1626,6 +1629,7 @@ async function hantarResetDevice() {
   if (!rekodResetDevice) return;
 
   const sebab = teks(el("sebabResetDevice").value);
+  const tarikhReset = el("tarikh").value || hariIniMalaysia();
   const butang = el("btnSahkanResetDevice");
 
   if (!sebab) {
@@ -1633,7 +1637,9 @@ async function hantarResetDevice() {
     return;
   }
 
-  if (!confirm("Sahkan reset Device ID petugas ini?")) return;
+  if (!confirm(
+    `Sahkan reset Device ID dan kehadiran petugas untuk ${tarikhReset}? Petugas perlu check-in semula.`
+  )) return;
 
   butang.disabled = true;
   butang.textContent = "SEDANG RESET...";
@@ -1642,7 +1648,8 @@ async function hantarResetDevice() {
     let hasil = await denganHadMasa(
       db.rpc("reset_device_petugas", {
         p_petugas_id: rekodResetDevice.petugasId,
-        p_sebab: sebab
+        p_sebab: sebab,
+        p_tarikh: tarikhReset
       })
     );
 
@@ -1664,7 +1671,14 @@ async function hantarResetDevice() {
       throw new Error(hasil.data?.message || "Device ID gagal direset.");
     }
 
-    paparMesej("statusModalResetDevice", "Device ID berjaya direset.", "success");
+    paparMesej(
+      "statusModalResetDevice",
+      escapeHtml(
+        hasil.data.message ||
+        "Device ID dan kehadiran berjaya direset. Petugas perlu check-in semula."
+      ),
+      "success"
+    );
     setTimeout(async () => {
       tutupModalResetDevice();
       await muatData(false);
@@ -1674,7 +1688,7 @@ async function hantarResetDevice() {
     paparMesej("statusModalResetDevice", escapeHtml(error.message), "error");
   } finally {
     butang.disabled = false;
-    butang.textContent = "SAHKAN RESET DEVICE";
+    butang.textContent = "SAHKAN RESET DEVICE & KEHADIRAN";
   }
 }
 
