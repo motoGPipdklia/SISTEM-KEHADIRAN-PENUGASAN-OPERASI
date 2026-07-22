@@ -624,6 +624,7 @@ button:disabled{
 .modal-backdrop{
   position:absolute;
   inset:0;
+  z-index:0;
   background:rgba(0,0,0,.82);
   backdrop-filter:blur(2px);
 }
@@ -695,6 +696,8 @@ button:disabled{
 ================================================================ */
 
 .modal-box{
+  position:relative;
+  z-index:1;
   width:min(100%,620px);
   max-height:92vh;
   overflow:auto;
