@@ -9,7 +9,7 @@
   <!-- Gaya global mesti dimuatkan dahulu. -->
   <link rel="stylesheet" href="css/style.css">
   <!-- Gaya khusus halaman Petugas dimuatkan selepas gaya global. -->
-  <link rel="stylesheet" href="css/index.css">
+  <link rel="stylesheet" href="css/index.css?v=20260722-1205">
 </head>
 
 <body>
@@ -112,6 +112,10 @@
         HANTAR PELAPORAN
       </button>
 
+      <button class="map-button" id="btnPaparPeta" type="button" onclick="bukaPeta()">
+        PAPARAN PETA
+      </button>
+
       <button class="refresh-button" id="btnRefreshStatus" type="button" onclick="refreshDashboard()">
         SEMAK SEMULA STATUS
       </button>
@@ -189,11 +193,38 @@
     </section>
   </main>
 
+  <!-- PAPARAN PETA OPERASI -->
+  <section class="peta-modal" id="modalPeta" role="dialog" aria-modal="true"
+    aria-labelledby="tajukModalPeta" aria-hidden="true" hidden
+    onclick="if(event.target===this)tutupPeta()">
+    <div class="peta-dialog">
+      <header class="peta-header">
+        <div>
+          <h2 id="tajukModalPeta">Peta Operasi</h2>
+          <p>Gunakan kawalan zum untuk melihat peta dengan lebih jelas.</p>
+        </div>
+        <button class="peta-close" type="button" aria-label="Tutup paparan peta" onclick="tutupPeta()">&times;</button>
+      </header>
+
+      <div class="peta-controls" aria-label="Kawalan peta">
+        <button type="button" onclick="ubahZumPeta(-0.25)">ZUM KELUAR</button>
+        <button type="button" onclick="resetZumPeta()">RESET</button>
+        <button type="button" onclick="ubahZumPeta(0.25)">ZUM MASUK</button>
+      </div>
+
+      <div class="peta-status" id="statusPeta" role="status" aria-live="polite">Zum: 100%</div>
+      <div class="peta-viewport" id="ruangPeta">
+        <img id="imejPeta" src="images/peta.png" alt="Peta kawasan operasi"
+          onload="petaBerjayaDimuatkan()" onerror="petaGagalDimuatkan()">
+      </div>
+    </div>
+  </section>
+
   <!-- Urutan JavaScript ini penting. -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/api-config.js"></script>
   <script src="js/supabase-client.js"></script>
-  <script src="js/index.js"></script>
+  <script src="js/index.js?v=20260722-1205"></script>
   <script src="js/walkie-petugas.js"></script>
 </body>
 </html>
