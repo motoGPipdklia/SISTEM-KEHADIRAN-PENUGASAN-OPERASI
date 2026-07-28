@@ -248,9 +248,10 @@ button:disabled{
 }
 
 .content{
-  width:min(100%,1500px);
-  margin:auto;
-  padding:22px;
+  width:100%;
+  max-width:none;
+  margin:0;
+  padding:18px 16px 24px;
 }
 
 .filters{
@@ -519,8 +520,14 @@ button:disabled{
 
 table{
   width:100%;
-  min-width:1450px;
+  min-width:1575px;
   border-collapse:collapse;
+}
+
+th:nth-child(4),
+td:nth-child(4){
+  min-width:125px;
+  white-space:nowrap;
 }
 
 th,
@@ -844,7 +851,8 @@ tbody tr:hover{
   }
 
   .content{
-    padding:14px;
+    width:100%;
+    padding:10px 8px 18px;
   }
 
   .stats,
