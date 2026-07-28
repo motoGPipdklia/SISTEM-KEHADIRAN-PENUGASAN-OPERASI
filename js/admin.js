@@ -523,6 +523,7 @@ async function muatData(kemasKiniPenapis = false) {
         noBadan: pengguna.no_badan || "-",
         pangkat: pengguna.pangkat || "-",
         nama: pengguna.nama || "-",
+        telefon: pengguna.telefon || "-",
         deviceId: ikatanDevice?.device_id || "",
         deviceDiikatPada: ikatanDevice?.diikat_pada || null,
         deviceKaliTerakhir: ikatanDevice?.kali_terakhir || null,
@@ -614,6 +615,7 @@ function papar() {
         item.noBadan,
         item.pangkat,
         item.nama,
+        item.telefon,
         item.callSign,
         item.jenisTugas,
         item.tempatTugas,
@@ -635,7 +637,7 @@ function paparJadual() {
 
   if (!dataPaparan.length) {
     tbody.innerHTML = (
-      '<tr><td colspan="14" class="empty-row">' +
+      '<tr><td colspan="15" class="empty-row">' +
       "Tiada rekod yang sepadan.</td></tr>"
     );
     return;
@@ -657,6 +659,7 @@ function paparJadual() {
           <strong>${escapeHtml(item.pangkat)}</strong><br>
           ${escapeHtml(item.nama)}
         </td>
+        <td>${escapeHtml(item.telefon)}</td>
         <td>${escapeHtml(item.callSign)}</td>
         <td>${escapeHtml(item.jenisTugas)}</td>
         <td>${escapeHtml(item.tempatTugas)}</td>
@@ -737,7 +740,7 @@ function exportExcel() {
   }
 
   const tajuk = [
-    "BIL", "NO BADAN", "PANGKAT", "NAMA", "CALL SIGN",
+    "BIL", "NO BADAN", "PANGKAT", "NAMA", "NO TELEFON", "CALL SIGN",
     "JENIS TUGAS", "TEMPAT TUGAS", "PEMEGANG SET",
     "CHECK-IN", "STATUS", "CHECK-OUT", "TEMPOH"
   ];
@@ -747,6 +750,7 @@ function exportExcel() {
     item.noBadan,
     item.pangkat,
     item.nama,
+    item.telefon,
     item.callSign,
     item.jenisTugas,
     item.tempatTugas,
