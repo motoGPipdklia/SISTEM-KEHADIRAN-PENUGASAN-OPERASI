@@ -51,9 +51,10 @@ textarea{
 }
 
 .container{
-  width:min(100%,1500px);
-  margin:0 auto;
-  padding:22px;
+  width:100%;
+  max-width:none;
+  margin:0;
+  padding:18px 16px 24px;
 }
 
 .card,
@@ -150,6 +151,13 @@ button:disabled{
   color:#111;
 }
 
+.btn-print{
+  width:100%;
+  margin-top:10px;
+  background:var(--gray);
+  color:#fff;
+}
+
 .link,
 .btn-secondary,
 .gray{
@@ -213,9 +221,10 @@ button:disabled{
 }
 
 .content{
-  width:min(100%,1500px);
-  margin:0 auto;
-  padding:22px;
+  width:100%;
+  max-width:none;
+  margin:0;
+  padding:18px 16px 24px;
 }
 
 .stats,
@@ -247,7 +256,7 @@ button:disabled{
 .toolbar,
 .filters{
   display:grid;
-  grid-template-columns:repeat(3,minmax(180px,1fr));
+  grid-template-columns:repeat(4,minmax(180px,1fr));
   gap:12px;
   margin-bottom:14px;
 }
@@ -265,6 +274,7 @@ button:disabled{
 
 .toolbar-actions button{
   flex:1;
+  min-width:0;
 }
 
 .table-card{
@@ -279,8 +289,14 @@ button:disabled{
 
 table{
   width:100%;
-  min-width:1450px;
+  min-width:1575px;
   border-collapse:collapse;
+}
+
+th:nth-child(5),
+td:nth-child(5){
+  min-width:125px;
+  white-space:nowrap;
 }
 
 th,
@@ -509,7 +525,8 @@ tbody tr:hover{
 
   .content,
   .container{
-    padding:14px;
+    width:100%;
+    padding:10px 8px 18px;
   }
 
   .topbar{
@@ -842,4 +859,6 @@ tbody tr:hover{
 .notification-read-all:disabled{
   opacity:.5;
   cursor:not-allowed;
+}
+
 }
