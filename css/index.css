@@ -63,6 +63,11 @@ textarea{
   text-align:center;
 }
 
+/* Pastikan susun atur Flex dipulihkan selepas pengguna log keluar. */
+#loginBox.login-visible{
+  display:flex;
+}
+
 #loginBox > *{
   flex-shrink:0;
 }
