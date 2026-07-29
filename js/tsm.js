@@ -724,6 +724,7 @@ function paparDataTSM() {
   const senarai = dataTSM.filter(item => {
     if (status && atasTSM(item.rekod.status) !== status) return false;
     const gabung = atasTSM([item.profil.no_badan, item.profil.pangkat, item.profil.nama,
+      item.profil.telefon,
       item.tugas.call_sign, item.tugas.jenis_tugas, item.tugas.tempat_tugas,
       item.rekod.no_siri_set, item.rekod.status].join(" "));
     return !carian || gabung.includes(carian);
@@ -737,7 +738,7 @@ function paparDataTSM() {
 
   const tbody = elTSM("tbodyTSM");
   if (!senarai.length) {
-    tbody.innerHTML = '<tr><td colspan="12" class="empty">Tiada permohonan ditemui.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="13" class="empty">Tiada permohonan ditemui.</td></tr>';
     return;
   }
 
@@ -756,6 +757,7 @@ function paparDataTSM() {
       <td>${htmlTSM(masaTSM(r.masa_permohonan || r.created_at))}</td>
       <td>${htmlTSM(item.profil.no_badan || "-")}</td>
       <td><strong>${htmlTSM(item.profil.pangkat || "-")}</strong><br>${htmlTSM(item.profil.nama || "-")}</td>
+      <td>${htmlTSM(item.profil.telefon || "-")}</td>
       <td>${htmlTSM(item.tugas.call_sign || "-")}</td>
       <td>${htmlTSM(item.tugas.jenis_tugas || "-")}<br>${htmlTSM(item.tugas.tempat_tugas || item.tugas.lokasi || "-")}</td>
       <td>${htmlTSM(r.no_siri_set || "-")}</td>
@@ -769,6 +771,10 @@ function paparDataTSM() {
 }
 
 function cariRekodTSM(id) { return dataTSM.find(x => x.rekod.id === id) || null; }
+
+function cetakTSM() {
+  window.print();
+}
 
 function bukaModalPelepasan(id) {
   rekodAktifTSM = cariRekodTSM(id); if (!rekodAktifTSM) return;
