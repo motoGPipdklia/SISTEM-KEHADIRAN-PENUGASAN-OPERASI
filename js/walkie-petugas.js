@@ -1,12 +1,13 @@
 "use strict";
 
 /* ================================================================
-   SKPO — MODUL WALKIE-TALKIE PETUGAS
+   SKPO FORMULA 1 — MODUL WALKIE-TALKIE PETUGAS
 ================================================================ */
 
 (function modulWalkiePetugas() {
   const dbWalkie = window.supabaseClient;
   const ZON_MASA_WALKIE = "Asia/Kuala_Lumpur";
+  const KOD_OPERASI_WALKIE = "F1";
 
   const state = {
     profil: null,
@@ -212,6 +213,7 @@
   function paparanRekod() {
     const rekod = state.rekod;
     const status = atas(rekod.status);
+    const statusPaparan = status.replaceAll("_", " ");
     const kelas = kelasStatus(status);
 
     let keterangan = "Permohonan sedang menunggu tindakan TSM.";
@@ -224,7 +226,7 @@
       <div class="walkie-info-grid">
         <div>
           <span class="walkie-label">Status</span>
-          <span class="walkie-badge ${kelas}">${htmlSelamat(status)}</span>
+          <span class="walkie-badge ${kelas}">${htmlSelamat(statusPaparan)}</span>
         </div>
         <div>
           <span class="walkie-label">No Siri Set</span>
