@@ -2336,6 +2336,16 @@ async function hantarSitrep(event) {
 
 async function muatDataSitrep() {
   const senarai = elemenPenyelia("senaraiSitrep");
+  const inputTarikh = elemenPenyelia("tarikhSitrep");
+
+  if (inputTarikh && !inputTarikh.value) {
+    inputTarikh.value = hariIniPenyelia();
+  }
+
+  const tarikhDipilih =
+    inputTarikh?.value ||
+    hariIniPenyelia();
+
   if (senarai) {
     senarai.innerHTML = '<div class="empty">Sedang memuatkan rekod SITREP...</div>';
   }
@@ -2344,6 +2354,7 @@ async function muatDataSitrep() {
     const { data, error } = await dbPenyelia
       .from(JADUAL_SITREP)
       .select("*")
+      .eq("tarikh", tarikhDipilih)
       .order("created_at", { ascending: false })
       .limit(100);
 
@@ -2384,7 +2395,16 @@ function paparSenaraiSitrep() {
   });
 
   if (dataDitapis.length === 0) {
-    senarai.innerHTML = '<div class="empty">Tiada rekod SITREP ditemui.</div>';
+    const tarikhDipilih =
+      elemenPenyelia("tarikhSitrep")?.value ||
+      hariIniPenyelia();
+
+    senarai.innerHTML = `
+      <div class="empty">
+        Tiada rekod SITREP ditemui bagi tarikh
+        ${htmlPenyelia(formatTarikhPaparanSitrep(tarikhDipilih))}.
+      </div>
+    `;
     return;
   }
 
@@ -2420,6 +2440,16 @@ function paparSenaraiSitrep() {
       </table>
     </div>
   `;
+}
+
+function formatTarikhPaparanSitrep(nilai) {
+  const bahagian = teksPenyelia(nilai).split("-");
+
+  if (bahagian.length !== 3) {
+    return teksPenyelia(nilai) || "-";
+  }
+
+  return `${bahagian[2]}/${bahagian[1]}/${bahagian[0]}`;
 }
 
 async function bukaLampiranSitrep(laluan) {
