@@ -1090,3 +1090,192 @@ body #loginSection .btn-secondary.link:hover{
     min-height:54px !important;
   }
 }
+
+/* ================================================================
+   MODUL SITREP
+================================================================ */
+
+.sitrep-panel{
+  margin-top:18px;
+  padding:22px;
+  border:1px solid #3d3d3d;
+  border-radius:14px;
+  background:#1b1b1b;
+}
+
+.sitrep-heading{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+  margin-bottom:20px;
+}
+
+.sitrep-heading h2{
+  margin:0 0 5px;
+  color:var(--gold);
+}
+
+.sitrep-heading p{
+  margin:0;
+  color:#bdbdbd;
+}
+
+.sitrep-form{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:16px;
+}
+
+.sitrep-field{
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+  min-width:0;
+  color:#fff;
+  font-weight:700;
+}
+
+.sitrep-field input,
+.sitrep-field textarea,
+.sitrep-search{
+  width:100%;
+  border:1px solid #4a4a4a;
+  border-radius:9px;
+  background:#111;
+  color:#fff;
+}
+
+.sitrep-field input,
+.sitrep-search{
+  min-height:50px;
+  padding:12px 14px;
+}
+
+.sitrep-field textarea{
+  min-height:112px;
+  padding:12px 14px;
+  resize:vertical;
+}
+
+.sitrep-field small{
+  color:#aaa;
+  font-size:12px;
+  font-weight:400;
+}
+
+.sitrep-wide{
+  grid-column:1 / -1;
+}
+
+.sitrep-actions{
+  display:flex;
+  justify-content:flex-end;
+}
+
+.sitrep-actions button{
+  width:min(100%,360px);
+  min-height:52px;
+}
+
+.sitrep-history{
+  margin-top:22px;
+}
+
+.sitrep-search{
+  margin-bottom:16px;
+}
+
+.sitrep-list{
+  display:grid;
+  gap:16px;
+}
+
+.sitrep-card{
+  padding:20px;
+  border:1px solid #414141;
+  border-left:4px solid var(--gold);
+  border-radius:12px;
+  background:#151515;
+}
+
+.sitrep-card > header{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+  margin-bottom:17px;
+}
+
+.sitrep-card h3{
+  margin:4px 0;
+  color:var(--gold);
+  font-size:22px;
+}
+
+.sitrep-card header p{
+  margin:0;
+  color:#c9c9c9;
+}
+
+.sitrep-date{
+  color:#9f9f9f;
+  font-size:13px;
+}
+
+.sitrep-detail-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+}
+
+.sitrep-detail{
+  padding:13px;
+  border:1px solid #343434;
+  border-radius:9px;
+  background:#1e1e1e;
+}
+
+.sitrep-detail strong{
+  display:block;
+  margin-bottom:5px;
+  color:#d9b735;
+  font-size:12px;
+  text-transform:uppercase;
+}
+
+.sitrep-detail p{
+  margin:0;
+  color:#eee;
+  white-space:pre-wrap;
+}
+
+.sitrep-attachment{
+  width:100%;
+  margin-top:14px;
+}
+
+@media(max-width:720px){
+  .sitrep-panel{
+    padding:16px;
+  }
+
+  .sitrep-heading,
+  .sitrep-card > header{
+    flex-direction:column;
+  }
+
+  .sitrep-heading button,
+  .sitrep-print-button{
+    width:100%;
+  }
+
+  .sitrep-form,
+  .sitrep-detail-grid{
+    grid-template-columns:1fr;
+  }
+
+  .sitrep-wide{
+    grid-column:auto;
+  }
+}
