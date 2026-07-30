@@ -510,14 +510,28 @@
               </button>
             </div>
 
-            <input
-              id="carianSitrep"
-              class="sitrep-search"
-              type="search"
-              placeholder="Cari tajuk, pengirim atau kandungan SITREP..."
-              autocomplete="off"
-              oninput="paparSenaraiSitrep()"
-            >
+            <div class="sitrep-filter-bar">
+              <label class="sitrep-date-filter">
+                <span>Tarikh SITREP</span>
+                <input
+                  id="tarikhSitrep"
+                  type="date"
+                  onchange="muatDataSitrep()"
+                >
+              </label>
+
+              <label class="sitrep-search-filter">
+                <span>Carian</span>
+                <input
+                  id="carianSitrep"
+                  class="sitrep-search"
+                  type="search"
+                  placeholder="Cari tajuk, pengirim atau kandungan SITREP..."
+                  autocomplete="off"
+                  oninput="paparSenaraiSitrep()"
+                >
+              </label>
+            </div>
 
             <div id="senaraiSitrep" class="sitrep-list"></div>
           </div>
@@ -719,7 +733,7 @@
   ></script>
 
   <script
-    src="js/penyelia.js?v=20260730-sitrep-003"
+    src="js/penyelia.js?v=20260730-sitrep-004"
   ></script>
 
 </body>
