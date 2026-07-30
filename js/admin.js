@@ -685,7 +685,7 @@ function paparJadual() {
             ${item.deviceId ? "" : "disabled"}
             onclick="bukaModalResetDevice('${escapeHtml(item.petugasId)}')"
           >
-            RESET DEVICE &amp; KEHADIRAN
+            RESET DEVICE
           </button>
         </td>
       </tr>
@@ -1614,12 +1614,10 @@ function bukaModalResetDevice(petugasId) {
   el("maklumatResetDevice").innerHTML = `
     <strong>${escapeHtml(rekod.pangkat)} ${escapeHtml(rekod.nama)}</strong><br>
     No Badan: ${escapeHtml(rekod.noBadan)}<br>
-    Device ID: ${escapeHtml(rekod.deviceId || "-")}<br>
-    Tarikh Kehadiran: ${escapeHtml(el("tarikh").value || hariIniMalaysia())}<br><br>
-    <strong>Perhatian:</strong> Status petugas akan ditukar kepada BELUM HADIR
-    dan petugas perlu membuat check-in semula.
+    Device ID: ${escapeHtml(rekod.deviceId || "-")}<br><br>
+    <strong>Perhatian:</strong> Hanya ikatan Device ID akan dibuang.
+    Rekod Check-In, Check-Out dan status kehadiran petugas akan dikekalkan.
   `;
-  el("sebabResetDevice").value = "";
   el("statusModalResetDevice").innerHTML = "";
   el("modalResetDevice").style.display = "block";
 }
@@ -1632,17 +1630,10 @@ function tutupModalResetDevice() {
 async function hantarResetDevice() {
   if (!rekodResetDevice) return;
 
-  const sebab = teks(el("sebabResetDevice").value);
-  const tarikhReset = el("tarikh").value || hariIniMalaysia();
   const butang = el("btnSahkanResetDevice");
 
-  if (!sebab) {
-    paparMesej("statusModalResetDevice", "Sila nyatakan sebab reset Device ID.", "error");
-    return;
-  }
-
   if (!confirm(
-    `Sahkan reset Device ID dan kehadiran petugas untuk ${tarikhReset}? Petugas perlu check-in semula.`
+    `Sahkan reset Device ID untuk ${rekodResetDevice.noBadan}? Rekod kehadiran akan dikekalkan.`
   )) return;
 
   butang.disabled = true;
@@ -1650,10 +1641,8 @@ async function hantarResetDevice() {
 
   try {
     const hasil = await denganHadMasa(
-      db.rpc("reset_device_petugas", {
-        p_petugas_id: rekodResetDevice.petugasId,
-        p_sebab: sebab,
-        p_tarikh: tarikhReset
+      db.rpc("nyahikat_peranti_petugas", {
+        p_no_badan: rekodResetDevice.noBadan
       })
     );
 
@@ -1662,7 +1651,7 @@ async function hantarResetDevice() {
         `${hasil.error.code || ""} ${hasil.error.message || ""}`
       )) {
         throw new Error(
-          "Fungsi reset terbaru belum tersedia. Jalankan semula device-binding.sql dan muat semula halaman."
+          "Fungsi nyahikat_peranti_petugas belum tersedia dalam Supabase."
         );
       }
       throw hasil.error;
@@ -1675,7 +1664,7 @@ async function hantarResetDevice() {
       "statusModalResetDevice",
       escapeHtml(
         hasil.data.message ||
-        "Device ID dan kehadiran berjaya direset. Petugas perlu check-in semula."
+        "Device ID berjaya direset. Rekod kehadiran dikekalkan."
       ),
       "success"
     );
@@ -1688,7 +1677,7 @@ async function hantarResetDevice() {
     paparMesej("statusModalResetDevice", escapeHtml(error.message), "error");
   } finally {
     butang.disabled = false;
-    butang.textContent = "SAHKAN RESET DEVICE & KEHADIRAN";
+    butang.textContent = "SAHKAN RESET DEVICE";
   }
 }
 
