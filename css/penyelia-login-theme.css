@@ -1,4 +1,4 @@
-/* ================================================================
+﻿/* ================================================================
    SKPO MOTOGP - LOGIN URUSETIA SEPERTI LOGIN PENTADBIR
    Muatkan fail ini selepas css/penyelia.css.
 ================================================================ */
@@ -8,7 +8,7 @@
   Selepas loginSection disembunyikan oleh penyelia.js, dashboard
   kembali menggunakan susun atur asal.
 */
-body:has(#loginSection:not([style*="display: none"])){
+body:has(#loginSection:not(.hidden):not([hidden]):not([style*="display: none"])){
   min-height:100vh;
   margin:0;
   background:
@@ -16,7 +16,7 @@ body:has(#loginSection:not([style*="display: none"])){
     url("../images/background-portal.jpg") center center / cover no-repeat fixed;
 }
 
-body:has(#loginSection:not([style*="display: none"])) .container{
+body:has(#loginSection:not(.hidden):not([hidden]):not([style*="display: none"])) .container{
   display:flex;
   align-items:center;
   justify-content:center;
@@ -28,15 +28,15 @@ body:has(#loginSection:not([style*="display: none"])) .container{
 }
 
 /* Tajuk SKPO URUSETIA di luar kad tidak dipaparkan semasa login. */
-body:has(#loginSection:not([style*="display: none"])) .container > header{
+body:has(#loginSection:not(.hidden):not([hidden]):not([style*="display: none"])) .container > header{
   display:none;
 }
 
-body:has(#loginSection:not([style*="display: none"])) #dashboardSection{
+body:has(#loginSection:not(.hidden):not([hidden]):not([style*="display: none"])) #dashboardSection{
   display:none;
 }
 
-body:has(#loginSection:not([style*="display: none"])) #loginSection{
+body:has(#loginSection:not(.hidden):not([hidden]):not([style*="display: none"])) #loginSection{
   position:relative;
   display:block;
   width:min(100%,560px);
@@ -67,7 +67,7 @@ body:has(#loginSection:not([style*="display: none"])) #loginSection{
   filter:drop-shadow(0 6px 10px rgba(0,0,0,.8));
 }
 
-body:has(#loginSection:not([style*="display: none"])) #loginSection h1{
+body:has(#loginSection:not(.hidden):not([hidden]):not([style*="display: none"])) #loginSection h1{
   margin:4px 0 18px;
   color:#d9b333;
   font-size:clamp(28px,4vw,38px);
@@ -76,27 +76,27 @@ body:has(#loginSection:not([style*="display: none"])) #loginSection h1{
   text-transform:uppercase;
 }
 
-body:has(#loginSection:not([style*="display: none"])) #loginSection input{
+body:has(#loginSection:not(.hidden):not([hidden]):not([style*="display: none"])) #loginSection input{
   width:100%;
   min-height:58px;
   margin:0 0 12px;
 }
 
-body:has(#loginSection:not([style*="display: none"])) #loginSection button{
+body:has(#loginSection:not(.hidden):not([hidden]):not([style*="display: none"])) #loginSection button{
   width:100%;
   min-height:56px;
 }
 
 @media(max-width:620px){
-  body:has(#loginSection:not([style*="display: none"])){
+  body:has(#loginSection:not(.hidden):not([hidden]):not([style*="display: none"])){
     background-attachment:scroll;
   }
 
-  body:has(#loginSection:not([style*="display: none"])) .container{
+  body:has(#loginSection:not(.hidden):not([hidden]):not([style*="display: none"])) .container{
     padding:18px 12px;
   }
 
-  body:has(#loginSection:not([style*="display: none"])) #loginSection{
+  body:has(#loginSection:not(.hidden):not([hidden]):not([style*="display: none"])) #loginSection{
     padding:22px 18px;
     border-radius:14px;
   }
@@ -108,7 +108,8 @@ body:has(#loginSection:not([style*="display: none"])) #loginSection button{
 }
 
 @media print{
-  body:has(#loginSection:not([style*="display: none"])){
+  body:has(#loginSection:not(.hidden):not([hidden]):not([style*="display: none"])){
     background:#fff !important;
   }
 }
+
