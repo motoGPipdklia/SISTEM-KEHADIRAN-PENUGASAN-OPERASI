@@ -2167,7 +2167,7 @@ function bukaCetakanAdmin(tajuk, kandungan) {
       h1{font-size:22px;text-align:center;margin:0 0 8px}
       .subtitle{text-align:center;margin:0 0 24px;color:#444}
       .meta{border:1px solid #bbb;padding:12px;margin-bottom:18px}
-      .field{margin:0 0 14px;page-break-inside:avoid}
+      .field{margin:0 0 14px;page-break-inside:avoid;white-space:pre-wrap}
       .field strong{display:block;margin-bottom:4px}
       .attachment{max-width:100%;max-height:520px}
       @media print{button{display:none}}
