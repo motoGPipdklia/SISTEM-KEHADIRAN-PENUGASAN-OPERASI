@@ -16,7 +16,11 @@ body:has(#loginSection:not(.hidden):not([hidden]):not([style*="display: none"]))
 }
 
 body:has(#loginSection:not(.hidden):not([hidden]):not([style*="display: none"])) #loginSection{
-  display:flex;
+  /*
+    !important diperlukan kerana logoutTSM() menetapkan display:block
+    terus pada elemen. Tanpanya, kad akan melekat di sebelah kiri.
+  */
+  display:flex !important;
   align-items:center;
   justify-content:center;
   width:100%;
