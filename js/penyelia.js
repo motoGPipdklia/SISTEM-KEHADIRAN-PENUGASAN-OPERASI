@@ -2396,6 +2396,7 @@ function paparSenaraiSitrep() {
             <th scope="col">Bil.</th>
             <th scope="col">Tadbir</th>
             <th scope="col">Masa Dihantar</th>
+            <th scope="col">Tindakan</th>
           </tr>
         </thead>
         <tbody>
@@ -2404,6 +2405,15 @@ function paparSenaraiSitrep() {
               <td data-label="Bil.">${indeks + 1}</td>
               <td data-label="Tadbir">${htmlPenyelia(item.tadbir || "-")}</td>
               <td data-label="Masa Dihantar">${htmlPenyelia(formatMasaPenyelia(item.created_at))}</td>
+              <td data-label="Tindakan">
+                <button
+                  class="btn-secondary sitrep-table-print"
+                  type="button"
+                  onclick="cetakSitrep('${htmlPenyelia(item.id)}')"
+                >
+                  CETAK
+                </button>
+              </td>
             </tr>
           `).join("")}
         </tbody>
