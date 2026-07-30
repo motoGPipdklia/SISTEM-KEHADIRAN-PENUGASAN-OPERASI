@@ -11,6 +11,9 @@ const MASA_TAMAT_PERMINTAAN = 15000;
 
 let adminLogin = null;
 let dataDashboard = [];
+let dataLaporanPetugasAdmin = [];
+let dataSitrepAdmin = [];
+let tabLaporanAdminAktif = "petugas";
 let dataPaparan = [];
 let rekodResetDevice = null;
 let rekodImportPenugasan = [];
@@ -427,6 +430,8 @@ async function logout() {
   adminLogin = null;
   dataDashboard = [];
   dataPaparan = [];
+  dataLaporanPetugasAdmin = [];
+  dataSitrepAdmin = [];
 
   el("dashboard").style.display = "none";
   el("loginPage").style.display = "block";
@@ -1708,6 +1713,12 @@ function tutupSemuaModulPentadbir() {
       idKandungan: "borangDaftarPengguna",
       idButang: "btnToggleDaftarPengguna",
       teksButang: "PAPARKAN BORANG"
+    },
+    {
+      idModul: "modulLaporanPentadbir",
+      idKandungan: "kandunganLaporanPentadbir",
+      idButang: "btnToggleLaporanPentadbir",
+      teksButang: "TUTUP MODUL"
     }
   ];
 
@@ -1838,6 +1849,30 @@ function bukaDaftarPengguna() {
   );
 }
 
+function bukaModulLaporanPentadbir() {
+  bukaDanSkrolModul(
+    "modulLaporanPentadbir",
+    "kandunganLaporanPentadbir",
+    "btnToggleLaporanPentadbir",
+    "TUTUP MODUL"
+  );
+
+  const inputTarikh = el("tarikhLaporanPentadbir");
+  if (inputTarikh && !inputTarikh.value) {
+    inputTarikh.value = hariIniMalaysia();
+  }
+
+  muatLaporanPentadbir();
+}
+
+function tutupModulLaporanPentadbir() {
+  const modul = el("modulLaporanPentadbir");
+  if (!modul) return;
+  modul.hidden = true;
+  modul.setAttribute("hidden", "");
+  modul.style.display = "none";
+}
+
 
 /* ================================================================
    TOGGLE MODUL
@@ -1935,11 +1970,243 @@ function toggleImportPenugasan() {
    PERMULAAN HALAMAN
 ================================================================ */
 
+/* ================================================================
+   MODUL LAPORAN PENTADBIR
+================================================================ */
+
+function tukarTabLaporanPentadbir(tab) {
+  tabLaporanAdminAktif = tab === "sitrep" ? "sitrep" : "petugas";
+
+  const petugasAktif = tabLaporanAdminAktif === "petugas";
+  el("paparanLaporanPetugasAdmin")?.toggleAttribute("hidden", !petugasAktif);
+  el("paparanSitrepAdmin")?.toggleAttribute("hidden", petugasAktif);
+  el("tabAdminLaporanPetugas")?.classList.toggle("active", petugasAktif);
+  el("tabAdminSitrep")?.classList.toggle("active", !petugasAktif);
+  el("tabAdminLaporanPetugas")?.setAttribute("aria-selected", String(petugasAktif));
+  el("tabAdminSitrep")?.setAttribute("aria-selected", String(!petugasAktif));
+  paparLaporanPentadbir();
+}
+
+function tarikhMalaysiaDaripadaMasa(nilai) {
+  if (!nilai) return "";
+  const tarikh = new Date(nilai);
+  if (Number.isNaN(tarikh.getTime())) return teks(nilai).slice(0, 10);
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: ZON_MASA,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(tarikh);
+}
+
+async function muatLaporanPentadbir() {
+  const inputTarikh = el("tarikhLaporanPentadbir");
+  if (inputTarikh && !inputTarikh.value) inputTarikh.value = hariIniMalaysia();
+  const tarikhDipilih = inputTarikh?.value || hariIniMalaysia();
+
+  paparMesej("statusLaporanPentadbir", "Sedang memuatkan laporan...", "warning");
+
+  try {
+    const [laporanRes, profilRes, penugasanRes, sitrepRes] = await Promise.all([
+      db.from("pelaporan")
+        .select("*")
+        .order("tarikh_masa", { ascending: false })
+        .limit(500),
+      db.from("profiles")
+        .select("id,no_badan,pangkat,nama"),
+      db.from("penugasan")
+        .select("id,call_sign,jenis_tugas,tempat_tugas"),
+      db.from("sitrep")
+        .select("*")
+        .eq("tarikh", tarikhDipilih)
+        .order("created_at", { ascending: false })
+        .limit(200)
+    ]);
+
+    if (laporanRes.error) throw laporanRes.error;
+    if (profilRes.error) throw profilRes.error;
+    if (penugasanRes.error) throw penugasanRes.error;
+    if (sitrepRes.error) throw sitrepRes.error;
+
+    const profilMap = new Map((profilRes.data || []).map(item => [String(item.id), item]));
+    const tugasMap = new Map((penugasanRes.data || []).map(item => [String(item.id), item]));
+
+    dataLaporanPetugasAdmin = (laporanRes.data || [])
+      .filter(item =>
+        (item.dibaca === true || Boolean(item.dibaca_pada)) &&
+        tarikhMalaysiaDaripadaMasa(item.tarikh_masa || item.created_at) === tarikhDipilih
+      )
+      .map(item => ({
+        ...item,
+        profil: profilMap.get(String(item.petugas_id)) || {},
+        penugasan: tugasMap.get(String(item.penugasan_id)) || {}
+      }));
+
+    dataSitrepAdmin = sitrepRes.data || [];
+
+    paparLaporanPentadbir();
+    paparMesej(
+      "statusLaporanPentadbir",
+      `${dataLaporanPetugasAdmin.length} laporan petugas telah dibaca dan ${dataSitrepAdmin.length} SITREP ditemui.`,
+      "success"
+    );
+  } catch (error) {
+    dataLaporanPetugasAdmin = [];
+    dataSitrepAdmin = [];
+    paparLaporanPentadbir();
+    paparMesej(
+      "statusLaporanPentadbir",
+      `Laporan gagal dimuatkan: ${escapeHtml(error.message || "Ralat tidak diketahui.")}`,
+      "error"
+    );
+  }
+}
+
+function paparLaporanPentadbir() {
+  const carian = atas(el("carianLaporanPentadbir")?.value);
+
+  if (tabLaporanAdminAktif === "petugas") {
+    const tbody = el("tbodyLaporanPetugasAdmin");
+    if (!tbody) return;
+
+    const senarai = dataLaporanPetugasAdmin.filter(item => atas([
+      item.profil?.no_badan,
+      item.profil?.pangkat,
+      item.profil?.nama,
+      item.penugasan?.call_sign,
+      item.perkara_menarik,
+      item.vvip_vip
+    ].join(" ")).includes(carian));
+
+    tbody.innerHTML = senarai.length
+      ? senarai.map((item, indeks) => `
+          <tr>
+            <td data-label="Bil.">${indeks + 1}</td>
+            <td data-label="Petugas">
+              <strong>${escapeHtml(item.profil?.pangkat || "")} ${escapeHtml(item.profil?.nama || "-")}</strong><br>
+              ${escapeHtml(item.profil?.no_badan || "-")}
+            </td>
+            <td data-label="Call Sign">${escapeHtml(item.penugasan?.call_sign || "-")}</td>
+            <td data-label="Masa Dihantar">${escapeHtml(formatTarikhMasa(item.tarikh_masa || item.created_at))}</td>
+            <td data-label="Masa Dibaca">${escapeHtml(formatTarikhMasa(item.dibaca_pada))}</td>
+            <td data-label="Tindakan">
+              <button class="gray admin-print-button" type="button"
+                onclick="cetakLaporanPetugasAdmin('${escapeHtml(item.id)}')">CETAK</button>
+            </td>
+          </tr>
+        `).join("")
+      : '<tr><td colspan="6" class="empty-row">Tiada laporan petugas yang telah dibaca pada tarikh ini.</td></tr>';
+    return;
+  }
+
+  const tbody = el("tbodySitrepAdmin");
+  if (!tbody) return;
+  const senarai = dataSitrepAdmin.filter(item => atas([
+    item.tajuk,
+    item.tadbir,
+    item.nama_pelapor,
+    item.no_badan_pelapor
+  ].join(" ")).includes(carian));
+
+  tbody.innerHTML = senarai.length
+    ? senarai.map((item, indeks) => `
+        <tr>
+          <td data-label="Bil.">${indeks + 1}</td>
+          <td data-label="Tadbir">${escapeHtml(item.tadbir || "-")}</td>
+          <td data-label="Masa Dihantar">${escapeHtml(formatTarikhMasa(item.created_at))}</td>
+          <td data-label="Tindakan">
+            <button class="gray admin-print-button" type="button"
+              onclick="cetakSitrepAdmin('${escapeHtml(item.id)}')">CETAK</button>
+          </td>
+        </tr>
+      `).join("")
+    : '<tr><td colspan="4" class="empty-row">Tiada rekod SITREP pada tarikh ini.</td></tr>';
+}
+
+function bukaCetakanAdmin(tajuk, meta, medan) {
+  const tetingkap = window.open("", "_blank", "width=900,height=720");
+  if (!tetingkap) {
+    alert("Benarkan pop-up untuk menggunakan fungsi cetak.");
+    return;
+  }
+
+  tetingkap.document.write(`<!doctype html><html lang="ms"><head><meta charset="utf-8">
+    <title>${escapeHtml(tajuk)}</title>
+    <style>
+      body{font-family:Arial,sans-serif;color:#111;margin:30px;line-height:1.5}
+      h1{margin:0 0 7px;font-size:25px}.meta{margin:0 0 22px;color:#444}
+      section{padding:11px 0;border-top:1px solid #bbb;break-inside:avoid}
+      strong{display:block;margin-bottom:4px}p{margin:0;white-space:pre-wrap}
+      @media print{body{margin:12mm}}
+    </style></head><body>
+    <h1>${escapeHtml(tajuk)}</h1>
+    <p class="meta">${meta}</p>
+    ${medan.map(([label, nilai]) => `
+      <section><strong>${escapeHtml(label)}</strong><p>${escapeHtml(nilai || "TIADA")}</p></section>
+    `).join("")}
+    </body></html>`);
+  tetingkap.document.close();
+  tetingkap.focus();
+  setTimeout(() => tetingkap.print(), 250);
+}
+
+function cetakLaporanPetugasAdmin(id) {
+  const item = dataLaporanPetugasAdmin.find(rekod => String(rekod.id) === String(id));
+  if (!item) return alert("Laporan petugas tidak ditemui.");
+
+  const nama = `${item.profil?.pangkat || ""} ${item.profil?.nama || "-"}`.trim();
+  bukaCetakanAdmin(
+    "LAPORAN PETUGAS",
+    `${escapeHtml(nama)} (${escapeHtml(item.profil?.no_badan || "-")})<br>
+     Dihantar: ${escapeHtml(formatTarikhMasa(item.tarikh_masa || item.created_at))}<br>
+     Dibaca: ${escapeHtml(formatTarikhMasa(item.dibaca_pada))}`,
+    [
+      ["Call Sign", item.penugasan?.call_sign],
+      ["Jenis Tugas", item.penugasan?.jenis_tugas],
+      ["Tempat Tugas", item.penugasan?.tempat_tugas],
+      ["Jumlah Pengunjung", String(item.jumlah_pengunjung ?? 0)],
+      ["Jumlah Kenderaan", String(item.jumlah_kenderaan ?? 0)],
+      ["VVIP / VIP", item.vvip_vip],
+      ["Perkara Menarik", item.perkara_menarik]
+    ]
+  );
+}
+
+function cetakSitrepAdmin(id) {
+  const item = dataSitrepAdmin.find(rekod => String(rekod.id) === String(id));
+  if (!item) return alert("Rekod SITREP tidak ditemui.");
+
+  bukaCetakanAdmin(
+    "SITUATION REPORT (SITREP)",
+    `${escapeHtml(item.pangkat_pelapor || "")} ${escapeHtml(item.nama_pelapor || "-")}
+     (${escapeHtml(item.no_badan_pelapor || "-")})<br>
+     Dihantar: ${escapeHtml(formatTarikhMasa(item.created_at))}`,
+    [
+      ["1. Tajuk", item.tajuk],
+      ["2. Musuh", item.musuh],
+      ["3. Kedudukan", item.kedudukan],
+      ["4. Tugas", item.tugas],
+      ["5. Tadbir", item.tadbir],
+      ["6. Perancangan Hadapan", item.perancangan_hadapan],
+      ["7. Kekuatan", item.kekuatan],
+      ["8. Pegawai Pemerintah Medan", item.pegawai_pemerintah_medan],
+      ["9. Keselamatan", item.keselamatan],
+      ["10. Keutamaan", item.keutamaan],
+      ["11. Lampiran", item.lampiran_nama]
+    ]
+  );
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   const inputTarikh = el("tarikh");
 
   if (inputTarikh) {
     inputTarikh.value = hariIniMalaysia();
+  }
+
+  const tarikhLaporan = el("tarikhLaporanPentadbir");
+  if (tarikhLaporan) {
+    tarikhLaporan.value = hariIniMalaysia();
   }
 
   el("password")?.addEventListener("keydown", event => {
