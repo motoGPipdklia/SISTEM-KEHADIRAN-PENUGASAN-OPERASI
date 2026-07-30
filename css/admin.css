@@ -54,10 +54,40 @@ textarea{
 }
 
 .login{
-  width:min(100%,460px);
-  margin:70px auto;
-  padding:22px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  min-height:100vh;
+  margin:0;
+  padding:28px 20px;
+  background:
+    linear-gradient(rgba(0,0,0,.60),rgba(0,0,0,.60)),
+    url("../images/background-portal.jpg") center center / cover no-repeat fixed;
   text-align:center;
+}
+
+.login .card{
+  width:min(100%,500px);
+  background:rgba(25,25,25,.92);
+  backdrop-filter:blur(4px);
+}
+
+.admin-login-brand{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  margin:0 0 16px;
+}
+
+.admin-login-logo{
+  display:block;
+  width:auto;
+  max-width:min(100%,430px);
+  max-height:150px;
+  object-fit:contain;
+  filter:drop-shadow(0 5px 10px rgba(0,0,0,.9));
 }
 
 .card{
@@ -1096,5 +1126,17 @@ tbody tr:hover{
 
   .admin-report-tab{
     flex:1 0 auto;
+  }
+}
+
+@media(max-width:420px){
+  .login{
+    padding:18px 14px;
+    background-attachment:scroll;
+  }
+
+  .admin-login-logo{
+    max-width:94%;
+    max-height:115px;
   }
 }
