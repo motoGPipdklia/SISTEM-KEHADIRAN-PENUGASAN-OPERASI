@@ -5,6 +5,7 @@
 const db = window.supabaseClient;
 const ZON_MASA = "Asia/Kuala_Lumpur";
 const SELANG_SEMAKAN_STATUS = 15000;
+const HAD_KETEPATAN_GPS = 100;
 
 let userLogin = null;
 let tugas = null;
@@ -331,11 +332,11 @@ function semakRadius(keluar) {
   }
   const jarak = kiraJarakMeter(gps.lat, gps.lng, tugas.lat, tugas.lng);
   if (keluar) jarakCheckout = jarak; else jarakSemasa = jarak;
-  const dibenar = gps.accuracy <= 50 && jarak <= radius;
+  const dibenar = gps.accuracy <= HAD_KETEPATAN_GPS && jarak <= radius;
   if (keluar) lokasiCheckoutDibenarkan = dibenar; else lokasiDibenarkan = dibenar;
   el(jarakId).innerHTML = dibenar
-    ? `<span class="status-success">Lokasi berjaya disahkan (jarak ${jarak.toFixed(1)} meter).</span>`
-    : `<span class="status-error">Lokasi tidak dibenarkan. Jarak ${jarak.toFixed(1)} meter; radius ${radius} meter.</span>`;
+    ? `<span class="status-success">Lokasi berjaya disahkan (jarak ${jarak.toFixed(1)} meter; ketepatan GPS ${gps.accuracy.toFixed(1)} meter).</span>`
+    : `<span class="status-error">Lokasi tidak dibenarkan. Jarak ${jarak.toFixed(1)} meter; radius ${radius} meter; ketepatan GPS ${gps.accuracy.toFixed(1)} meter (maksimum ${HAD_KETEPATAN_GPS} meter).</span>`;
   el(butangId).disabled = !dibenar;
 }
 
