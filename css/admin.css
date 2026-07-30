@@ -973,3 +973,148 @@ tbody tr:hover{
     font-size:10px;
   }
 }
+
+/* ================================================================
+   MODUL LAPORAN PENTADBIR
+================================================================ */
+
+.header-reports{
+  background:#7356a8;
+  color:#fff;
+}
+
+.admin-reports{
+  margin-top:22px;
+}
+
+.admin-report-tabs{
+  display:flex;
+  gap:6px;
+  margin:20px 0 16px;
+  border-bottom:1px solid var(--border);
+}
+
+.admin-report-tab{
+  min-height:48px;
+  padding:12px 20px;
+  border:0;
+  border-bottom:3px solid transparent;
+  background:#292929;
+  color:#c7c7c7;
+  font-weight:800;
+}
+
+.admin-report-tab.active{
+  border-bottom-color:var(--gold);
+  color:var(--gold);
+}
+
+.admin-report-toolbar{
+  display:grid;
+  grid-template-columns:minmax(190px,260px) minmax(280px,1fr) auto;
+  align-items:end;
+  gap:14px;
+  margin-bottom:16px;
+}
+
+.admin-report-toolbar label{
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+  color:#fff;
+  font-weight:700;
+}
+
+.admin-report-toolbar input{
+  width:100%;
+  min-height:50px;
+  padding:11px 14px;
+  border:1px solid var(--border-light);
+  border-radius:9px;
+  background:#121212;
+  color:#fff;
+}
+
+.admin-report-refresh{
+  min-height:50px;
+  padding:11px 22px;
+}
+
+.admin-report-table-wrap{
+  width:100%;
+  overflow:auto;
+  margin-top:14px;
+  border:1px solid var(--border);
+  border-radius:11px;
+  background:#171717;
+}
+
+.admin-report-table{
+  width:100%;
+  min-width:860px;
+  border-collapse:collapse;
+}
+
+.admin-report-table th,
+.admin-report-table td{
+  padding:14px;
+  border-bottom:1px solid #353535;
+  color:#eee;
+  text-align:left;
+  vertical-align:top;
+  white-space:pre-wrap;
+}
+
+.admin-report-table th{
+  background:#151515;
+  color:var(--gold);
+  font-size:12px;
+  text-transform:uppercase;
+}
+
+.admin-report-table th:first-child,
+.admin-report-table td:first-child{
+  width:65px;
+  text-align:center;
+}
+
+.admin-report-table th:last-child,
+.admin-report-table td:last-child{
+  width:125px;
+  text-align:center;
+}
+
+.admin-report-table tr:last-child td{
+  border-bottom:0;
+}
+
+.admin-print-button{
+  min-width:88px;
+  min-height:40px;
+  padding:8px 13px;
+}
+
+@media(max-width:760px){
+  .admin-report-toolbar{
+    grid-template-columns:1fr;
+  }
+
+  .admin-report-refresh{
+    width:100%;
+  }
+
+  .admin-report-tabs{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+  }
+
+  .admin-report-tab{
+    padding:10px;
+  }
+}
+
+@media print{
+  .admin-reports{
+    display:none !important;
+  }
+}
