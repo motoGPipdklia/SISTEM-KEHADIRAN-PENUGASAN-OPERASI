@@ -309,6 +309,18 @@
             </span>
           </button>
 
+          <button
+            id="tabSitrep"
+            class="tab-button"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            aria-controls="bahagianSitrep"
+            onclick="tukarTabPenyelia('sitrep')"
+          >
+            SITREP
+          </button>
+
         </div>
 
 
@@ -392,6 +404,123 @@
             id="senaraiLaporan"
           ></div>
 
+        </section>
+
+        <!-- =====================================================
+             BAHAGIAN SITREP
+        ====================================================== -->
+
+        <section
+          id="bahagianSitrep"
+          class="hidden"
+          role="tabpanel"
+          aria-labelledby="tabSitrep"
+        >
+          <div class="sitrep-panel">
+            <div class="sitrep-heading">
+              <div>
+                <h2>Borang SITREP</h2>
+                <p>Lengkapkan maklumat situasi semasa. Tarikh, masa dan pengirim direkodkan secara automatik.</p>
+              </div>
+              <button class="btn-secondary" type="button" onclick="resetBorangSitrep()">
+                KOSONGKAN BORANG
+              </button>
+            </div>
+
+            <form id="formSitrep" class="sitrep-form" onsubmit="hantarSitrep(event)">
+              <label class="sitrep-field sitrep-wide">
+                <span>1. Tajuk *</span>
+                <input id="sitrepTajuk" type="text" maxlength="200" required placeholder="Masukkan tajuk SITREP">
+              </label>
+
+              <label class="sitrep-field">
+                <span>2. Musuh *</span>
+                <textarea id="sitrepMusuh" required placeholder="Jika tiada, masukkan TIADA"></textarea>
+              </label>
+
+              <label class="sitrep-field">
+                <span>3. Kedudukan *</span>
+                <textarea id="sitrepKedudukan" required placeholder="Nyatakan kedudukan semasa"></textarea>
+              </label>
+
+              <label class="sitrep-field">
+                <span>4. Tugas *</span>
+                <textarea id="sitrepTugas" required placeholder="Nyatakan tugas"></textarea>
+              </label>
+
+              <label class="sitrep-field">
+                <span>5. Tadbir *</span>
+                <textarea id="sitrepTadbir" required placeholder="Nyatakan urusan pentadbiran"></textarea>
+              </label>
+
+              <label class="sitrep-field">
+                <span>6. Perancangan Hadapan *</span>
+                <textarea id="sitrepPerancangan" required placeholder="Nyatakan perancangan seterusnya"></textarea>
+              </label>
+
+              <label class="sitrep-field">
+                <span>7. Kekuatan *</span>
+                <textarea id="sitrepKekuatan" required placeholder="Nyatakan kekuatan anggota/aset"></textarea>
+              </label>
+
+              <label class="sitrep-field">
+                <span>8. Pegawai Pemerintah Medan *</span>
+                <textarea id="sitrepPegawaiPemerintah" required placeholder="Nama dan jawatan pegawai"></textarea>
+              </label>
+
+              <label class="sitrep-field">
+                <span>9. Keselamatan *</span>
+                <textarea id="sitrepKeselamatan" required placeholder="Nyatakan keadaan keselamatan"></textarea>
+              </label>
+
+              <label class="sitrep-field">
+                <span>10. Keutamaan *</span>
+                <textarea id="sitrepKeutamaan" required placeholder="Nyatakan perkara keutamaan"></textarea>
+              </label>
+
+              <label class="sitrep-field">
+                <span>11. Lampiran</span>
+                <input id="sitrepLampiran" type="file" accept=".jpg,.jpeg,.png,.webp,.pdf">
+                <small>JPG, PNG, WEBP atau PDF. Maksimum 10 MB.</small>
+              </label>
+
+              <div
+                class="status hidden sitrep-wide"
+                id="statusSitrep"
+                role="status"
+                aria-live="polite"
+              ></div>
+
+              <div class="sitrep-actions sitrep-wide">
+                <button id="btnHantarSitrep" class="btn-ok" type="submit">
+                  HANTAR SITREP
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <div class="sitrep-panel sitrep-history">
+            <div class="sitrep-heading">
+              <div>
+                <h2>Rekod SITREP</h2>
+                <p>Senarai SITREP terkini yang telah dihantar.</p>
+              </div>
+              <button class="btn-refresh" type="button" onclick="muatDataSitrep()">
+                SEMAK SEMULA
+              </button>
+            </div>
+
+            <input
+              id="carianSitrep"
+              class="sitrep-search"
+              type="search"
+              placeholder="Cari tajuk, pengirim atau kandungan SITREP..."
+              autocomplete="off"
+              oninput="paparSenaraiSitrep()"
+            >
+
+            <div id="senaraiSitrep" class="sitrep-list"></div>
+          </div>
         </section>
 
       </div>
@@ -590,7 +719,7 @@
   ></script>
 
   <script
-    src="js/penyelia.js?v=20260722-1145"
+    src="js/penyelia.js?v=20260730-sitrep-001"
   ></script>
 
 </body>
