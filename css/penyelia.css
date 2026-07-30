@@ -52,9 +52,10 @@ button{
 }
 
 .container{
-  width:min(100%,1050px);
-  margin:35px auto;
-  padding:18px;
+  width:calc(100% - 24px);
+  max-width:none;
+  margin:22px auto;
+  padding:8px;
 }
 
 .logo{
@@ -806,8 +807,9 @@ button:disabled{
 
 @media(max-width:700px){
   .container{
-    margin-top:15px;
-    padding:13px;
+    width:calc(100% - 12px);
+    margin:12px auto;
+    padding:6px;
   }
 
   .card{
