@@ -7,7 +7,7 @@
   <title>SKPO Pentadbir</title>
 
   <link rel="stylesheet" href="css/style.css?v=20260722-0045">
-  <link rel="stylesheet" href="css/admin.css?v=20260729-001">
+  <link rel="stylesheet" href="css/admin.css?v=20260730-001">
 </head>
 
 <body>
@@ -693,14 +693,8 @@
   ====================================================== -->
   <div class="modal" id="modalResetDevice" role="dialog" aria-modal="true" aria-labelledby="tajukResetDevice">
     <div class="modal-card">
-      <h2 id="tajukResetDevice">Reset Device &amp; Kehadiran Petugas</h2>
+      <h2 id="tajukResetDevice">Reset Device Petugas</h2>
       <div class="info-box" id="maklumatResetDevice"></div>
-
-      <label for="sebabResetDevice"><strong>Sebab Reset *</strong></label>
-      <textarea
-        id="sebabResetDevice"
-        placeholder="Nyatakan sebab Device ID perlu direset."
-      ></textarea>
 
       <div id="statusModalResetDevice" role="status" aria-live="polite"></div>
 
@@ -711,7 +705,7 @@
           type="button"
           onclick="hantarResetDevice()"
         >
-          SAHKAN RESET DEVICE &amp; KEHADIRAN
+          SAHKAN RESET DEVICE
         </button>
 
         <button class="gray" type="button" onclick="tutupModalResetDevice()">BATAL</button>
@@ -725,7 +719,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/api-config.js?v=20260722-0215"></script>
 <script src="js/supabase-client.js?v=20260722-0215"></script>
-<script src="js/admin.js?v=20260729-001"></script>
+<script src="js/admin.js?v=20260730-001"></script>
 
 </body>
 </html>
