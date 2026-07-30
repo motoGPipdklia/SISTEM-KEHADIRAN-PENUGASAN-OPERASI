@@ -9,10 +9,13 @@ const dbPenyelia = window.supabaseClient;
 const ZON_MASA_PENYELIA = "Asia/Kuala_Lumpur";
 
 const JADUAL_LAPORAN = "pelaporan";
+const JADUAL_SITREP = "sitrep";
+const BUCKET_SITREP = "sitrep-lampiran";
 
 let penggunaPenyelia = null;
 let dataPenyelia = [];
 let dataLaporanPenyelia = [];
+let dataSitrepPenyelia = [];
 let laporanAktif = null;
 let penugasanDipilih = null;
 
@@ -1610,6 +1613,10 @@ function bukaBahagianLaporan() {
 function tukarTabPenyelia(tab) {
   const kehadiranAktif =
     tab === "kehadiran";
+  const laporanAktif =
+    tab === "laporan";
+  const sitrepAktif =
+    tab === "sitrep";
 
   const bahagianKehadiran =
     elemenPenyelia(
@@ -1621,6 +1628,11 @@ function tukarTabPenyelia(tab) {
       "bahagianLaporan"
     );
 
+  const bahagianSitrep =
+    elemenPenyelia(
+      "bahagianSitrep"
+    );
+
   const tabKehadiran =
     elemenPenyelia(
       "tabKehadiran"
@@ -1629,6 +1641,11 @@ function tukarTabPenyelia(tab) {
   const tabLaporan =
     elemenPenyelia(
       "tabLaporan"
+    );
+
+  const tabSitrep =
+    elemenPenyelia(
+      "tabSitrep"
     );
 
   if (bahagianKehadiran) {
@@ -1643,7 +1660,15 @@ function tukarTabPenyelia(tab) {
     bahagianLaporan
       .classList.toggle(
         "hidden",
-        kehadiranAktif
+        !laporanAktif
+      );
+  }
+
+  if (bahagianSitrep) {
+    bahagianSitrep
+      .classList.toggle(
+        "hidden",
+        !sitrepAktif
       );
   }
 
@@ -1666,15 +1691,35 @@ function tukarTabPenyelia(tab) {
     tabLaporan
       .classList.toggle(
         "active",
-        !kehadiranAktif
+        laporanAktif
       );
 
     tabLaporan.setAttribute(
       "aria-selected",
       String(
-        !kehadiranAktif
+        laporanAktif
       )
     );
+  }
+
+  if (tabSitrep) {
+    tabSitrep
+      .classList.toggle(
+        "active",
+        sitrepAktif
+      );
+
+    tabSitrep.setAttribute(
+      "aria-selected",
+      String(sitrepAktif)
+    );
+  }
+
+  if (
+    sitrepAktif &&
+    dataSitrepPenyelia.length === 0
+  ) {
+    muatDataSitrep();
   }
 }
 
@@ -2114,6 +2159,7 @@ async function logoutPenyelia() {
   penggunaPenyelia = null;
   dataPenyelia = [];
   dataLaporanPenyelia = [];
+  dataSitrepPenyelia = [];
   laporanAktif = null;
 
   elemenPenyelia(
@@ -2148,6 +2194,301 @@ async function logoutPenyelia() {
 /* ================================================================
    EVENT KEYBOARD
 ================================================================ */
+
+/* ================================================================
+   MODUL SITREP
+================================================================ */
+
+const MEDAN_SITREP = [
+  ["sitrepTajuk", "tajuk"],
+  ["sitrepMusuh", "musuh"],
+  ["sitrepKedudukan", "kedudukan"],
+  ["sitrepTugas", "tugas"],
+  ["sitrepTadbir", "tadbir"],
+  ["sitrepPerancangan", "perancangan_hadapan"],
+  ["sitrepKekuatan", "kekuatan"],
+  ["sitrepPegawaiPemerintah", "pegawai_pemerintah_medan"],
+  ["sitrepKeselamatan", "keselamatan"],
+  ["sitrepKeutamaan", "keutamaan"]
+];
+
+function resetBorangSitrep() {
+  elemenPenyelia("formSitrep")?.reset();
+  const status = elemenPenyelia("statusSitrep");
+  if (status) {
+    status.className = "status hidden";
+    status.innerHTML = "";
+  }
+}
+
+function namaFailSelamatSitrep(nama) {
+  const bersih = teksPenyelia(nama)
+    .normalize("NFKD")
+    .replace(/[^\w.-]+/g, "-")
+    .replace(/-+/g, "-");
+  return bersih || "lampiran";
+}
+
+async function hantarSitrep(event) {
+  event?.preventDefault();
+
+  if (!penggunaPenyelia) {
+    statusPenyelia("statusSitrep", "Sesi pengguna tidak sah. Sila log masuk semula.", "error");
+    return;
+  }
+
+  const rekod = {};
+  for (const [id, kolum] of MEDAN_SITREP) {
+    const nilai = teksPenyelia(elemenPenyelia(id)?.value);
+    if (!nilai) {
+      statusPenyelia("statusSitrep", "Sila lengkapkan semua ruangan bertanda *.", "error");
+      elemenPenyelia(id)?.focus();
+      return;
+    }
+    rekod[kolum] = nilai;
+  }
+
+  const fail = elemenPenyelia("sitrepLampiran")?.files?.[0] || null;
+  const jenisDibenarkan = [
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "application/pdf"
+  ];
+
+  if (fail && (!jenisDibenarkan.includes(fail.type) || fail.size > 10 * 1024 * 1024)) {
+    statusPenyelia(
+      "statusSitrep",
+      "Lampiran mesti dalam format JPG, PNG, WEBP atau PDF dan tidak melebihi 10 MB.",
+      "error"
+    );
+    return;
+  }
+
+  const butang = elemenPenyelia("btnHantarSitrep");
+  if (butang) {
+    butang.disabled = true;
+    butang.textContent = "SEDANG MENGHANTAR...";
+  }
+
+  statusPenyelia("statusSitrep", "Sedang menyimpan SITREP...", "warning");
+  let laluanLampiran = "";
+
+  try {
+    if (fail) {
+      laluanLampiran = `${penggunaPenyelia.id}/${Date.now()}-${namaFailSelamatSitrep(fail.name)}`;
+      const muatNaik = await dbPenyelia.storage
+        .from(BUCKET_SITREP)
+        .upload(laluanLampiran, fail, {
+          cacheControl: "3600",
+          upsert: false,
+          contentType: fail.type
+        });
+
+      if (muatNaik.error) {
+        throw muatNaik.error;
+      }
+    }
+
+    const payload = {
+      ...rekod,
+      tarikh: hariIniPenyelia(),
+      dicipta_oleh: penggunaPenyelia.id,
+      no_badan_pelapor: penggunaPenyelia.no_badan || null,
+      pangkat_pelapor: penggunaPenyelia.pangkat || null,
+      nama_pelapor: penggunaPenyelia.nama || null,
+      lampiran_path: laluanLampiran || null,
+      lampiran_nama: fail?.name || null,
+      lampiran_jenis: fail?.type || null,
+      lampiran_saiz: fail?.size || null
+    };
+
+    const { error } = await dbPenyelia
+      .from(JADUAL_SITREP)
+      .insert(payload);
+
+    if (error) {
+      if (laluanLampiran) {
+        await dbPenyelia.storage
+          .from(BUCKET_SITREP)
+          .remove([laluanLampiran])
+          .catch(() => {});
+      }
+      throw error;
+    }
+
+    statusPenyelia("statusSitrep", "<strong>SITREP berjaya dihantar.</strong>", "success");
+    elemenPenyelia("formSitrep")?.reset();
+    await muatDataSitrep();
+  } catch (error) {
+    statusPenyelia(
+      "statusSitrep",
+      `SITREP gagal dihantar: ${htmlPenyelia(error.message || "Ralat tidak diketahui.")}`,
+      "error"
+    );
+  } finally {
+    if (butang) {
+      butang.disabled = false;
+      butang.textContent = "HANTAR SITREP";
+    }
+  }
+}
+
+async function muatDataSitrep() {
+  const senarai = elemenPenyelia("senaraiSitrep");
+  if (senarai) {
+    senarai.innerHTML = '<div class="empty">Sedang memuatkan rekod SITREP...</div>';
+  }
+
+  try {
+    const { data, error } = await dbPenyelia
+      .from(JADUAL_SITREP)
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(100);
+
+    if (error) {
+      throw error;
+    }
+
+    dataSitrepPenyelia = data || [];
+    paparSenaraiSitrep();
+  } catch (error) {
+    if (senarai) {
+      senarai.innerHTML = `
+        <div class="status error">
+          Rekod SITREP gagal dimuatkan: ${htmlPenyelia(error.message)}
+        </div>
+      `;
+    }
+  }
+}
+
+function paparSenaraiSitrep() {
+  const senarai = elemenPenyelia("senaraiSitrep");
+  if (!senarai) return;
+
+  const carian = atasPenyelia(elemenPenyelia("carianSitrep")?.value);
+  const dataDitapis = dataSitrepPenyelia.filter(item => {
+    const gabungan = atasPenyelia([
+      item.tajuk,
+      item.no_badan_pelapor,
+      item.pangkat_pelapor,
+      item.nama_pelapor,
+      item.musuh,
+      item.kedudukan,
+      item.tugas,
+      item.keutamaan
+    ].join(" "));
+    return !carian || gabungan.includes(carian);
+  });
+
+  if (dataDitapis.length === 0) {
+    senarai.innerHTML = '<div class="empty">Tiada rekod SITREP ditemui.</div>';
+    return;
+  }
+
+  const labelMedan = [
+    ["Musuh", "musuh"],
+    ["Kedudukan", "kedudukan"],
+    ["Tugas", "tugas"],
+    ["Tadbir", "tadbir"],
+    ["Perancangan Hadapan", "perancangan_hadapan"],
+    ["Kekuatan", "kekuatan"],
+    ["Pegawai Pemerintah Medan", "pegawai_pemerintah_medan"],
+    ["Keselamatan", "keselamatan"],
+    ["Keutamaan", "keutamaan"]
+  ];
+
+  senarai.innerHTML = dataDitapis.map(item => `
+    <article class="sitrep-card" data-sitrep-id="${htmlPenyelia(item.id)}">
+      <header>
+        <div>
+          <span class="sitrep-date">${htmlPenyelia(formatMasaPenyelia(item.created_at))}</span>
+          <h3>${htmlPenyelia(item.tajuk)}</h3>
+          <p>
+            ${htmlPenyelia(item.pangkat_pelapor || "")}
+            ${htmlPenyelia(item.nama_pelapor || "-")}
+            · ${htmlPenyelia(item.no_badan_pelapor || "-")}
+          </p>
+        </div>
+        <button class="btn-secondary sitrep-print-button" type="button"
+          onclick="cetakSitrep('${htmlPenyelia(item.id)}')">CETAK</button>
+      </header>
+      <div class="sitrep-detail-grid">
+        ${labelMedan.map(([label, kolum]) => `
+          <div class="sitrep-detail">
+            <strong>${label}</strong>
+            <p>${htmlPenyelia(item[kolum] || "-")}</p>
+          </div>
+        `).join("")}
+      </div>
+      ${item.lampiran_path ? `
+        <button class="btn-blue sitrep-attachment" type="button"
+          onclick="bukaLampiranSitrep('${htmlPenyelia(item.lampiran_path)}')">
+          BUKA LAMPIRAN · ${htmlPenyelia(item.lampiran_nama || "Lampiran")}
+        </button>
+      ` : ""}
+    </article>
+  `).join("");
+}
+
+async function bukaLampiranSitrep(laluan) {
+  const tetingkap = window.open("", "_blank");
+  try {
+    const { data, error } = await dbPenyelia.storage
+      .from(BUCKET_SITREP)
+      .createSignedUrl(laluan, 300);
+    if (error || !data?.signedUrl) throw error || new Error("Pautan tidak tersedia.");
+    if (tetingkap) {
+      tetingkap.location = data.signedUrl;
+    } else {
+      window.location.href = data.signedUrl;
+    }
+  } catch (error) {
+    tetingkap?.close();
+    alert(`Lampiran gagal dibuka: ${error.message}`);
+  }
+}
+
+function cetakSitrep(id) {
+  const item = dataSitrepPenyelia.find(rekod => String(rekod.id) === String(id));
+  if (!item) return;
+
+  const medan = [
+    ["1. Tajuk", "tajuk"],
+    ["2. Musuh", "musuh"],
+    ["3. Kedudukan", "kedudukan"],
+    ["4. Tugas", "tugas"],
+    ["5. Tadbir", "tadbir"],
+    ["6. Perancangan Hadapan", "perancangan_hadapan"],
+    ["7. Kekuatan", "kekuatan"],
+    ["8. Pegawai Pemerintah Medan", "pegawai_pemerintah_medan"],
+    ["9. Keselamatan", "keselamatan"],
+    ["10. Keutamaan", "keutamaan"],
+    ["11. Lampiran", "lampiran_nama"]
+  ];
+  const cetakan = window.open("", "_blank", "width=900,height=700");
+  if (!cetakan) return alert("Benarkan pop-up untuk mencetak SITREP.");
+
+  cetakan.document.write(`<!doctype html><html lang="ms"><head><meta charset="utf-8">
+    <title>SITREP - ${htmlPenyelia(item.tajuk)}</title>
+    <style>
+      body{font-family:Arial,sans-serif;color:#111;margin:32px;line-height:1.5}
+      h1{margin:0 0 6px} .meta{margin:0 0 24px;color:#444}
+      section{border-top:1px solid #bbb;padding:12px 0;break-inside:avoid}
+      strong{display:block;margin-bottom:4px} p{margin:0;white-space:pre-wrap}
+    </style></head><body>
+    <h1>SITUATION REPORT (SITREP)</h1>
+    <p class="meta">${htmlPenyelia(formatMasaPenyelia(item.created_at))}<br>
+    ${htmlPenyelia(item.pangkat_pelapor || "")} ${htmlPenyelia(item.nama_pelapor || "-")}
+    (${htmlPenyelia(item.no_badan_pelapor || "-")})</p>
+    ${medan.map(([label, kolum]) => `<section><strong>${label}</strong><p>${htmlPenyelia(item[kolum] || "TIADA")}</p></section>`).join("")}
+    </body></html>`);
+  cetakan.document.close();
+  cetakan.focus();
+  setTimeout(() => cetakan.print(), 250);
+}
 
 document.addEventListener(
   "keydown",
