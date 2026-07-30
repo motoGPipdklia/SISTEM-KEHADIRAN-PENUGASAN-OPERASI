@@ -1,0 +1,66 @@
+/* ================================================================
+   SKPO MOTOGP — TEMA LOGIN URUSETIA
+   Fail tambahan: muatkan selepas css/penyelia.css
+================================================================ */
+
+body{
+  isolation:isolate;
+}
+
+/*
+  Latar ini hanya wujud selagi bahagian login dipaparkan.
+  Apabila #loginSection disembunyikan oleh JavaScript, latar turut hilang.
+*/
+#loginSection::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:-1;
+  background:
+    linear-gradient(rgba(0,0,0,.60),rgba(0,0,0,.60)),
+    url("../images/background-portal.jpg") center center / cover no-repeat fixed;
+}
+
+#loginSection{
+  width:min(100%,500px);
+  margin-inline:auto;
+  background:rgba(25,25,25,.92);
+  backdrop-filter:blur(4px);
+  -webkit-backdrop-filter:blur(4px);
+}
+
+.urusetia-login-brand{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  margin:0 0 16px;
+}
+
+.urusetia-login-logo{
+  display:block;
+  width:auto;
+  max-width:min(100%,430px);
+  max-height:150px;
+  object-fit:contain;
+  filter:drop-shadow(0 5px 10px rgba(0,0,0,.9));
+}
+
+#loginSection h1{
+  margin-top:4px;
+}
+
+@media(max-width:520px){
+  #loginSection::before{
+    background-attachment:scroll;
+  }
+
+  #loginSection{
+    width:100%;
+  }
+
+  .urusetia-login-logo{
+    max-width:94%;
+    max-height:115px;
+  }
+}
