@@ -4,14 +4,13 @@
   Membersihkan borang login selepas pengguna log keluar tanpa mengubah
   fungsi utama Urusetia dalam js/penyelia.js.
 */
-document.addEventListener("click", event => {
-  const butangLogout = event.target.closest(
-    'button[onclick*="logoutPenyelia"], a[onclick*="logoutPenyelia"]'
-  );
+(function pasangPembersihanLogoutUrusetia() {
+  const logoutAsal = window.logoutPenyelia;
 
-  if (!butangLogout) return;
+  if (typeof logoutAsal !== "function") return;
 
-  setTimeout(() => {
+  window.logoutPenyelia = async function logoutPenyeliaBersih(...args) {
+    const hasil = await logoutAsal.apply(this, args);
     const noBadan = document.getElementById("noBadan");
     const password = document.getElementById("password");
     const status = document.getElementById("loginStatus");
@@ -22,8 +21,10 @@ document.addEventListener("click", event => {
     if (status) {
       status.innerHTML = "";
       status.className = "status hidden";
+      status.style.display = "none";
     }
 
     noBadan?.focus();
-  }, 0);
-});
+    return hasil;
+  };
+})();
