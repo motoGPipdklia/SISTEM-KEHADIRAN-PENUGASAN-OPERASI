@@ -7,7 +7,7 @@
   <title>SKPO Pentadbir</title>
 
   <link rel="stylesheet" href="css/style.css?v=20260722-0045">
-  <link rel="stylesheet" href="css/admin.css?v=20260730-laporan-001">
+  <link rel="stylesheet" href="css/admin.css?v=20260730-motogp-laporan-002">
 </head>
 
 <body>
@@ -150,121 +150,6 @@
             <option value="DIGANTI">DIGANTI</option>
             <option value="CHECK-OUT">CHECK-OUT</option>
           </select>
-        </div>
-      </section>
-
-      <!-- ===============================================
-           LAPORAN PETUGAS & SITREP
-      ================================================ -->
-      <section
-        class="card admin-reports"
-        id="modulLaporanPentadbir"
-        hidden
-      >
-        <div class="section-heading">
-          <div>
-            <h2>Modul Laporan</h2>
-            <p class="muted">
-              Lihat Laporan Petugas dan SITREP.
-            </p>
-          </div>
-
-          <button
-            class="gray compact-button"
-            id="btnToggleLaporanPentadbir"
-            type="button"
-            onclick="tutupModulLaporanPentadbir()"
-          >
-            TUTUP MODUL
-          </button>
-        </div>
-
-        <div id="kandunganLaporanPentadbir">
-          <div class="admin-report-tabs" role="tablist" aria-label="Jenis laporan">
-            <button
-              id="tabAdminLaporanPetugas"
-              class="admin-report-tab active"
-              type="button"
-              role="tab"
-              aria-selected="true"
-              onclick="tukarTabLaporanPentadbir('petugas')"
-            >
-              LAPORAN PETUGAS
-            </button>
-
-            <button
-              id="tabAdminSitrep"
-              class="admin-report-tab"
-              type="button"
-              role="tab"
-              aria-selected="false"
-              onclick="tukarTabLaporanPentadbir('sitrep')"
-            >
-              REKOD SITREP
-            </button>
-          </div>
-
-          <div class="admin-report-toolbar">
-            <label>
-              <span>Tarikh</span>
-              <input
-                id="tarikhLaporanPentadbir"
-                type="date"
-                onchange="muatLaporanPentadbir()"
-              >
-            </label>
-
-            <label>
-              <span>Carian</span>
-              <input
-                id="carianLaporanPentadbir"
-                type="search"
-                placeholder="Cari nama, No Badan, Call Sign atau kandungan..."
-                oninput="paparLaporanPentadbir()"
-              >
-            </label>
-
-            <button class="blue admin-report-refresh" type="button" onclick="muatLaporanPentadbir()">
-              SEMAK SEMULA
-            </button>
-          </div>
-
-          <div
-            id="statusLaporanPentadbir"
-            class="status-box"
-            role="status"
-            aria-live="polite"
-          ></div>
-
-          <div id="paparanLaporanPetugasAdmin" class="admin-report-table-wrap">
-            <table class="admin-report-table">
-              <thead>
-                <tr>
-                  <th>Bil.</th>
-                  <th>Petugas</th>
-                  <th>Call Sign</th>
-                  <th>Masa Dihantar</th>
-                  <th>Masa Dibaca</th>
-                  <th>Tindakan</th>
-                </tr>
-              </thead>
-              <tbody id="tbodyLaporanPetugasAdmin"></tbody>
-            </table>
-          </div>
-
-          <div id="paparanSitrepAdmin" class="admin-report-table-wrap" hidden>
-            <table class="admin-report-table">
-              <thead>
-                <tr>
-                  <th>Bil.</th>
-                  <th>Tadbir</th>
-                  <th>Masa Dihantar</th>
-                  <th>Tindakan</th>
-                </tr>
-              </thead>
-              <tbody id="tbodySitrepAdmin"></tbody>
-            </table>
-          </div>
         </div>
       </section>
 
@@ -413,6 +298,104 @@
               </tr>
             </tbody>
           </table>
+        </div>
+      </section>
+
+      <!-- ===============================================
+           LAPORAN PETUGAS & REKOD SITREP
+      ================================================ -->
+      <section class="card admin-report-module" id="modulLaporanPentadbir" hidden>
+        <div class="section-heading">
+          <div>
+            <h2>Modul Laporan</h2>
+            <p class="muted">
+              Lihat laporan petugas yang telah dibaca dan rekod SITREP mengikut tarikh.
+            </p>
+          </div>
+          <button class="gray" type="button" onclick="tutupModulLaporanPentadbir()">
+            TUTUP
+          </button>
+        </div>
+
+        <div class="admin-report-toolbar">
+          <div>
+            <label for="tarikhLaporanPentadbir">Tarikh</label>
+            <input id="tarikhLaporanPentadbir" type="date" onchange="muatLaporanPentadbir()">
+          </div>
+          <div>
+            <label for="carianLaporanPentadbir">Carian</label>
+            <input
+              id="carianLaporanPentadbir"
+              type="search"
+              placeholder="Cari petugas, tajuk atau kandungan..."
+              oninput="paparLaporanPentadbir()"
+            >
+          </div>
+          <button class="gold admin-report-refresh" type="button" onclick="muatLaporanPentadbir()">
+            SEMAK SEMULA
+          </button>
+        </div>
+
+        <div class="admin-report-tabs" role="tablist" aria-label="Jenis laporan">
+          <button
+            class="admin-report-tab active"
+            id="tabAdminLaporanPetugas"
+            type="button"
+            role="tab"
+            aria-selected="true"
+            onclick="tukarTabLaporanPentadbir('petugas')"
+          >
+            LAPORAN PETUGAS
+          </button>
+          <button
+            class="admin-report-tab"
+            id="tabAdminSitrep"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            onclick="tukarTabLaporanPentadbir('sitrep')"
+          >
+            REKOD SITREP
+          </button>
+        </div>
+
+        <div id="statusLaporanPentadbir" class="status" role="status" aria-live="polite"></div>
+
+        <div class="admin-report-panel" id="panelAdminLaporanPetugas">
+          <div class="admin-report-table-wrap">
+            <table class="admin-report-table">
+              <thead>
+                <tr>
+                  <th>Bil.</th>
+                  <th>Petugas</th>
+                  <th>Call Sign / Lokasi</th>
+                  <th>Masa Dihantar</th>
+                  <th>Tindakan</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyLaporanPetugasAdmin">
+                <tr><td colspan="5" class="empty-row">Belum ada laporan dipaparkan.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="admin-report-panel" id="panelAdminSitrep" hidden>
+          <div class="admin-report-table-wrap">
+            <table class="admin-report-table">
+              <thead>
+                <tr>
+                  <th>Bil.</th>
+                  <th>Tadbir</th>
+                  <th>Masa Dihantar</th>
+                  <th>Tindakan</th>
+                </tr>
+              </thead>
+              <tbody id="tbodySitrepAdmin">
+                <tr><td colspan="4" class="empty-row">Belum ada SITREP dipaparkan.</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
 
@@ -842,7 +825,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/api-config.js?v=20260722-0215"></script>
 <script src="js/supabase-client.js?v=20260722-0215"></script>
-<script src="js/admin.js?v=20260730-laporan-001"></script>
+<script src="js/admin.js?v=20260730-motogp-laporan-002"></script>
 
 </body>
 </html>
