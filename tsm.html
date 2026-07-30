@@ -7,12 +7,20 @@
   <title>SKPO TSM</title>
 
   <link rel="stylesheet" href="css/style.css?v=20260722-0415">
-  <link rel="stylesheet" href="css/tsm.css?v=20260729-002">
+  <link rel="stylesheet" href="css/tsm.css?v=20260729-f1-001">
+  <link rel="stylesheet" href="css/tsm-login-theme.css?v=20260730-001">
 </head>
 
 <body>
   <main class="login" id="loginSection">
     <section class="card">
+      <div class="tsm-login-brand">
+        <img
+          class="tsm-login-logo"
+          src="images/logo-utama.png"
+          alt="OPS Litar MotoGP 2026"
+        >
+      </div>
       <div class="logo">SKPO TSM</div>
       <p>Pengurusan Set Walkie-Talkie</p>
       <label class="sr-only" for="noBadan">No Badan TSM</label>
@@ -233,7 +241,6 @@
         <label class="check-option"><input name="aksesoriTSM" type="checkbox" value="EARPIECE"> Earpiece</label>
         <label class="check-option"><input name="aksesoriTSM" type="checkbox" value="ANTENA"> Antena</label>
         <label class="check-option"><input name="aksesoriTSM" type="checkbox" value="BELT CLIP"> Belt Clip</label>
-        <label class="check-option"><input name="aksesoriTSM" type="checkbox" value="PALM MIC"> Palm Mic</label>
       </div>
       <label for="catatanTSM">Catatan TSM</label>
       <textarea id="catatanTSM" placeholder="Jika tiada, boleh dikosongkan."></textarea>
@@ -271,6 +278,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/api-config.js?v=20260722-0415"></script>
   <script src="js/supabase-client.js?v=20260722-0415"></script>
-  <script src="js/tsm.js?v=20260729-002"></script>
+  <script src="js/tsm.js?v=20260729-f1-001"></script>
 </body>
 </html>
