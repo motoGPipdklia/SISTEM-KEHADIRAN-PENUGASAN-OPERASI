@@ -2388,49 +2388,28 @@ function paparSenaraiSitrep() {
     return;
   }
 
-  const labelMedan = [
-    ["Musuh", "musuh"],
-    ["Kedudukan", "kedudukan"],
-    ["Tugas", "tugas"],
-    ["Tadbir", "tadbir"],
-    ["Perancangan Hadapan", "perancangan_hadapan"],
-    ["Kekuatan", "kekuatan"],
-    ["Pegawai Pemerintah Medan", "pegawai_pemerintah_medan"],
-    ["Keselamatan", "keselamatan"],
-    ["Keutamaan", "keutamaan"]
-  ];
-
-  senarai.innerHTML = dataDitapis.map(item => `
-    <article class="sitrep-card" data-sitrep-id="${htmlPenyelia(item.id)}">
-      <header>
-        <div>
-          <span class="sitrep-date">${htmlPenyelia(formatMasaPenyelia(item.created_at))}</span>
-          <h3>${htmlPenyelia(item.tajuk)}</h3>
-          <p>
-            ${htmlPenyelia(item.pangkat_pelapor || "")}
-            ${htmlPenyelia(item.nama_pelapor || "-")}
-            · ${htmlPenyelia(item.no_badan_pelapor || "-")}
-          </p>
-        </div>
-        <button class="btn-secondary sitrep-print-button" type="button"
-          onclick="cetakSitrep('${htmlPenyelia(item.id)}')">CETAK</button>
-      </header>
-      <div class="sitrep-detail-grid">
-        ${labelMedan.map(([label, kolum]) => `
-          <div class="sitrep-detail">
-            <strong>${label}</strong>
-            <p>${htmlPenyelia(item[kolum] || "-")}</p>
-          </div>
-        `).join("")}
-      </div>
-      ${item.lampiran_path ? `
-        <button class="btn-blue sitrep-attachment" type="button"
-          onclick="bukaLampiranSitrep('${htmlPenyelia(item.lampiran_path)}')">
-          BUKA LAMPIRAN · ${htmlPenyelia(item.lampiran_nama || "Lampiran")}
-        </button>
-      ` : ""}
-    </article>
-  `).join("");
+  senarai.innerHTML = `
+    <div class="sitrep-table-wrap">
+      <table class="sitrep-table">
+        <thead>
+          <tr>
+            <th scope="col">Bil.</th>
+            <th scope="col">Tadbir</th>
+            <th scope="col">Masa Dihantar</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${dataDitapis.map((item, indeks) => `
+            <tr>
+              <td data-label="Bil.">${indeks + 1}</td>
+              <td data-label="Tadbir">${htmlPenyelia(item.tadbir || "-")}</td>
+              <td data-label="Masa Dihantar">${htmlPenyelia(formatMasaPenyelia(item.created_at))}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
 }
 
 async function bukaLampiranSitrep(laluan) {
