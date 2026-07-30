@@ -1183,7 +1183,33 @@ body #loginSection .btn-secondary.link:hover{
 }
 
 .sitrep-search{
+  margin:0;
+}
+
+.sitrep-filter-bar{
+  display:grid;
+  grid-template-columns:minmax(190px,260px) minmax(0,1fr);
+  gap:14px;
   margin-bottom:16px;
+}
+
+.sitrep-date-filter,
+.sitrep-search-filter{
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+  color:#fff;
+  font-weight:700;
+}
+
+.sitrep-date-filter input{
+  width:100%;
+  min-height:50px;
+  padding:12px 14px;
+  border:1px solid #4a4a4a;
+  border-radius:9px;
+  background:#111;
+  color:#fff;
 }
 
 .sitrep-list{
@@ -1336,6 +1362,10 @@ body #loginSection .btn-secondary.link:hover{
 
   .sitrep-form,
   .sitrep-detail-grid{
+    grid-template-columns:1fr;
+  }
+
+  .sitrep-filter-bar{
     grid-template-columns:1fr;
   }
 
