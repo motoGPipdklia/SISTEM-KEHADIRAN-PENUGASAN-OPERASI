@@ -505,17 +505,34 @@ function petaGagalDimuatkan() {
 
 async function logout() {
   tutupPeta();
-  hentikanSemakanStatusAutomatik(); await db.auth.signOut().catch(() => {}); localStorage.removeItem("user");
-  userLogin = tugas = lokasiGPS = lokasiGPSCheckout = rekodCheckinSemasa = null;
-  ["dashboard", "checkin", "checkout", "laporan"].forEach(id => { if (el(id)) el(id).style.display = "none"; });
+  hentikanSemakanStatusAutomatik();
+
+  await db.auth.signOut().catch(() => {});
+  localStorage.removeItem("user");
+
+  userLogin = null;
+  tugas = null;
+  lokasiGPS = null;
+  lokasiGPSCheckout = null;
+  rekodCheckinSemasa = null;
+
+  ["dashboard", "checkin", "checkout", "laporan"].forEach(id => {
+    if (el(id)) el(id).style.display = "none";
+  });
+
   const loginBox = el("loginBox");
+
   if (loginBox) {
     loginBox.style.removeProperty("display");
     loginBox.classList.add("login-visible");
   }
-  el("password").value = "";
-  el("status").innerHTML = "";
+
+  if (el("noBadan")) el("noBadan").value = "";
+  if (el("password")) el("password").value = "";
+  if (el("status")) el("status").innerHTML = "";
+
   window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  el("noBadan")?.focus();
 }
 function kosongkanMaklumatTugas() { ["callSignTugas", "jenisTugas", "lokasiTugas", "penyeliaTugas", "pemegangSetTugas"].forEach(id => el(id).textContent = "-"); }
 function binaBarisMaklumat(label, nilai) { return `<div class="info-row"><div class="info-label">${escapeHtml(label)}</div><div class="info-value">${escapeHtml(nilai || "-")}</div></div>`; }
