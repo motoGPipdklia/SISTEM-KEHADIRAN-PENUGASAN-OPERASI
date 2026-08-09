@@ -1,4 +1,4 @@
-﻿/* ================================================================
+/* ================================================================
    SKPO MOTOGP - LOGIN TSM SEPERTI LOGIN PENTADBIR
    Muatkan fail ini selepas css/tsm.css.
 ================================================================ */
@@ -16,10 +16,6 @@ body:has(#loginSection:not(.hidden):not([hidden]):not([style*="display: none"]))
 }
 
 body:has(#loginSection:not(.hidden):not([hidden]):not([style*="display: none"])) #loginSection{
-  /*
-    !important diperlukan kerana logoutTSM() menetapkan display:block
-    terus pada elemen. Tanpanya, kad akan melekat di sebelah kiri.
-  */
   display:flex !important;
   align-items:center;
   justify-content:center;
@@ -114,4 +110,3 @@ body:has(#loginSection:not(.hidden):not([hidden]):not([style*="display: none"]))
     background:#fff !important;
   }
 }
-
