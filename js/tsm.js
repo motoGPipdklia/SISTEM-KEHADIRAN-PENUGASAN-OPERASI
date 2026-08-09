@@ -911,6 +911,18 @@ async function logoutTSM() {
   elTSM("loginSection").style.display = "block";
   elTSM("password").value = "";
 
+  const butangLogin = elTSM("btnLoginTSM");
+  if (butangLogin) {
+    butangLogin.disabled = false;
+    butangLogin.textContent = "LOGIN TSM";
+  }
+
+  const statusLogin = elTSM("loginStatus");
+  if (statusLogin) {
+    statusLogin.innerHTML = "";
+    statusLogin.className = "status hidden";
+  }
+
   document.title = "SKPO TSM";
 }
 
