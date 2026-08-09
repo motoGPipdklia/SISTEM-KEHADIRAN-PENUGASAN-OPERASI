@@ -212,6 +212,23 @@ button:disabled{
   flex-wrap:wrap;
 }
 
+.topbar-actions > .nav-button,
+.topbar-actions > .logout{
+  box-sizing:border-box;
+  display:inline-flex !important;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 158px;
+  width:158px !important;
+  min-width:158px !important;
+  height:68px !important;
+  min-height:68px !important;
+  margin:0 !important;
+  padding:0 18px !important;
+  line-height:1.2;
+  text-align:center;
+}
+
 .profile{
   padding:13px;
   border:1px solid #333;
@@ -264,6 +281,26 @@ button:disabled{
 .toolbar label,
 .filters label{
   margin-top:0;
+}
+
+.toolbar > div:not(.toolbar-actions){
+  display:flex;
+  min-width:0;
+  flex-direction:column;
+}
+
+.toolbar > div:not(.toolbar-actions) > label{
+  display:block;
+  width:100%;
+  margin-top:0;
+  text-align:center;
+}
+
+.toolbar > div:not(.toolbar-actions) > input,
+.toolbar > div:not(.toolbar-actions) > select{
+  width:100%;
+  height:58px;
+  min-height:58px;
 }
 
 .toolbar-actions{
@@ -495,6 +532,20 @@ tbody tr:hover{
   margin-top:14px;
 }
 
+.modal-actions > button{
+  box-sizing:border-box;
+  display:flex !important;
+  align-items:center;
+  justify-content:center;
+  width:100% !important;
+  min-width:0 !important;
+  height:62px !important;
+  min-height:62px !important;
+  margin:0 !important;
+  padding:0 16px !important;
+  line-height:1.2;
+}
+
 .empty{
   padding:26px;
   color:var(--muted);
@@ -537,6 +588,15 @@ tbody tr:hover{
   .topbar-actions button,
   .topbar-actions a{
     width:100%;
+  }
+
+  .topbar-actions > .nav-button,
+  .topbar-actions > .logout{
+    flex:1 1 100%;
+    width:100% !important;
+    min-width:0 !important;
+    height:52px !important;
+    min-height:52px !important;
   }
 
   .stats,
