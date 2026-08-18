@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0d0d0d">
+
+  <title>OP LITAR | MotoGP | Pusat Kawalan</title>
+
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/pusat-kawalan.css?v=20260818-003">
+</head>
+
+<body>
+  <main class="laporan-shell">
+
+    <!-- LOGIN -->
+    <section id="loginPage" class="laporan-login-card">
+      <div class="laporan-brand">
+        <img
+          src="images/logo-utama.png"
+          alt="OPS Litar MotoGP 2026"
+          class="laporan-logo"
+        >
+      </div>
+
+      <h1>PUSAT KAWALAN</h1>
+      <p class="laporan-sub">
+        Akses baca sahaja untuk melihat, mencetak SITREP dan memuat turun lampiran.
+      </p>
+
+      <label class="sr-only" for="noBadan">No Badan</label>
+      <input
+        id="noBadan"
+        type="text"
+        placeholder="No Badan"
+        autocomplete="username"
+        spellcheck="false"
+      >
+
+      <label class="sr-only" for="password">Kata Laluan</label>
+      <input
+        id="password"
+        type="password"
+        placeholder="Kata Laluan"
+        autocomplete="current-password"
+      >
+
+      <button
+        id="btnLogin"
+        class="laporan-btn laporan-btn-primary"
+        type="button"
+        onclick="loginLaporan()"
+      >
+        LOGIN PUSAT KAWALAN
+      </button>
+
+      <div
+        id="loginStatus"
+        class="laporan-status hidden"
+        role="status"
+        aria-live="polite"
+      ></div>
+
+      <a class="laporan-btn laporan-btn-secondary laporan-link" href="index.html">
+        KEMBALI
+      </a>
+    </section>
+
+
+    <!-- DASHBOARD SITREP -->
+    <section id="dashboardPage" class="hidden">
+
+      <div class="laporan-topbar">
+        <div>
+          <div class="laporan-eyebrow">PUSAT KAWALAN</div>
+          <h1>SITREP</h1>
+          <p id="profilLaporan" class="laporan-profile">-</p>
+        </div>
+
+        <button
+          class="laporan-btn laporan-btn-secondary"
+          type="button"
+          onclick="logoutLaporan()"
+        >
+          LOG KELUAR
+        </button>
+      </div>
+
+      <div class="laporan-toolbar">
+        <label>
+          <span>Tarikh SITREP</span>
+          <input
+            id="tarikhLaporan"
+            type="date"
+            onchange="muatSitrep()"
+          >
+        </label>
+
+        <label class="laporan-search">
+          <span>Carian</span>
+          <input
+            id="carianLaporan"
+            type="search"
+            placeholder="Cari tajuk, pengirim atau kandungan SITREP..."
+            autocomplete="off"
+            oninput="paparSitrep()"
+          >
+        </label>
+
+        <button
+          class="laporan-btn laporan-btn-primary"
+          type="button"
+          onclick="muatSitrep()"
+        >
+          SEMAK SEMULA
+        </button>
+      </div>
+
+      <div class="laporan-summary">
+        <div class="laporan-summary-card">
+          <span>JUMLAH SITREP</span>
+          <strong id="jumlahSitrep">0</strong>
+        </div>
+      </div>
+
+      <div
+        id="statusDataLaporan"
+        class="laporan-status hidden"
+        role="status"
+        aria-live="polite"
+      ></div>
+
+      <div id="senaraiSitrep" class="laporan-list"></div>
+
+    </section>
+
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/api-config.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/pusat-kawalan.js?v=20260818-003"></script>
+</body>
+</html>
