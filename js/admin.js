@@ -8,6 +8,7 @@
 const db = window.supabaseClient;
 const ZON_MASA = "Asia/Kuala_Lumpur";
 const MASA_TAMAT_PERMINTAAN = 15000;
+const BUCKET_SITREP = "sitrep-lampiran";
 
 let adminLogin = null;
 let dataDashboard = [];
@@ -2149,9 +2150,75 @@ function paparLaporanPentadbir() {
             <td>${index + 1}</td>
             <td>${escapeHtml(item.tadbir || "-")}</td>
             <td>${escapeHtml(formatMasaLaporanAdmin(item.created_at || item.tarikh_masa))}</td>
-            <td><button class="gray compact-print" type="button" onclick="cetakSitrepAdmin('${escapeHtml(item.id)}')">CETAK</button></td>
+            <td>
+              ${
+                item.lampiran_path
+                  ? `<button
+                       class="green compact-print"
+                       type="button"
+                       onclick="muatTurunLampiranSitrepAdmin(
+                         '${escapeHtml(item.lampiran_path)}',
+                         '${escapeHtml(item.lampiran_nama || "lampiran")}'
+                       )"
+                     >📎 LAMPIRAN</button>`
+                  : ""
+              }
+
+              <button
+                class="gray compact-print"
+                type="button"
+                onclick="cetakSitrepAdmin('${escapeHtml(item.id)}')"
+              >
+                CETAK
+              </button>
+            </td>
           </tr>`).join("")
       : '<tr><td colspan="4" class="empty-row">Tiada rekod SITREP untuk tarikh ini.</td></tr>';
+  }
+}
+
+
+async function muatTurunLampiranSitrepAdmin(laluan, namaFail = "lampiran") {
+  if (!laluan) {
+    alert("Lampiran tidak ditemui.");
+    return;
+  }
+
+  try {
+    const { data, error } = await db.storage
+      .from(BUCKET_SITREP)
+      .download(laluan);
+
+    if (error) {
+      throw error;
+    }
+
+    if (!data) {
+      throw new Error("Fail tidak ditemui.");
+    }
+
+    const url = URL.createObjectURL(data);
+    const pautan = document.createElement("a");
+
+    pautan.href = url;
+    pautan.download = namaFail || "lampiran";
+
+    document.body.appendChild(pautan);
+    pautan.click();
+    pautan.remove();
+
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 1000);
+
+  } catch (error) {
+    console.error("Ralat muat turun lampiran SITREP Admin:", error);
+
+    alert(
+      `Lampiran gagal dimuat turun: ${
+        error.message || "Ralat tidak diketahui."
+      }`
+    );
   }
 }
 
