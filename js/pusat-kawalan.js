@@ -4,7 +4,7 @@
    SKPO MOTOGP — MODUL PUSAT KAWALAN — SITREP (READ ONLY)
 
    Peranan dibenarkan:
-   - LAPORAN
+   - PUSAT_KAWALAN
 
    Fungsi:
    - Lihat SITREP sahaja
@@ -459,8 +459,8 @@ function paparSitrep() {
         <div class="laporan-label">Tarikh</div>
         <div>${htmlLaporan(formatTarikhLaporan(item.tarikh))}</div>
 
-        <div class="laporan-label">Lampiran</div>
-        <div>${htmlLaporan(item.lampiran_nama || "TIADA")}</div>
+        <div class="laporan-label">Tadbir</div>
+        <div style="white-space:pre-wrap">${htmlLaporan(item.tadbir || "TIADA")}</div>
 
       </div>
 
@@ -477,7 +477,7 @@ function paparSitrep() {
                     '${htmlLaporan(item.lampiran_nama || "lampiran")}'
                   )"
                 >
-                  📎 MUAT TURUN LAMPIRAN
+                  MUAT TURUN LAMPIRAN
                 </button>
               `
             : ""
