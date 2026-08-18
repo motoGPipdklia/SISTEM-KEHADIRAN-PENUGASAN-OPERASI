@@ -2426,6 +2426,23 @@ function paparSenaraiSitrep() {
               <td data-label="Tadbir">${htmlPenyelia(item.tadbir || "-")}</td>
               <td data-label="Masa Dihantar">${htmlPenyelia(formatMasaPenyelia(item.created_at))}</td>
               <td data-label="Tindakan">
+                ${
+                  item.lampiran_path
+                    ? `
+                        <button
+                          class="btn-main"
+                          type="button"
+                          onclick="bukaLampiranSitrep(
+                            '${htmlPenyelia(item.lampiran_path)}',
+                            '${htmlPenyelia(item.lampiran_nama || "lampiran")}'
+                          )"
+                        >
+                          📎 LAMPIRAN
+                        </button>
+                      `
+                    : ""
+                }
+
                 <button
                   class="btn-secondary sitrep-table-print"
                   type="button"
@@ -2452,24 +2469,49 @@ function formatTarikhPaparanSitrep(nilai) {
   return `${bahagian[2]}/${bahagian[1]}/${bahagian[0]}`;
 }
 
-async function bukaLampiranSitrep(laluan) {
-  const tetingkap = window.open("", "_blank");
+async function bukaLampiranSitrep(laluan, namaFail = "lampiran") {
+  if (!laluan) {
+    alert("Lampiran tidak ditemui.");
+    return;
+  }
+
   try {
     const { data, error } = await dbPenyelia.storage
       .from(BUCKET_SITREP)
-      .createSignedUrl(laluan, 300);
-    if (error || !data?.signedUrl) throw error || new Error("Pautan tidak tersedia.");
-    if (tetingkap) {
-      tetingkap.location = data.signedUrl;
-    } else {
-      window.location.href = data.signedUrl;
+      .download(laluan);
+
+    if (error) {
+      throw error;
     }
+
+    if (!data) {
+      throw new Error("Fail tidak ditemui.");
+    }
+
+    const url = URL.createObjectURL(data);
+
+    const pautan = document.createElement("a");
+    pautan.href = url;
+    pautan.download = namaFail || "lampiran";
+
+    document.body.appendChild(pautan);
+    pautan.click();
+    pautan.remove();
+
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 1000);
+
   } catch (error) {
-    tetingkap?.close();
-    alert(`Lampiran gagal dibuka: ${error.message}`);
+    console.error("Ralat download lampiran:", error);
+
+    alert(
+      `Lampiran gagal dimuat turun: ${
+        error.message || "Ralat tidak diketahui."
+      }`
+    );
   }
 }
-
 function cetakSitrep(id) {
   const item = dataSitrepPenyelia.find(rekod => String(rekod.id) === String(id));
   if (!item) return;
