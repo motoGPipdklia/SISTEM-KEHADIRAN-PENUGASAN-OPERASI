@@ -8,7 +8,6 @@
 const db = window.supabaseClient;
 const ZON_MASA = "Asia/Kuala_Lumpur";
 const MASA_TAMAT_PERMINTAAN = 15000;
-const BUCKET_SITREP = "sitrep-lampiran";
 
 let adminLogin = null;
 let dataDashboard = [];
@@ -897,7 +896,7 @@ function binaRekodImportPenggunaCsv(barisCsv) {
     throw new Error(`Kolum wajib tidak dijumpai: ${tiada.join(", ")}. Gunakan templat pengguna yang disediakan.`);
   }
 
-  const perananSah = ["PETUGAS", "PENYELIA", "URUSETIA", "PENTADBIR", "TSM"];
+  const perananSah = ["PETUGAS", "PENYELIA", "URUSETIA", "PENTADBIR", "TSM", "PUSAT_KAWALAN"];
   const ambil = (baris, nama) => indeks[nama] >= 0 ? teks(baris[indeks[nama]]) : "";
 
   const rekod = barisCsv.slice(1).map((baris, kedudukan) => {
@@ -1070,7 +1069,8 @@ function muatTurunTemplatPengguna() {
   const kandungan = [
     "NO_BADAN,PANGKAT,NAMA,PERANAN,TELEFON,BAHAGIAN,DAERAH,KATA_LALUAN,AKTIF",
     "197898,L/KPL,NORHISHAM BIN CHE MAT,PETUGAS,0193151615,BKDNKA,KLIA,Skpo@A7m2#1,YA",
-    "199898,SJN,AHMAD BIN ALI,PENYELIA,0123456789,IPD KLIA,SEPANG,Skpo@B9n4#2,YA"
+    "199898,SJN,AHMAD BIN ALI,PENYELIA,0123456789,IPD KLIA,SEPANG,Skpo@B9n4#2,YA",
+    "PUSAT01,INSP,PUSAT KAWALAN,PUSAT_KAWALAN,0123456789,IPK,KUALA LUMPUR,Skpo@PK2026#1,YA"
   ].join("\r\n");
 
   const blob = new Blob(["\uFEFF", kandungan], { type: "text/csv;charset=utf-8" });
@@ -2150,75 +2150,9 @@ function paparLaporanPentadbir() {
             <td>${index + 1}</td>
             <td>${escapeHtml(item.tadbir || "-")}</td>
             <td>${escapeHtml(formatMasaLaporanAdmin(item.created_at || item.tarikh_masa))}</td>
-            <td>
-              ${
-                item.lampiran_path
-                  ? `<button
-                       class="green compact-print"
-                       type="button"
-                       onclick="muatTurunLampiranSitrepAdmin(
-                         '${escapeHtml(item.lampiran_path)}',
-                         '${escapeHtml(item.lampiran_nama || "lampiran")}'
-                       )"
-                     >📎 LAMPIRAN</button>`
-                  : ""
-              }
-
-              <button
-                class="gray compact-print"
-                type="button"
-                onclick="cetakSitrepAdmin('${escapeHtml(item.id)}')"
-              >
-                CETAK
-              </button>
-            </td>
+            <td><button class="gray compact-print" type="button" onclick="cetakSitrepAdmin('${escapeHtml(item.id)}')">CETAK</button></td>
           </tr>`).join("")
       : '<tr><td colspan="4" class="empty-row">Tiada rekod SITREP untuk tarikh ini.</td></tr>';
-  }
-}
-
-
-async function muatTurunLampiranSitrepAdmin(laluan, namaFail = "lampiran") {
-  if (!laluan) {
-    alert("Lampiran tidak ditemui.");
-    return;
-  }
-
-  try {
-    const { data, error } = await db.storage
-      .from(BUCKET_SITREP)
-      .download(laluan);
-
-    if (error) {
-      throw error;
-    }
-
-    if (!data) {
-      throw new Error("Fail tidak ditemui.");
-    }
-
-    const url = URL.createObjectURL(data);
-    const pautan = document.createElement("a");
-
-    pautan.href = url;
-    pautan.download = namaFail || "lampiran";
-
-    document.body.appendChild(pautan);
-    pautan.click();
-    pautan.remove();
-
-    setTimeout(() => {
-      URL.revokeObjectURL(url);
-    }, 1000);
-
-  } catch (error) {
-    console.error("Ralat muat turun lampiran SITREP Admin:", error);
-
-    alert(
-      `Lampiran gagal dimuat turun: ${
-        error.message || "Ralat tidak diketahui."
-      }`
-    );
   }
 }
 
