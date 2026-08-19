@@ -9,7 +9,7 @@
   <!-- Gaya global mesti dimuatkan dahulu. -->
   <link rel="stylesheet" href="css/style.css">
   <!-- Gaya khusus halaman Petugas dimuatkan selepas gaya global. -->
-  <link rel="stylesheet" href="css/index.css?v=20260722-2045">
+  <link rel="stylesheet" href="css/index.css?v=20260819-motogp-001">
 </head>
 
 <body>
@@ -94,7 +94,6 @@
         CHECK-OUT KEHADIRAN
       </button>
 
-      <!-- Modul ini diurus sepenuhnya oleh js/walkie-petugas.js. -->
       <section class="walkie-card" id="modulWalkiePetugas">
         <div class="walkie-header">
           <div>
@@ -133,6 +132,7 @@
       <button class="refresh-button" id="btnRefreshStatus" type="button" onclick="refreshDashboard()">
         SEMAK SEMULA STATUS
       </button>
+
       <button class="secondary" type="button" onclick="logout()">LOG KELUAR</button>
     </section>
   </main>
@@ -173,11 +173,15 @@
     </section>
   </main>
 
-  <!-- PELAPORAN PETUGAS -->
-  <main class="laporan" id="laporan">
+  <!-- PELAPORAN PETUGAS DINAMIK -->
+  <main class="laporan" id="laporan" style="display:none">
     <section class="card">
       <h1>Pelaporan Petugas</h1>
-      <div class="info-box"><div id="tugasLaporan"></div></div>
+
+      <div class="info-box">
+        <div id="tugasLaporan"></div>
+      </div>
+
       <div class="info-box">
         <div class="info-row">
           <div class="info-label">Tarikh / Masa:</div>
@@ -185,22 +189,15 @@
         </div>
       </div>
 
-      <label for="jumlahPengunjung"><strong>Jumlah Pengunjung</strong></label>
-      <input id="jumlahPengunjung" type="number" inputmode="numeric" min="0" step="1" placeholder="Contoh: 150">
+      <!-- Borang akan dijana secara automatik mengikut jenis tugas. -->
+      <div id="borangLaporanDinamik"></div>
 
-      <label for="jumlahKenderaan"><strong>Jumlah Kenderaan</strong></label>
-      <input id="jumlahKenderaan" type="number" inputmode="numeric" min="0" step="1" placeholder="Contoh: 45">
+      <div class="status-box" id="statusLaporan" role="status" aria-live="polite"></div>
 
-      <label for="vvipVip"><strong>VVIP / VIP</strong></label>
-      <textarea id="vvipVip" placeholder="Jika tiada, masukkan TIADA."></textarea>
-
-      <label for="perkaraMenarik"><strong>Perkara Menarik</strong></label>
-      <textarea id="perkaraMenarik" placeholder="Jika tiada, masukkan TIADA."></textarea>
-
-      <div class="status-box" id="statusLaporan"></div>
       <button id="btnHantarLaporan" type="button" onclick="hantarLaporan()">
         HANTAR LAPORAN KEPADA URUSETIA
       </button>
+
       <button class="secondary" id="btnKembaliLaporan" type="button" onclick="tutupLaporan()">
         KEMBALI
       </button>
@@ -234,11 +231,10 @@
     </div>
   </section>
 
-  <!-- Urutan JavaScript ini penting. -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/api-config.js"></script>
   <script src="js/supabase-client.js"></script>
-  <script src="js/index.js?v=20260730-logout-002"></script>
+  <script src="js/index.js?v=20260819-motogp-001"></script>
   <script src="js/walkie-petugas.js"></script>
 </body>
 </html>
