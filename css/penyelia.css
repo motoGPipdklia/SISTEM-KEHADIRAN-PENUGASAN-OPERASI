@@ -1418,3 +1418,154 @@ body #loginSection .btn-secondary.link:hover{
     text-transform:uppercase;
   }
 }
+
+
+/* ================================================================
+   PEMBETULAN SAIZ REKOD SITREP
+   - Tarikh SITREP dan Carian sama lebar
+   - Lampiran dan Cetak sama saiz
+================================================================ */
+
+/* Tarikh SITREP dan Carian = 50% / 50% */
+.sitrep-filter-bar{
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr) !important;
+  gap:14px !important;
+  align-items:end !important;
+}
+
+.sitrep-date-filter,
+.sitrep-search-filter{
+  width:100% !important;
+  min-width:0 !important;
+}
+
+.sitrep-date-filter input,
+.sitrep-search-filter input,
+.sitrep-search{
+  width:100% !important;
+  min-width:0 !important;
+  height:50px !important;
+  min-height:50px !important;
+  max-height:50px !important;
+  margin:0 !important;
+  padding:12px 14px !important;
+  box-sizing:border-box !important;
+}
+
+/* Ruang tindakan dalam table */
+.sitrep-table td[data-label="Tindakan"]{
+  display:grid !important;
+  grid-template-columns:130px 130px !important;
+  gap:8px !important;
+  justify-content:end !important;
+  align-items:center !important;
+}
+
+/* LAMPIRAN dan CETAK = saiz sama */
+.sitrep-table .sitrep-table-action{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:130px !important;
+  min-width:130px !important;
+  max-width:130px !important;
+  height:42px !important;
+  min-height:42px !important;
+  max-height:42px !important;
+  margin:0 !important;
+  padding:9px 12px !important;
+  box-sizing:border-box !important;
+  font-size:14px !important;
+  line-height:1 !important;
+}
+
+/* Buang width:100% / margin-top daripada btn-main untuk Lampiran sahaja */
+.sitrep-table .sitrep-table-attachment{
+  margin-top:0 !important;
+}
+
+/* Paparan tablet/telefon */
+@media(max-width:700px){
+  .sitrep-filter-bar{
+    grid-template-columns:1fr !important;
+  }
+
+  .sitrep-table td[data-label="Tindakan"]{
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr) !important;
+    width:100% !important;
+  }
+
+  .sitrep-table .sitrep-table-action{
+    width:100% !important;
+    min-width:0 !important;
+    max-width:none !important;
+  }
+}
+
+
+/* ================================================================
+   PEMBETULAN KEDUDUKAN KOLUM REKOD SITREP
+   - MASA DIHANTAR berada di tengah kolum
+   - TINDAKAN berada di tengah antara LAMPIRAN dan CETAK
+================================================================ */
+
+@media(min-width:701px){
+
+  .sitrep-table{
+    width:100% !important;
+    table-layout:fixed !important;
+  }
+
+  /* Bil. */
+  .sitrep-table th:first-child,
+  .sitrep-table td:first-child{
+    width:60px !important;
+    text-align:center !important;
+  }
+
+  /* Masa Dihantar */
+  .sitrep-table th:nth-child(3),
+  .sitrep-table td:nth-child(3){
+    width:220px !important;
+    text-align:center !important;
+    vertical-align:middle !important;
+    white-space:nowrap !important;
+  }
+
+  /* Tindakan */
+  .sitrep-table th:last-child,
+  .sitrep-table td:last-child{
+    width:300px !important;
+  }
+
+  .sitrep-table th:last-child{
+    text-align:center !important;
+    vertical-align:middle !important;
+  }
+
+  .sitrep-table td[data-label="Tindakan"]{
+    display:grid !important;
+    grid-template-columns:130px 130px !important;
+    gap:8px !important;
+    justify-content:center !important;
+    align-items:center !important;
+    width:300px !important;
+    min-width:300px !important;
+    padding-left:12px !important;
+    padding-right:12px !important;
+    box-sizing:border-box !important;
+    text-align:center !important;
+    vertical-align:middle !important;
+  }
+
+  .sitrep-table .sitrep-table-action{
+    width:130px !important;
+    min-width:130px !important;
+    max-width:130px !important;
+    height:42px !important;
+    min-height:42px !important;
+    max-height:42px !important;
+    margin:0 !important;
+  }
+}

@@ -1,5 +1,5 @@
 /* ================================================================
-   SKPO MotoGP — Modul Laporan SITREP
+   SKPO MOTOGP — PUSAT KAWALAN
 ================================================================ */
 
 :root{
@@ -11,25 +11,28 @@
   --lap-muted:#a7a9b1;
   --lap-accent:#e21b23;
   --lap-accent-hover:#ff3138;
-  --lap-green:#198754;
+  --lap-green:#2e7d32;
+  --lap-green-hover:#39943f;
+  --lap-gold:#d4af37;
 }
 
-*{box-sizing:border-box}
+*{
+  box-sizing:border-box;
+}
 
 body{
   margin:0;
   min-height:100vh;
-  background:
-    radial-gradient(circle at top right, rgba(226,27,35,.16), transparent 35%),
-    var(--lap-bg);
   color:var(--lap-text);
   font-family:Arial,Helvetica,sans-serif;
 }
 
-.hidden{display:none !important}
+.hidden{
+  display:none !important;
+}
 
 .laporan-shell{
-  width:min(1100px, calc(100% - 28px));
+  width:min(1400px, calc(100% - 28px));
   margin:0 auto;
   padding:36px 0 60px;
 }
@@ -44,8 +47,16 @@ body{
   box-shadow:0 24px 80px rgba(0,0,0,.35);
 }
 
-.laporan-brand{text-align:center;margin-bottom:18px}
-.laporan-logo{max-width:280px;max-height:125px;object-fit:contain}
+.laporan-brand{
+  text-align:center;
+  margin-bottom:18px;
+}
+
+.laporan-logo{
+  max-width:280px;
+  max-height:125px;
+  object-fit:contain;
+}
 
 .laporan-login-card h1{
   margin:0;
@@ -54,26 +65,50 @@ body{
 }
 
 .laporan-sub{
-  text-align:center;
-  color:var(--lap-muted);
   margin:8px 0 24px;
+  color:var(--lap-muted);
   line-height:1.5;
+  text-align:center;
 }
+
+
+/* ================================================================
+   INPUT
+================================================================ */
 
 .laporan-login-card input,
 .laporan-toolbar input{
   width:100%;
+  height:48px;
   min-height:48px;
+  padding:0 14px;
   border:1px solid var(--lap-border);
   border-radius:10px;
-  padding:0 14px;
   background:#0f1013;
   color:var(--lap-text);
   font-size:15px;
   outline:none;
+  box-sizing:border-box;
 }
 
-.laporan-login-card input{margin-bottom:12px}
+.laporan-login-card input{
+  margin-bottom:12px;
+}
+
+.laporan-toolbar input{
+  margin:0;
+}
+
+.laporan-login-card input:focus,
+.laporan-toolbar input:focus{
+  border-color:var(--lap-gold);
+  box-shadow:0 0 0 2px rgba(212,175,55,.15);
+}
+
+
+/* ================================================================
+   BUTTON
+================================================================ */
 
 .laporan-btn{
   border:0;
@@ -84,34 +119,52 @@ body{
   cursor:pointer;
 }
 
-.laporan-btn-primary{
-  background:var(--lap-accent);
-  color:white;
+.laporan-btn:disabled{
+  opacity:.6;
+  cursor:not-allowed;
 }
 
-.laporan-btn-primary:hover{
+.laporan-btn-primary{
+  background:var(--lap-accent);
+  color:#fff;
+}
+
+.laporan-btn-primary:hover:not(:disabled){
   background:var(--lap-accent-hover);
 }
 
 .laporan-btn-secondary{
   background:#30323a;
-  color:white;
+  color:#fff;
 }
 
-.laporan-btn-download{
+.laporan-btn-download,
+.laporan-btn-send{
   background:var(--lap-green);
-  color:white;
+  color:#fff;
+}
+
+.laporan-btn-download:hover:not(:disabled),
+.laporan-btn-send:hover:not(:disabled){
+  background:var(--lap-green-hover);
 }
 
 .laporan-link{
   display:flex;
   align-items:center;
   justify-content:center;
-  text-decoration:none;
   margin-top:10px;
+  text-decoration:none;
 }
 
-.laporan-login-card > .laporan-btn{width:100%}
+.laporan-login-card > .laporan-btn{
+  width:100%;
+}
+
+
+/* ================================================================
+   STATUS
+================================================================ */
 
 .laporan-status{
   margin:14px 0;
@@ -135,18 +188,25 @@ body{
   border:1px solid rgba(190,55,68,.5);
 }
 
+
+/* ================================================================
+   TOP BAR
+================================================================ */
+
 .laporan-topbar{
   display:flex;
   justify-content:space-between;
-  gap:20px;
   align-items:flex-start;
+  gap:20px;
   padding:22px;
   border:1px solid var(--lap-border);
   border-radius:16px;
-  background:var(--lap-panel);
+  background:rgba(23,24,28,.97);
 }
 
-.laporan-topbar h1{margin:4px 0 8px}
+.laporan-topbar h1{
+  margin:4px 0 8px;
+}
 
 .laporan-eyebrow{
   color:#ff6d72;
@@ -156,29 +216,56 @@ body{
 }
 
 .laporan-profile{
-  color:var(--lap-muted);
   margin:0;
+  color:var(--lap-muted);
 }
+
+
+/* ================================================================
+   REKOD / FILTER
+================================================================ */
 
 .laporan-toolbar{
   display:grid;
-  grid-template-columns:180px 1fr auto;
-  gap:12px;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  gap:14px;
   align-items:end;
   margin:16px 0;
-  padding:16px;
-  border:1px solid var(--lap-border);
-  border-radius:14px;
-  background:var(--lap-panel);
+  width:100%;
+}
+
+.laporan-toolbar label{
+  display:block;
+  width:100%;
+  min-width:0;
 }
 
 .laporan-toolbar label > span{
   display:block;
   margin-bottom:7px;
+  color:var(--lap-muted);
   font-size:12px;
   font-weight:800;
-  color:var(--lap-muted);
 }
+
+/* Pastikan TARIKH SITREP & CARIAN betul-betul sama */
+#tarikhLaporan,
+#carianLaporan{
+  width:100% !important;
+  height:48px !important;
+  min-height:48px !important;
+  max-height:48px !important;
+  padding:0 14px !important;
+  margin:0 !important;
+  box-sizing:border-box !important;
+  border-radius:10px !important;
+  font-size:15px !important;
+}
+
+
+/* ================================================================
+   SUMMARY
+================================================================ */
 
 .laporan-summary{
   margin-bottom:16px;
@@ -189,21 +276,27 @@ body{
   padding:18px;
   border:1px solid var(--lap-border);
   border-radius:14px;
-  background:var(--lap-panel);
+  background:var(--lap-panel-2);
 }
 
 .laporan-summary-card span{
   display:block;
-  font-size:12px;
   color:var(--lap-muted);
+  font-size:12px;
   font-weight:800;
 }
 
 .laporan-summary-card strong{
   display:block;
   margin-top:6px;
+  color:var(--lap-gold);
   font-size:30px;
 }
+
+
+/* ================================================================
+   SENARAI SITREP
+================================================================ */
 
 .laporan-list{
   display:grid;
@@ -211,16 +304,16 @@ body{
 }
 
 .laporan-record{
+  overflow:hidden;
   border:1px solid var(--lap-border);
   border-radius:16px;
   background:var(--lap-panel);
-  overflow:hidden;
 }
 
 .laporan-record-head{
   padding:18px;
-  background:var(--lap-panel-2);
   border-bottom:1px solid var(--lap-border);
+  background:var(--lap-panel-2);
 }
 
 .laporan-record-head h3{
@@ -228,18 +321,20 @@ body{
   font-size:20px;
 }
 
-.laporan-record-head small{color:var(--lap-muted)}
+.laporan-record-head small{
+  color:var(--lap-muted);
+}
 
 .laporan-record-type{
   color:#ff7479;
-  font-weight:900;
   font-size:11px;
+  font-weight:900;
   letter-spacing:.08em;
 }
 
 .laporan-grid{
   display:grid;
-  grid-template-columns:180px 1fr;
+  grid-template-columns:180px minmax(0,1fr);
   gap:10px 18px;
   padding:18px;
 }
@@ -249,25 +344,63 @@ body{
   font-weight:800;
 }
 
+
+/* ================================================================
+   TINDAKAN SITREP
+   - MUAT TURUN LAMPIRAN & CETAK / SIMPAN PDF DI TENGAH
+================================================================ */
+
 .laporan-actions{
-  display:flex;
-  flex-wrap:wrap;
-  gap:10px;
-  padding:0 18px 18px;
+  display:grid;
+  grid-template-columns:260px 220px;
+  gap:12px;
+  justify-content:center;
+  align-items:center;
+  width:100%;
+  padding:4px 18px 18px;
 }
+
+.laporan-actions .laporan-btn{
+  width:100%;
+  min-height:46px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  margin:0;
+}
+
+
+/* Jika hanya ada satu butang, kekalkan ia di tengah */
+.laporan-actions > .laporan-btn:only-child{
+  grid-column:1 / -1;
+  justify-self:center;
+  width:220px;
+}
+
+
+/* ================================================================
+   EMPTY
+================================================================ */
 
 .laporan-empty{
   padding:40px 20px;
-  text-align:center;
   border:1px dashed var(--lap-border);
   border-radius:14px;
-  color:var(--lap-muted);
   background:var(--lap-panel);
+  color:var(--lap-muted);
+  text-align:center;
 }
 
+
+/* ================================================================
+   MOBILE
+================================================================ */
+
 @media (max-width:760px){
+
   .laporan-shell{
-    width:min(100% - 18px, 1100px);
+    width:min(100% - 18px, 1400px);
     padding-top:18px;
   }
 
@@ -292,7 +425,16 @@ body{
     margin-top:8px;
   }
 
-  .laporan-actions .laporan-btn{
+  .laporan-actions{
+    grid-template-columns:1fr;
+    justify-content:stretch;
     width:100%;
+  }
+
+  .laporan-actions .laporan-btn,
+  .laporan-actions > .laporan-btn:only-child{
+    grid-column:auto;
+    width:100%;
+    justify-self:stretch;
   }
 }
