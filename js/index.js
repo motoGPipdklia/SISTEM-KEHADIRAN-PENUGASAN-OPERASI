@@ -1,11 +1,15 @@
 "use strict";
 
-/* SKPO V2 - Petugas (GitHub Pages + Supabase) */
+/* SKPO MOTOGP — Petugas (GitHub Pages + Supabase) */
 
 const db = window.supabaseClient;
 const ZON_MASA = "Asia/Kuala_Lumpur";
 const SELANG_SEMAKAN_STATUS = 15000;
 const HAD_KETEPATAN_GPS = 100;
+
+/* Kekalkan kunci tempatan MotoGP sedia ada supaya ikatan peranti tidak berubah. */
+const KUNCI_USER_MOTOGP = "user";
+const KUNCI_DEVICE_MOTOGP = "skpoDeviceId";
 
 let userLogin = null;
 let tugas = null;
@@ -55,7 +59,7 @@ function emailDalaman(noBadan) {
   return `${n}@skpo.local`;
 }
 function dapatkanDeviceId() {
-  const kunci = "skpoDeviceId";
+  const kunci = KUNCI_DEVICE_MOTOGP;
   let id = localStorage.getItem(kunci);
   if (!id) {
     const rawak = window.crypto?.randomUUID?.() ||
@@ -121,7 +125,7 @@ async function login() {
       id: profil.id, authUserId: data.user.id, noBadan: profil.no_badan,
       pangkat: profil.pangkat || "", nama: profil.nama || "", peranan: profil.peranan || "PETUGAS"
     };
-    localStorage.setItem("user", JSON.stringify(userLogin));
+    localStorage.setItem(KUNCI_USER_MOTOGP, JSON.stringify(userLogin));
     paparDashboardProfil();
     await refreshDashboard();
     mulaSemakanStatusAutomatik();
@@ -153,12 +157,12 @@ async function pulihkanSesi() {
       id: profil.id, authUserId: data.session.user.id, noBadan: profil.no_badan,
       pangkat: profil.pangkat || "", nama: profil.nama || "", peranan: profil.peranan || "PETUGAS"
     };
-    localStorage.setItem("user", JSON.stringify(userLogin));
+    localStorage.setItem(KUNCI_USER_MOTOGP, JSON.stringify(userLogin));
     paparDashboardProfil(); await refreshDashboard(); mulaSemakanStatusAutomatik();
   } catch (err) {
     console.error("Pemulihan sesi gagal:", err);
     await db.auth.signOut().catch(() => {});
-    localStorage.removeItem("user");
+    localStorage.removeItem(KUNCI_USER_MOTOGP);
     el("status").innerHTML = `<span class="status-error">${escapeHtml(err.message)}</span>`;
   }
 }
@@ -402,34 +406,467 @@ function setProsesGps(keluar, proses, mesej = "") {
   if (mesej) paparStatus(keluar ? "statusHantarCheckout" : "statusHantar", mesej, "warning");
 }
 
+function normalisasiJenisTugasPelaporan(nilai) {
+  const jenis = atas(nilai).replace(/\s+/g, " ").trim();
+
+  if (jenis.includes("KAWALAN KESELAMATAN")) return "KAWALAN KESELAMATAN";
+  if (jenis.includes("KAWALAN LALULINTAS") || jenis.includes("KAWALAN LALU LINTAS")) {
+    return "KAWALAN LALULINTAS";
+  }
+  if (jenis.includes("RONDAAN PENCEGAHAN JENAYAH NARKOTIK")) {
+    return "RONDAAN PENCEGAHAN JENAYAH NARKOTIK";
+  }
+  if (jenis.includes("RONDAAN PENCEGAHAN JENAYAH KOMERSIL")) {
+    return "RONDAAN PENCEGAHAN JENAYAH KOMERSIL";
+  }
+  if (jenis.includes("RONDAAN PENCEGAHAN JENAYAH")) {
+    return "RONDAAN PENCEGAHAN JENAYAH";
+  }
+  if (jenis.includes("BALAI POLIS BERGERAK")) return "BALAI POLIS BERGERAK";
+  if (jenis.includes("PONDOK POLIS")) return "PONDOK POLIS";
+  if (jenis.includes("UNIT PEMUSNAH BOM")) return "UNIT PEMUSNAH BOM";
+
+  return jenis;
+}
+
 function bukaLaporan() {
   if (!petugasLayakHantarLaporan(tugas) || statusKehadiranSemasa !== "HADIR" || sudahCheckOutSemasa) {
-    alert("Pelaporan hanya dibenarkan selepas kehadiran disahkan, sebelum Check-Out, kepada Penyelia atau Pemegang Set."); return;
+    alert("Pelaporan hanya dibenarkan selepas kehadiran disahkan, sebelum Check-Out, kepada Penyelia atau Pemegang Set.");
+    return;
   }
-  el("dashboard").style.display = "none"; el("laporan").style.display = "block";
-  el("tugasLaporan").innerHTML = binaBarisMaklumat("Call Sign:", tugas.callSign) + binaBarisMaklumat("Jenis Tugas:", tugas.jenisTugas) + binaBarisMaklumat("Tempat Tugas:", tugas.lokasi) + binaBarisMaklumat("Penyelia:", tugas.penyelia);
+
+  if (!tugas) {
+    alert("Maklumat tugasan tidak dijumpai.");
+    return;
+  }
+
+  el("dashboard").style.display = "none";
+  el("laporan").style.display = "block";
+
+  el("tugasLaporan").innerHTML =
+    binaBarisMaklumat("Call Sign:", tugas.callSign) +
+    binaBarisMaklumat("Jenis Tugas:", tugas.jenisTugas) +
+    binaBarisMaklumat("Tempat Tugas:", tugas.lokasi) +
+    binaBarisMaklumat("Penyelia:", tugas.penyelia);
+
   kemasKiniTarikhMasaLaporan();
-  ["jumlahPengunjung", "jumlahKenderaan", "vvipVip", "perkaraMenarik"].forEach(id => el(id).value = "");
-  el("statusLaporan").style.display = "none"; el("btnHantarLaporan").disabled = false;
+  janaBorangPelaporan();
+
+  const status = el("statusLaporan");
+  if (status) {
+    status.style.display = "none";
+    status.innerHTML = "";
+  }
+
+  const btn = el("btnHantarLaporan");
+  if (btn) {
+    btn.disabled = false;
+    btn.textContent = "HANTAR LAPORAN KEPADA URUSETIA";
+  }
+
+  window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
 }
-function kemasKiniTarikhMasaLaporan() { el("tarikhMasaLaporan").textContent = formatTarikhMasa(new Date()); }
-function tutupLaporan() { el("laporan").style.display = "none"; el("dashboard").style.display = "block"; }
+
+function kemasKiniTarikhMasaLaporan() {
+  const ruang = el("tarikhMasaLaporan");
+  if (ruang) ruang.textContent = formatTarikhMasa(new Date());
+}
+
+function tutupLaporan() {
+  el("laporan").style.display = "none";
+  el("dashboard").style.display = "block";
+}
+
+function janaBorangPelaporan() {
+  const ruang = el("borangLaporanDinamik");
+  if (!ruang || !tugas) return;
+
+  const jenis = normalisasiJenisTugasPelaporan(tugas.jenisTugas);
+
+  switch (jenis) {
+    case "KAWALAN KESELAMATAN":
+      ruang.innerHTML = `
+        <h2>Borang Kawalan Keselamatan</h2>
+
+        <label for="lapKeadaanKeselamatan"><strong>Keadaan Keselamatan</strong></label>
+        <select id="lapKeadaanKeselamatan">
+          <option value="">-- PILIH --</option>
+          <option value="TERKAWAL">TERKAWAL</option>
+          <option value="TIDAK TERKAWAL">TIDAK TERKAWAL</option>
+        </select>
+
+        <label for="lapJumlahPengunjung"><strong>Jumlah Pengunjung</strong></label>
+        <input id="lapJumlahPengunjung" type="number" min="0" step="1" inputmode="numeric" placeholder="Contoh: 1500">
+
+        <h3>Pecahan Kenderaan</h3>
+
+        <label for="lapBas"><strong>Bas</strong></label>
+        <input id="lapBas" type="number" min="0" step="1" value="0" inputmode="numeric" oninput="kiraJumlahKenderaanKeselamatan()">
+
+        <label for="lapMotosikal"><strong>Motosikal</strong></label>
+        <input id="lapMotosikal" type="number" min="0" step="1" value="0" inputmode="numeric" oninput="kiraJumlahKenderaanKeselamatan()">
+
+        <label for="lapMotokar"><strong>Motokar</strong></label>
+        <input id="lapMotokar" type="number" min="0" step="1" value="0" inputmode="numeric" oninput="kiraJumlahKenderaanKeselamatan()">
+
+        <label for="lapJumlahKenderaan"><strong>Jumlah Kenderaan</strong></label>
+        <input id="lapJumlahKenderaan" type="number" value="0" readonly>
+
+        ${binaPilihanAdaTiada("lapVvipVip", "VVIP / VIP", "Butiran VVIP / VIP", "Masukkan nama / jawatan VVIP atau VIP.")}
+
+        <label for="lapCatatan"><strong>Catatan</strong></label>
+        <textarea id="lapCatatan" placeholder="Jika tiada, masukkan TIADA."></textarea>
+      `;
+      kiraJumlahKenderaanKeselamatan();
+      break;
+
+    case "KAWALAN LALULINTAS":
+      ruang.innerHTML = `
+        <h2>Borang Kawalan Lalulintas</h2>
+
+        <label for="lapKeadaanTrafik"><strong>Keadaan Trafik</strong></label>
+        <select id="lapKeadaanTrafik">
+          <option value="">-- PILIH --</option>
+          <option value="LANCAR">LANCAR</option>
+          <option value="PERLAHAN">PERLAHAN</option>
+          <option value="SESAK">SESAK</option>
+        </select>
+
+        <label for="lapJumlahKenderaan"><strong>Jumlah Kenderaan</strong></label>
+        <input id="lapJumlahKenderaan" type="number" min="0" step="1" inputmode="numeric" placeholder="Contoh: 350">
+
+        ${binaPilihanAdaTiada("lapKemalangan", "Kemalangan", "Butiran Kemalangan", "Masukkan butiran kemalangan.")}
+
+        <label for="lapCatatanTindakan"><strong>Catatan / Tindakan</strong></label>
+        <textarea id="lapCatatanTindakan" placeholder="Masukkan catatan atau tindakan yang telah diambil."></textarea>
+      `;
+      break;
+
+    case "RONDAAN PENCEGAHAN JENAYAH":
+    case "RONDAAN PENCEGAHAN JENAYAH NARKOTIK":
+    case "RONDAAN PENCEGAHAN JENAYAH KOMERSIL":
+      ruang.innerHTML = `
+        <h2>${escapeHtml(jenis)}</h2>
+
+        <label for="lapLokasiRondaan"><strong>Lokasi Rondaan</strong></label>
+        <textarea id="lapLokasiRondaan" placeholder="Masukkan lokasi / kawasan rondaan."></textarea>
+
+        <h3>Pemeriksaan</h3>
+
+        <label for="lapPemeriksaanLelaki"><strong>Lelaki</strong></label>
+        <input id="lapPemeriksaanLelaki" type="number" min="0" step="1" value="0" inputmode="numeric" oninput="kiraJumlahPemeriksaan()">
+
+        <label for="lapPemeriksaanPerempuan"><strong>Perempuan</strong></label>
+        <input id="lapPemeriksaanPerempuan" type="number" min="0" step="1" value="0" inputmode="numeric" oninput="kiraJumlahPemeriksaan()">
+
+        <label for="lapJumlahPemeriksaan"><strong>Jumlah Pemeriksaan</strong></label>
+        <input id="lapJumlahPemeriksaan" type="number" value="0" readonly>
+
+        ${binaPilihanAdaTiada("lapTangkapan", "Tangkapan", "Butiran Tangkapan", "Masukkan butiran tangkapan.")}
+
+        ${binaPilihanAdaTiada("lapRampasan", "Rampasan", "Butiran Rampasan", "Masukkan butiran rampasan.")}
+
+        <label for="lapCatatanRepot"><strong>Catatan / No. Repot</strong></label>
+        <textarea id="lapCatatanRepot" placeholder="Masukkan catatan dan No. Repot jika berkaitan. Jika tiada, masukkan TIADA."></textarea>
+      `;
+      kiraJumlahPemeriksaan();
+      break;
+
+    case "BALAI POLIS BERGERAK":
+      ruang.innerHTML = `
+        <h2>Borang Balai Polis Bergerak</h2>
+
+        <label for="lapNoRepot"><strong>No. Repot</strong></label>
+        <input id="lapNoRepot" type="text" placeholder="Jika tiada, masukkan TIADA.">
+
+        <label for="lapCatatan"><strong>Catatan</strong></label>
+        <textarea id="lapCatatan" placeholder="Jika tiada, masukkan TIADA."></textarea>
+      `;
+      break;
+
+    case "PONDOK POLIS":
+      ruang.innerHTML = `
+        <h2>Borang Pondok Polis</h2>
+
+        <label for="lapNoRepot"><strong>No. Repot</strong></label>
+        <input id="lapNoRepot" type="text" placeholder="Jika tiada, masukkan TIADA.">
+
+        <label for="lapCatatan"><strong>Catatan</strong></label>
+        <textarea id="lapCatatan" placeholder="Jika tiada, masukkan TIADA."></textarea>
+      `;
+      break;
+
+    case "UNIT PEMUSNAH BOM":
+      ruang.innerHTML = `
+        <h2>Borang Unit Pemusnah Bom</h2>
+
+        <label for="lapLokasi"><strong>Lokasi</strong></label>
+        <textarea id="lapLokasi" placeholder="Masukkan lokasi."></textarea>
+
+        ${binaPilihanAdaTiada("lapVvipVip", "VVIP / VIP", "Butiran VVIP / VIP", "Masukkan nama / jawatan VVIP atau VIP.")}
+
+        ${binaPilihanAdaTiada("lapAncaman", "Jenis Ancaman", "Butiran / Jenis Ancaman", "Masukkan jenis ancaman.")}
+
+        <label for="lapCatatan"><strong>Catatan</strong></label>
+        <textarea id="lapCatatan" placeholder="Masukkan catatan."></textarea>
+      `;
+      break;
+
+    default:
+      ruang.innerHTML = `
+        <div class="status-box error" style="display:block">
+          <strong>BORANG PELAPORAN TIDAK DIJUMPAI</strong><br><br>
+          Jenis tugas: <strong>${escapeHtml(tugas.jenisTugas)}</strong><br><br>
+          Sila hubungi Pentadbir.
+        </div>
+      `;
+      el("btnHantarLaporan").disabled = true;
+  }
+}
+
+function binaPilihanAdaTiada(id, label, labelButiran, placeholder) {
+  return `
+    <div class="laporan-pilihan">
+      <label for="${escapeHtml(id)}Status"><strong>${escapeHtml(label)}</strong></label>
+      <select id="${escapeHtml(id)}Status" onchange="ubahPaparanButiranLaporan('${escapeHtml(id)}')">
+        <option value="TIADA">TIADA</option>
+        <option value="ADA">ADA</option>
+      </select>
+
+      <div id="${escapeHtml(id)}ButiranBox" style="display:none;">
+        <label for="${escapeHtml(id)}Butiran"><strong>${escapeHtml(labelButiran)}</strong></label>
+        <textarea id="${escapeHtml(id)}Butiran" placeholder="${escapeHtml(placeholder)}"></textarea>
+      </div>
+    </div>
+  `;
+}
+
+function ubahPaparanButiranLaporan(id) {
+  const status = el(`${id}Status`);
+  const box = el(`${id}ButiranBox`);
+  const butiran = el(`${id}Butiran`);
+  if (!status || !box) return;
+
+  const ada = atas(status.value) === "ADA";
+  box.style.display = ada ? "block" : "none";
+  if (!ada && butiran) butiran.value = "";
+}
+
+function nomborBulatLaporan(id) {
+  const ruang = el(id);
+  if (!ruang) return 0;
+
+  const nilai = Number(ruang.value);
+  return Number.isInteger(nilai) && nilai >= 0 ? nilai : 0;
+}
+
+function kiraJumlahKenderaanKeselamatan() {
+  const bas = nomborBulatLaporan("lapBas");
+  const motosikal = nomborBulatLaporan("lapMotosikal");
+  const motokar = nomborBulatLaporan("lapMotokar");
+  const jumlah = bas + motosikal + motokar;
+
+  if (el("lapJumlahKenderaan")) el("lapJumlahKenderaan").value = jumlah;
+  return jumlah;
+}
+
+function kiraJumlahPemeriksaan() {
+  const lelaki = nomborBulatLaporan("lapPemeriksaanLelaki");
+  const perempuan = nomborBulatLaporan("lapPemeriksaanPerempuan");
+  const jumlah = lelaki + perempuan;
+
+  if (el("lapJumlahPemeriksaan")) el("lapJumlahPemeriksaan").value = jumlah;
+  return jumlah;
+}
+
+function dapatkanAdaTiadaLaporan(id) {
+  const status = atas(el(`${id}Status`)?.value) === "ADA" ? "ADA" : "TIADA";
+  const butiran = status === "ADA" ? teks(el(`${id}Butiran`)?.value) : "";
+  return { status, butiran };
+}
+
+function binaDataLaporan() {
+  const jenis = normalisasiJenisTugasPelaporan(tugas?.jenisTugas);
+
+  if (jenis === "KAWALAN KESELAMATAN") {
+    const keadaan = atas(el("lapKeadaanKeselamatan")?.value);
+    const jumlahPengunjung = Number(el("lapJumlahPengunjung")?.value);
+    const bas = nomborBulatLaporan("lapBas");
+    const motosikal = nomborBulatLaporan("lapMotosikal");
+    const motokar = nomborBulatLaporan("lapMotokar");
+    const jumlahKenderaan = kiraJumlahKenderaanKeselamatan();
+    const vvipVip = dapatkanAdaTiadaLaporan("lapVvipVip");
+    const catatan = teks(el("lapCatatan")?.value);
+
+    if (!keadaan) throw new Error("Sila pilih keadaan keselamatan.");
+    if (!Number.isInteger(jumlahPengunjung) || jumlahPengunjung < 0) {
+      throw new Error("Sila masukkan jumlah pengunjung yang sah.");
+    }
+    if (vvipVip.status === "ADA" && !vvipVip.butiran) {
+      throw new Error("Sila masukkan butiran VVIP / VIP.");
+    }
+    if (!catatan) throw new Error("Sila masukkan catatan. Jika tiada, masukkan TIADA.");
+
+    return {
+      keadaan_keselamatan: keadaan,
+      jumlah_pengunjung: jumlahPengunjung,
+      kenderaan: { bas, motosikal, motokar, jumlah: jumlahKenderaan },
+      vvip_vip: vvipVip,
+      catatan
+    };
+  }
+
+  if (jenis === "KAWALAN LALULINTAS") {
+    const keadaanTrafik = atas(el("lapKeadaanTrafik")?.value);
+    const jumlahKenderaan = Number(el("lapJumlahKenderaan")?.value);
+    const kemalangan = dapatkanAdaTiadaLaporan("lapKemalangan");
+    const catatanTindakan = teks(el("lapCatatanTindakan")?.value);
+
+    if (!keadaanTrafik) throw new Error("Sila pilih keadaan trafik.");
+    if (!Number.isInteger(jumlahKenderaan) || jumlahKenderaan < 0) {
+      throw new Error("Sila masukkan jumlah kenderaan yang sah.");
+    }
+    if (kemalangan.status === "ADA" && !kemalangan.butiran) {
+      throw new Error("Sila masukkan butiran kemalangan.");
+    }
+    if (!catatanTindakan) throw new Error("Sila masukkan catatan / tindakan.");
+
+    return {
+      keadaan_trafik: keadaanTrafik,
+      jumlah_kenderaan: jumlahKenderaan,
+      kemalangan,
+      catatan_tindakan: catatanTindakan
+    };
+  }
+
+  if (
+    jenis === "RONDAAN PENCEGAHAN JENAYAH" ||
+    jenis === "RONDAAN PENCEGAHAN JENAYAH NARKOTIK" ||
+    jenis === "RONDAAN PENCEGAHAN JENAYAH KOMERSIL"
+  ) {
+    const lokasi = teks(el("lapLokasiRondaan")?.value);
+    const lelaki = nomborBulatLaporan("lapPemeriksaanLelaki");
+    const perempuan = nomborBulatLaporan("lapPemeriksaanPerempuan");
+    const jumlah = kiraJumlahPemeriksaan();
+    const tangkapan = dapatkanAdaTiadaLaporan("lapTangkapan");
+    const rampasan = dapatkanAdaTiadaLaporan("lapRampasan");
+    const catatanRepot = teks(el("lapCatatanRepot")?.value);
+
+    if (!lokasi) throw new Error("Sila masukkan lokasi rondaan.");
+    if (tangkapan.status === "ADA" && !tangkapan.butiran) {
+      throw new Error("Sila masukkan butiran tangkapan.");
+    }
+    if (rampasan.status === "ADA" && !rampasan.butiran) {
+      throw new Error("Sila masukkan butiran rampasan.");
+    }
+    if (!catatanRepot) {
+      throw new Error("Sila masukkan catatan / No. Repot. Jika tiada, masukkan TIADA.");
+    }
+
+    return {
+      lokasi_rondaan: lokasi,
+      pemeriksaan: { lelaki, perempuan, jumlah },
+      tangkapan,
+      rampasan,
+      catatan_no_repot: catatanRepot
+    };
+  }
+
+  if (jenis === "BALAI POLIS BERGERAK" || jenis === "PONDOK POLIS") {
+    const noRepot = teks(el("lapNoRepot")?.value);
+    const catatan = teks(el("lapCatatan")?.value);
+
+    if (!noRepot) throw new Error("Sila masukkan No. Repot. Jika tiada, masukkan TIADA.");
+    if (!catatan) throw new Error("Sila masukkan catatan.");
+
+    return { no_repot: noRepot, catatan };
+  }
+
+  if (jenis === "UNIT PEMUSNAH BOM") {
+    const lokasi = teks(el("lapLokasi")?.value);
+    const vvipVip = dapatkanAdaTiadaLaporan("lapVvipVip");
+    const ancaman = dapatkanAdaTiadaLaporan("lapAncaman");
+    const catatan = teks(el("lapCatatan")?.value);
+
+    if (!lokasi) throw new Error("Sila masukkan lokasi.");
+    if (vvipVip.status === "ADA" && !vvipVip.butiran) {
+      throw new Error("Sila masukkan butiran VVIP / VIP.");
+    }
+    if (ancaman.status === "ADA" && !ancaman.butiran) {
+      throw new Error("Sila masukkan jenis ancaman.");
+    }
+    if (!catatan) throw new Error("Sila masukkan catatan.");
+
+    return { lokasi, vvip_vip: vvipVip, jenis_ancaman: ancaman, catatan };
+  }
+
+  throw new Error(`Borang bagi jenis tugas "${tugas?.jenisTugas || "-"}" belum disediakan.`);
+}
+
 async function hantarLaporan() {
-  const jp = Number(el("jumlahPengunjung").value), jk = Number(el("jumlahKenderaan").value);
-  const vip = teks(el("vvipVip").value), menarik = teks(el("perkaraMenarik").value), btn = el("btnHantarLaporan");
-  if (!petugasLayakHantarLaporan(tugas) || statusKehadiranSemasa !== "HADIR" || sudahCheckOutSemasa) return paparStatus("statusLaporan", "Pelaporan tidak dibenarkan.", "error");
-  if (!Number.isInteger(jp) || jp < 0 || !Number.isInteger(jk) || jk < 0 || !vip || !menarik) return paparStatus("statusLaporan", "Sila lengkapkan semua ruangan dengan nilai yang sah.", "error");
-  if (!confirm("Hantar laporan ini kepada URUSETIA?")) return;
-  btn.disabled = true; btn.textContent = "SEDANG MENGHANTAR...";
+  const btn = el("btnHantarLaporan");
+
+  if (!petugasLayakHantarLaporan(tugas) || statusKehadiranSemasa !== "HADIR" || sudahCheckOutSemasa) {
+    paparStatus("statusLaporan", "Pelaporan tidak dibenarkan.", "error");
+    return;
+  }
+
+  let dataLaporan;
   try {
-    const { error } = await db.from("pelaporan").insert({
-      penugasan_id: tugas.id, petugas_id: userLogin.id, jumlah_pengunjung: jp,
-      jumlah_kenderaan: jk, vvip_vip: vip, perkara_menarik: menarik
-    });
+    dataLaporan = binaDataLaporan();
+  } catch (err) {
+    paparStatus("statusLaporan", escapeHtml(err.message), "error");
+    return;
+  }
+
+  if (!confirm("Adakah anda pasti mahu menghantar laporan ini kepada URUSETIA?")) return;
+
+  btn.disabled = true;
+  btn.textContent = "SEDANG MENGHANTAR...";
+  paparStatus("statusLaporan", "Sedang menghantar laporan...", "warning");
+
+  try {
+    const jenis = normalisasiJenisTugasPelaporan(tugas.jenisTugas);
+
+    const payload = {
+      penugasan_id: tugas.id,
+      petugas_id: userLogin.id,
+      jenis_tugas: jenis,
+      data_laporan: dataLaporan
+    };
+
+    /* Kekalkan kolum lama untuk keserasian sementara dengan paparan Urusetia lama. */
+    if (jenis === "KAWALAN KESELAMATAN") {
+      payload.jumlah_pengunjung = dataLaporan.jumlah_pengunjung;
+      payload.jumlah_kenderaan = dataLaporan.kenderaan.jumlah;
+      payload.vvip_vip = dataLaporan.vvip_vip.status === "ADA" ? dataLaporan.vvip_vip.butiran : "TIADA";
+      payload.perkara_menarik = dataLaporan.catatan;
+    } else if (jenis === "KAWALAN LALULINTAS") {
+      payload.jumlah_pengunjung = 0;
+      payload.jumlah_kenderaan = dataLaporan.jumlah_kenderaan;
+      payload.vvip_vip = "TIADA";
+      payload.perkara_menarik = dataLaporan.catatan_tindakan;
+    } else {
+      payload.jumlah_pengunjung = 0;
+      payload.jumlah_kenderaan = 0;
+      payload.vvip_vip = "TIADA";
+      payload.perkara_menarik = dataLaporan.catatan || dataLaporan.catatan_no_repot || "";
+    }
+
+    const { error } = await db.from("pelaporan").insert(payload);
     if (error) throw error;
+
     paparStatus("statusLaporan", "<strong>LAPORAN BERJAYA DIHANTAR.</strong>", "success");
-    btn.textContent = "LAPORAN TELAH DIHANTAR"; setTimeout(tutupLaporan, 1800);
-  } catch (err) { btn.disabled = false; btn.textContent = "HANTAR LAPORAN KEPADA URUSETIA"; paparStatus("statusLaporan", escapeHtml(err.message), "error"); }
+    btn.textContent = "LAPORAN TELAH DIHANTAR";
+
+    setTimeout(() => tutupLaporan(), 1800);
+
+  } catch (err) {
+    console.error("Ralat menghantar laporan:", err);
+    btn.disabled = false;
+    btn.textContent = "HANTAR LAPORAN KEPADA URUSETIA";
+    paparStatus("statusLaporan", `Ralat menghantar laporan: ${escapeHtml(err.message)}`, "error");
+  }
 }
 
 async function refreshDashboard() {
@@ -505,34 +942,17 @@ function petaGagalDimuatkan() {
 
 async function logout() {
   tutupPeta();
-  hentikanSemakanStatusAutomatik();
-
-  await db.auth.signOut().catch(() => {});
-  localStorage.removeItem("user");
-
-  userLogin = null;
-  tugas = null;
-  lokasiGPS = null;
-  lokasiGPSCheckout = null;
-  rekodCheckinSemasa = null;
-
-  ["dashboard", "checkin", "checkout", "laporan"].forEach(id => {
-    if (el(id)) el(id).style.display = "none";
-  });
-
+  hentikanSemakanStatusAutomatik(); await db.auth.signOut().catch(() => {}); localStorage.removeItem(KUNCI_USER_MOTOGP);
+  userLogin = tugas = lokasiGPS = lokasiGPSCheckout = rekodCheckinSemasa = null;
+  ["dashboard", "checkin", "checkout", "laporan"].forEach(id => { if (el(id)) el(id).style.display = "none"; });
   const loginBox = el("loginBox");
-
   if (loginBox) {
     loginBox.style.removeProperty("display");
     loginBox.classList.add("login-visible");
   }
-
-  if (el("noBadan")) el("noBadan").value = "";
-  if (el("password")) el("password").value = "";
-  if (el("status")) el("status").innerHTML = "";
-
+  el("password").value = "";
+  el("status").innerHTML = "";
   window.scrollTo({ top: 0, left: 0, behavior: "instant" });
-  el("noBadan")?.focus();
 }
 function kosongkanMaklumatTugas() { ["callSignTugas", "jenisTugas", "lokasiTugas", "penyeliaTugas", "pemegangSetTugas"].forEach(id => el(id).textContent = "-"); }
 function binaBarisMaklumat(label, nilai) { return `<div class="info-row"><div class="info-label">${escapeHtml(label)}</div><div class="info-value">${escapeHtml(nilai || "-")}</div></div>`; }

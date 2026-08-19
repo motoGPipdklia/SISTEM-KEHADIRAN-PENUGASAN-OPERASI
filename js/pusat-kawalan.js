@@ -3,21 +3,17 @@
 /* ================================================================
    SKPO MOTOGP — MODUL PUSAT KAWALAN — SITREP (READ ONLY)
 
-   Peranan dibenarkan:
-   - PUSAT_KAWALAN
-
    Fungsi:
-   - Lihat SITREP sahaja
+   - Lihat SITREP
    - Cari SITREP
    - Pilih tarikh
-   - Cetak / Simpan PDF SITREP
    - Muat turun lampiran SITREP
+   - Cetak / Simpan PDF SITREP
 
    Tiada:
-   - Laporan Petugas
-   - Kehadiran
-   - Penugasan
-   - Edit / padam / hantar data
+   - Hantar SITREP
+   - Edit / padam SITREP
+   - Muat naik lampiran
 ================================================================ */
 
 const dbLaporan = window.supabaseClient;
@@ -292,13 +288,11 @@ function paparDashboardLaporan() {
   if (profil) {
     profil.innerHTML = `
       <strong>
-        ${htmlLaporan(penggunaLaporan?.pangkat || "")}
-        ${htmlLaporan(penggunaLaporan?.nama || "-")}
+        ${htmlLaporan(
+          penggunaLaporan?.nama ||
+          "PUSAT KAWALAN KONTINJEN SELANGOR"
+        )}
       </strong>
-      &nbsp; | &nbsp;
-      No Badan: ${htmlLaporan(penggunaLaporan?.no_badan || "-")}
-      &nbsp; | &nbsp;
-      Akses: PUSAT KAWALAN
     `;
   }
 
@@ -331,6 +325,7 @@ async function logoutLaporan() {
     "loginStatus"
   );
 }
+
 
 
 /* ================================================================
@@ -553,7 +548,9 @@ async function muatTurunLampiranSitrep(
 
 function cetakSitrepLaporan(id) {
   const item = dataSitrep.find(
-    rekod => String(rekod.id) === String(id)
+    rekod =>
+      String(rekod.id) ===
+      String(id)
   );
 
   if (!item) {
@@ -567,18 +564,23 @@ function cetakSitrepLaporan(id) {
     ["3. Kedudukan", item.kedudukan],
     ["4. Tugas", item.tugas],
     ["5. Tadbir", item.tadbir],
-    ["6. Perancangan Hadapan", item.perancangan_hadapan],
+    [
+      "6. Perancangan Hadapan",
+      item.perancangan_hadapan
+    ],
     ["7. Kekuatan", item.kekuatan],
-    ["8. Pegawai Pemerintah Medan", item.pegawai_pemerintah_medan],
+    [
+      "8. Pegawai Pemerintah Medan",
+      item.pegawai_pemerintah_medan
+    ],
     ["9. Keselamatan", item.keselamatan],
-    ["10. Keutamaan", item.keutamaan],
-    ["11. Lampiran", item.lampiran_nama || "TIADA"]
+    ["10. Keutamaan", item.keutamaan]
   ];
 
   const tetingkap = window.open(
     "",
     "_blank",
-    "width=950,height=750"
+    "width=1000,height=800"
   );
 
   if (!tetingkap) {
@@ -588,93 +590,148 @@ function cetakSitrepLaporan(id) {
     return;
   }
 
+  const pengirim =
+    [
+      item.pangkat_pelapor || "",
+      item.nama_pelapor || "-"
+    ]
+      .filter(Boolean)
+      .join(" ");
+
   tetingkap.document.write(`
     <!doctype html>
     <html lang="ms">
     <head>
       <meta charset="utf-8">
-      <title>SITREP - ${htmlLaporan(item.tajuk || "")}</title>
+
+      <title>
+        SITUATION REPORT (SITREP)
+      </title>
 
       <style>
-        *{box-sizing:border-box}
-
-        body{
-          font-family:Arial,Helvetica,sans-serif;
-          color:#111;
-          margin:32px;
-          line-height:1.5;
-          font-size:14px;
+        *{
+          box-sizing:border-box;
         }
 
-        h1{
-          margin:0 0 6px;
-          font-size:24px;
+        body{
+          margin:36px 42px;
+          color:#111;
+          background:#fff;
+          font-family:Arial,Helvetica,sans-serif;
+          font-size:18px;
+          line-height:1.45;
+        }
+
+        .tajuk{
+          margin:0;
+          text-align:center;
+          font-size:26px;
+          font-weight:800;
+        }
+
+        .subtajuk{
+          margin:6px 0 28px;
+          text-align:center;
+          font-size:20px;
+          color:#333;
         }
 
         .meta{
-          margin:0 0 24px;
-          color:#444;
+          margin-bottom:20px;
+          padding:14px;
+          border:1px solid #bbb;
+          line-height:1.45;
         }
 
-        section{
-          border-top:1px solid #bbb;
-          padding:12px 0;
+        .meta-row{
+          margin:2px 0;
+        }
+
+        .medan{
+          margin:18px 0;
           break-inside:avoid;
+          page-break-inside:avoid;
         }
 
-        strong{
+        .medan strong{
           display:block;
-          margin-bottom:4px;
+          margin-bottom:5px;
+          font-size:18px;
         }
 
-        p{
+        .medan p{
           margin:0;
           white-space:pre-wrap;
-        }
-
-        .nota{
-          margin-top:22px;
-          padding:12px;
-          border:1px solid #ccc;
-          background:#f5f5f5;
-          font-size:12px;
+          overflow-wrap:anywhere;
         }
 
         @media print{
-          body{margin:15mm}
+          body{
+            margin:15mm;
+          }
         }
       </style>
     </head>
 
     <body>
 
-      <h1>SITUATION REPORT (SITREP)</h1>
+      <h1 class="tajuk">
+        SITUATION REPORT (SITREP)
+      </h1>
 
-      <p class="meta">
-        ${htmlLaporan(formatMasaLaporan(item.created_at))}
-        <br>
-        ${htmlLaporan(item.pangkat_pelapor || "")}
-        ${htmlLaporan(item.nama_pelapor || "-")}
-        (${htmlLaporan(item.no_badan_pelapor || "-")})
-      </p>
+      <div class="subtajuk">
+        SKPO MOTOGP
+      </div>
 
-      ${medan.map(([label, nilai]) => `
-        <section>
-          <strong>${htmlLaporan(label)}</strong>
-          <p>${htmlLaporan(nilai || "TIADA")}</p>
-        </section>
-      `).join("")}
+      <div class="meta">
 
-      ${
-        item.lampiran_path
-          ? `
-              <div class="nota">
-                Lampiran tersedia: ${htmlLaporan(item.lampiran_nama || "lampiran")}.
-                Gunakan butang "MUAT TURUN LAMPIRAN" pada halaman utama untuk mendapatkan fail asal.
-              </div>
-            `
-          : ""
-      }
+        <div class="meta-row">
+          <strong>Pengirim:</strong>
+          ${htmlLaporan(pengirim)}
+          &nbsp; | &nbsp;
+          <strong>No Badan:</strong>
+          ${htmlLaporan(
+            item.no_badan_pelapor ||
+            "-"
+          )}
+        </div>
+
+        <div class="meta-row">
+          <strong>Masa dihantar:</strong>
+          ${htmlLaporan(
+            formatMasaLaporan(
+              item.created_at
+            )
+          )}
+        </div>
+
+      </div>
+
+      ${medan.map(
+        ([label, nilai]) => `
+          <div class="medan">
+            <strong>
+              ${htmlLaporan(label)}
+            </strong>
+            <p>${htmlLaporan(
+              nilai ||
+              "TIADA"
+            )}</p>
+          </div>
+        `
+      ).join("")}
+
+      <div class="medan">
+        <strong>11. Lampiran</strong>
+        <p>${htmlLaporan(
+          item.lampiran_path
+            ? (
+                item.lampiran_nama ||
+                "Lampiran tersedia"
+              )
+            : "TIADA"
+        )}</p>
+      </div>
 
     </body>
     </html>

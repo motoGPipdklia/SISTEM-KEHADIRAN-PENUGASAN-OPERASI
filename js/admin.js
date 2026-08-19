@@ -1,13 +1,19 @@
 "use strict";
 
 /* ================================================================
-   SKPO V2 — PENTADBIR
+   SKPO MOTOGP — PENTADBIR
    GitHub Pages + Supabase
 ================================================================ */
 
 const db = window.supabaseClient;
 const ZON_MASA = "Asia/Kuala_Lumpur";
+const BUCKET_SITREP_ADMIN = "sitrep-lampiran";
 const MASA_TAMAT_PERMINTAAN = 15000;
+
+/* Kunci sesi khusus Pentadbir MotoGP. */
+const KUNCI_ADMIN_F1 = "skpoF1Admin";
+const NO_BADAN_ADMIN_UTAMA_F1 = "ADMINF1";
+const EMAIL_ADMIN_UTAMA_F1 = "admin@skpo.local";
 
 let adminLogin = null;
 let dataDashboard = [];
@@ -20,6 +26,11 @@ let rekodImportPenugasan = [];
 let importSedangBerjalan = false;
 let rekodImportPengguna = [];
 let importPenggunaSedangBerjalan = false;
+
+/* Peranti khas Pentadbir MotoGP */
+const KUNCI_DEVICE_F1_ADMIN = "skpoDeviceId";
+const HAD_PERANTI_KHAS_ADMIN = 2;
+let dataPerantiKhasAdmin = [];
 
 function el(id) {
   return document.getElementById(id);
@@ -49,7 +60,17 @@ function nilaiBoolean(nilai) {
 }
 
 function emailDalaman(noBadan) {
-  const nilai = teks(noBadan)
+  const noBadanBersih = atas(noBadan);
+
+  /*
+    Akaun Pentadbir utama MotoGP telah didaftarkan dalam Supabase
+    Authentication sebagai admin@skpo.local.
+  */
+  if (noBadanBersih === NO_BADAN_ADMIN_UTAMA_F1) {
+    return EMAIL_ADMIN_UTAMA_F1;
+  }
+
+  const nilai = noBadanBersih
     .toLowerCase()
     .replace(/[^a-z0-9_-]/g, "");
 
@@ -258,6 +279,290 @@ function semakPerananPentadbir(profil) {
 }
 
 /* ================================================================
+   PERANTI KHAS PENTADBIR
+================================================================ */
+
+function dapatkanDeviceIdAdmin() {
+  let id = localStorage.getItem(KUNCI_DEVICE_F1_ADMIN);
+
+  if (!id) {
+    const rawak =
+      window.crypto?.randomUUID?.() ||
+      "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, aksara => {
+        const nombor = Math.random() * 16 | 0;
+        const nilai = aksara === "x" ? nombor : (nombor & 3 | 8);
+        return nilai.toString(16);
+      });
+
+    id = `DEV-${rawak.toUpperCase()}`;
+    localStorage.setItem(KUNCI_DEVICE_F1_ADMIN, id);
+  }
+
+  return id;
+}
+
+function jenisPerantiSemasaAdmin() {
+  const ua = String(navigator.userAgent || "").toLowerCase();
+
+  if (
+    /android|iphone|ipad|ipod|mobile|windows phone/.test(ua)
+  ) {
+    return "TELEFON";
+  }
+
+  return "LAPTOP";
+}
+
+function paparanStatusPerantiKhasAdmin(aktif) {
+  const ruang = el("statusPerantiKhasAdmin");
+  const btnTambah = el("btnJadikanPerantiKhas");
+  const btnBuang = el("btnBuangPerantiKhas");
+
+  if (ruang) {
+    ruang.innerHTML = aktif
+      ? '<span class="badge badge-green">PERANTI KHAS AKTIF</span>'
+      : '<span class="badge badge-gray">BUKAN PERANTI KHAS</span>';
+  }
+
+  if (btnTambah) btnTambah.disabled = aktif;
+  if (btnBuang) btnBuang.disabled = !aktif;
+}
+
+async function muatPerantiKhasAdmin() {
+  if (!adminLogin) return;
+
+  const deviceId = dapatkanDeviceIdAdmin();
+  const jenis = jenisPerantiSemasaAdmin();
+
+  if (el("deviceIdAdmin")) {
+    el("deviceIdAdmin").textContent = deviceId;
+  }
+
+  if (el("jenisPerantiAdmin")) {
+    el("jenisPerantiAdmin").textContent = jenis;
+  }
+
+  try {
+    const { data, error } = await denganHadMasa(
+      db.from("device_whitelist")
+        .select("device_id,akses_semua_petugas,catatan,aktif")
+        .eq("akses_semua_petugas", true)
+        .order("device_id", { ascending: true })
+    );
+
+    if (error) throw error;
+
+    dataPerantiKhasAdmin = data || [];
+
+    const perantiSemasa = dataPerantiKhasAdmin.find(
+      item => atas(item.device_id) === atas(deviceId) && item.aktif !== false
+    );
+
+    paparanStatusPerantiKhasAdmin(Boolean(perantiSemasa));
+
+    const tbody = el("tbodyPerantiKhasAdmin");
+    if (tbody) {
+      if (!dataPerantiKhasAdmin.length) {
+        tbody.innerHTML =
+          '<tr><td colspan="4" class="empty-row">Belum ada peranti khas didaftarkan.</td></tr>';
+      } else {
+        tbody.innerHTML = dataPerantiKhasAdmin.map((item, index) => {
+          const catatan = teks(item.catatan) || "-";
+          const jenisPeranti =
+            /TELEFON/i.test(catatan) ? "TELEFON" :
+            /LAPTOP/i.test(catatan) ? "LAPTOP" : "-";
+
+          return `
+            <tr>
+              <td>${index + 1}</td>
+              <td>${escapeHtml(jenisPeranti)}</td>
+              <td style="word-break:break-all">${escapeHtml(item.device_id || "-")}</td>
+              <td>${escapeHtml(catatan)}</td>
+            </tr>
+          `;
+        }).join("");
+      }
+    }
+
+    const statusBox = el("mesejPerantiKhasAdmin");
+    if (statusBox && !statusBox.innerHTML) {
+      statusBox.style.display = "none";
+    }
+
+  } catch (error) {
+    console.error("Gagal memuatkan peranti khas:", error);
+    paparanStatusPerantiKhasAdmin(false);
+
+    paparMesej(
+      "mesejPerantiKhasAdmin",
+      `Gagal menyemak peranti khas: ${escapeHtml(error.message)}. ` +
+      "Pastikan kolum akses_semua_petugas dan catatan telah diwujudkan dalam device_whitelist.",
+      "error"
+    );
+  }
+}
+
+async function salinDeviceIdAdmin() {
+  const deviceId = dapatkanDeviceIdAdmin();
+
+  try {
+    await navigator.clipboard.writeText(deviceId);
+    paparMesej(
+      "mesejPerantiKhasAdmin",
+      "Device ID berjaya disalin.",
+      "success"
+    );
+  } catch (_) {
+    window.prompt("Salin Device ID ini:", deviceId);
+  }
+}
+
+async function jadikanPerantiKhasAdmin() {
+  if (!adminLogin) return;
+
+  const deviceId = dapatkanDeviceIdAdmin();
+  const jenis = jenisPerantiSemasaAdmin();
+  const btn = el("btnJadikanPerantiKhas");
+
+  btn.disabled = true;
+  btn.textContent = "SEDANG MENDAFTAR...";
+
+  try {
+    const { data: sediaAda, error: semakError } = await denganHadMasa(
+      db.from("device_whitelist")
+        .select("device_id,akses_semua_petugas,catatan,aktif")
+        .eq("akses_semua_petugas", true)
+    );
+
+    if (semakError) throw semakError;
+
+    const senaraiAktif = (sediaAda || []).filter(item => item.aktif !== false);
+    const sudahAda = senaraiAktif.some(
+      item => atas(item.device_id) === atas(deviceId)
+    );
+
+    if (!sudahAda && senaraiAktif.length >= HAD_PERANTI_KHAS_ADMIN) {
+      throw new Error(
+        "Had maksimum 2 peranti khas telah dicapai. Buang salah satu peranti khas dahulu."
+      );
+    }
+
+    const jenisSudahAda = senaraiAktif.some(item => {
+      if (atas(item.device_id) === atas(deviceId)) return false;
+      const catatan = atas(item.catatan);
+      return jenis === "TELEFON"
+        ? catatan.includes("TELEFON")
+        : catatan.includes("LAPTOP");
+    });
+
+    if (!sudahAda && jenisSudahAda) {
+      throw new Error(
+        `Satu peranti khas jenis ${jenis} sudah didaftarkan. ` +
+        `Sistem hanya membenarkan 1 LAPTOP dan 1 TELEFON.`
+      );
+    }
+
+    const payload = {
+      device_id: deviceId,
+      akses_semua_petugas: true,
+      aktif: true,
+      catatan: `PERANTI KHAS PENTADBIR - ${jenis}`
+    };
+
+    /*
+      Cuba UPSERT terus ke device_whitelist.
+      device_id perlu mempunyai UNIQUE constraint.
+    */
+    const { error } = await denganHadMasa(
+      db.from("device_whitelist")
+        .upsert(payload, { onConflict: "device_id" })
+    );
+
+    if (error) throw error;
+
+    paparMesej(
+      "mesejPerantiKhasAdmin",
+      `<strong>PERANTI KHAS BERJAYA DIAKTIFKAN.</strong><br>` +
+      `${escapeHtml(jenis)} ini kini boleh digunakan untuk login sebagai petugas lain.`,
+      "success"
+    );
+
+    await muatPerantiKhasAdmin();
+
+  } catch (error) {
+    console.error("Gagal menjadikan peranti khas:", error);
+
+    const tambahan =
+      /row-level security|permission denied|policy/i.test(error.message || "")
+        ? " Semak RLS/policy INSERT dan UPDATE pada table device_whitelist."
+        : /duplicate|unique|on conflict/i.test(error.message || "")
+          ? " Pastikan device_whitelist.device_id mempunyai UNIQUE constraint."
+          : "";
+
+    paparMesej(
+      "mesejPerantiKhasAdmin",
+      `Gagal mendaftarkan peranti khas: ${escapeHtml(error.message)}${escapeHtml(tambahan)}`,
+      "error"
+    );
+
+  } finally {
+    btn.textContent = "JADIKAN PERANTI KHAS";
+    const aktif = dataPerantiKhasAdmin.some(
+      item => atas(item.device_id) === atas(deviceId) && item.aktif !== false
+    );
+    btn.disabled = aktif;
+  }
+}
+
+async function buangPerantiKhasAdmin() {
+  if (!adminLogin) return;
+
+  const deviceId = dapatkanDeviceIdAdmin();
+
+  if (!confirm(
+    "Buang status PERANTI KHAS daripada peranti ini? " +
+    "Selepas dibuang, peranti ini akan kembali tertakluk kepada kawalan device binding biasa."
+  )) return;
+
+  const btn = el("btnBuangPerantiKhas");
+  btn.disabled = true;
+  btn.textContent = "SEDANG MEMBUANG...";
+
+  try {
+    const { error } = await denganHadMasa(
+      db.from("device_whitelist")
+        .update({
+          akses_semua_petugas: false,
+          aktif: false
+        })
+        .eq("device_id", deviceId)
+    );
+
+    if (error) throw error;
+
+    paparMesej(
+      "mesejPerantiKhasAdmin",
+      "Status peranti khas berjaya dibuang.",
+      "success"
+    );
+
+    await muatPerantiKhasAdmin();
+
+  } catch (error) {
+    console.error("Gagal membuang peranti khas:", error);
+
+    paparMesej(
+      "mesejPerantiKhasAdmin",
+      `Gagal membuang peranti khas: ${escapeHtml(error.message)}`,
+      "error"
+    );
+
+  } finally {
+    btn.textContent = "BUANG PERANTI KHAS";
+  }
+}
+
+/* ================================================================
    LOGIN DAN SESI
 ================================================================ */
 
@@ -341,7 +646,7 @@ if (!semakPerananPentadbir(profil)) {
       peranan: atas(profil.peranan)
     };
 
-    localStorage.setItem("skpoAdmin", JSON.stringify(adminLogin));
+    localStorage.setItem(KUNCI_ADMIN_F1, JSON.stringify(adminLogin));
 
     el("loginPage").style.display = "none";
     el("dashboard").style.display = "block";
@@ -353,6 +658,7 @@ if (!semakPerananPentadbir(profil)) {
 
     paparMesej("loginStatus", "", "success");
     await muatData(true);
+    await muatPerantiKhasAdmin();
   } catch (error) {
     console.error("Login Pentadbir gagal:", error);
     await db?.auth?.signOut().catch(() => {});
@@ -418,6 +724,7 @@ if (!semakPerananPentadbir(profil)) {
     ].filter(Boolean).join(" ");
 
     await muatData(true);
+    await muatPerantiKhasAdmin();
   } catch (error) {
     console.error("Pemulihan sesi Pentadbir gagal:", error);
     paparMesej("loginStatus", escapeHtml(error.message), "error");
@@ -426,7 +733,7 @@ if (!semakPerananPentadbir(profil)) {
 
 async function logout() {
   await db?.auth?.signOut().catch(() => {});
-  localStorage.removeItem("skpoAdmin");
+  localStorage.removeItem(KUNCI_ADMIN_F1);
   adminLogin = null;
   dataDashboard = [];
   dataPaparan = [];
@@ -687,7 +994,6 @@ function paparJadual() {
           <button
             class="reset-device"
             type="button"
-            ${item.deviceId ? "" : "disabled"}
             onclick="bukaModalResetDevice('${escapeHtml(item.petugasId)}')"
           >
             RESET DEVICE
@@ -776,7 +1082,7 @@ function exportExcel() {
 
   const pautan = document.createElement("a");
   pautan.href = URL.createObjectURL(fail);
-  pautan.download = `SKPO_${el("tarikh").value || hariIniMalaysia()}.csv`;
+  pautan.download = `SKPO_F1_${el("tarikh").value || hariIniMalaysia()}.csv`;
   pautan.click();
   URL.revokeObjectURL(pautan.href);
 }
@@ -1070,13 +1376,13 @@ function muatTurunTemplatPengguna() {
     "NO_BADAN,PANGKAT,NAMA,PERANAN,TELEFON,BAHAGIAN,DAERAH,KATA_LALUAN,AKTIF",
     "197898,L/KPL,NORHISHAM BIN CHE MAT,PETUGAS,0193151615,BKDNKA,KLIA,Skpo@A7m2#1,YA",
     "199898,SJN,AHMAD BIN ALI,PENYELIA,0123456789,IPD KLIA,SEPANG,Skpo@B9n4#2,YA",
-    "PUSAT01,INSP,PUSAT KAWALAN,PUSAT_KAWALAN,0123456789,IPK,KUALA LUMPUR,Skpo@PK2026#1,YA"
+    "PUSATF1,INSP,PUSAT KAWALAN MOTOGP,PUSAT_KAWALAN,0123456789,IPK,KUALA LUMPUR,Skpo@F1PK2026#1,YA"
   ].join("\r\n");
 
   const blob = new Blob(["\uFEFF", kandungan], { type: "text/csv;charset=utf-8" });
   const pautan = document.createElement("a");
   pautan.href = URL.createObjectURL(blob);
-  pautan.download = "TEMPLAT_PENGGUNA_SKPO.csv";
+  pautan.download = "TEMPLAT_PENGGUNA_SKPO_F1.csv";
   document.body.appendChild(pautan);
   pautan.click();
   const alamat = pautan.href;
@@ -1090,82 +1396,222 @@ async function importPenggunaCsv() {
   const senarai = rekodImportPengguna.filter(
     item => item.ralat.length === 0 && !item.sediaAda && !item.diimport
   );
+
   if (!senarai.length) {
-    paparMesej("statusImportPengguna", "Tiada pengguna baharu yang sah untuk diimport.", "error");
+    paparMesej(
+      "statusImportPengguna",
+      "Tiada pengguna baharu yang sah untuk diimport.",
+      "error"
+    );
     return;
   }
 
-  if (!confirm(`Import ${senarai.length} pengguna baharu? Akaun Authentication akan dicipta dan tindakan ini tidak boleh dibatalkan dari halaman ini.`)) return;
+  if (!confirm(
+    `Import ${senarai.length} pengguna baharu? ` +
+    "Akaun Authentication dan profil pengguna akan dicipta di Supabase."
+  )) return;
 
   importPenggunaSedangBerjalan = true;
+
   const butang = el("btnImportPengguna");
   butang.disabled = true;
+
   let diproses = 0;
   let berjaya = 0;
   let sediaAda = 0;
   let gagal = 0;
+
   const semuaKeputusan = [];
 
   try {
-    const kumpulan = bahagiKumpulan(senarai, 10);
+    /*
+      PENTING:
+      Pendaftaran manual dalam sistem menggunakan Edge Function
+      "tambah-petugas". Import CSV kini menggunakan fungsi yang sama
+      supaya Auth user + public.profiles dicipta dengan aliran yang
+      sama dan tidak memerlukan Edge Function "import-pengguna".
+    */
 
-    for (let i = 0; i < kumpulan.length; i += 1) {
-      butang.textContent = `MENGIMPORT ${diproses} / ${senarai.length}...`;
+    for (const item of senarai) {
+      const d = item.data;
+
+      butang.textContent =
+        `MENGIMPORT ${diproses + 1} / ${senarai.length}...`;
+
       paparMesej(
         "statusImportPengguna",
-        `Sedang mencipta akaun kumpulan ${i + 1} daripada ${kumpulan.length}. Jangan tutup halaman ini.`,
+        `Sedang mencipta pengguna ${diproses + 1} daripada ${senarai.length}: ` +
+        `${escapeHtml(d.no_badan)} — ${escapeHtml(d.nama)}. ` +
+        "Jangan tutup halaman ini.",
         "warning"
       );
 
-      const hasil = await panggilEdgeFunction(
-        "import-pengguna",
-        { pengguna: kumpulan[i].map(item => item.data) },
-        120000
-      );
+      try {
+        const hasil = await panggilEdgeFunction(
+          "tambah-petugas",
+          {
+            no_badan: d.no_badan,
+            noBadan: d.no_badan,
+            pangkat: d.pangkat,
+            nama: d.nama,
+            peranan: d.peranan || "PETUGAS",
+            telefon: d.telefon || "",
+            bahagian: d.bahagian || "",
+            daerah: d.daerah || "",
+            password: d.password,
+            aktif: d.aktif !== false
+          },
+          60000
+        );
 
-      if (hasil?.success === false) throw new Error(hasil.message || "Import pengguna gagal.");
-
-      berjaya += Number(hasil.berjaya || 0);
-      sediaAda += Number(hasil.sedia_ada || 0);
-      gagal += Number(hasil.gagal || 0);
-      const keputusan = Array.isArray(hasil.keputusan) ? hasil.keputusan : [];
-      semuaKeputusan.push(...keputusan);
-
-      keputusan.forEach(itemHasil => {
-        const rekod = rekodImportPengguna.find(item => item.baris === Number(itemHasil.baris));
-        if (!rekod) return;
-
-        if (itemHasil.status === "BERJAYA") {
-          rekod.diimport = true;
-          rekod.data.password = "";
-        } else if (itemHasil.status === "SEDIA_ADA") {
-          rekod.sediaAda = true;
-          rekod.data.password = "";
-        } else {
-          rekod.ralat.push(`Import: ${itemHasil.mesej || "Gagal"}`);
+        if (hasil?.status === false || hasil?.success === false) {
+          throw new Error(
+            hasil?.mesej ||
+            hasil?.message ||
+            "Pendaftaran pengguna gagal."
+          );
         }
-      });
 
-      diproses += kumpulan[i].length;
+        item.diimport = true;
+        item.data.password = "";
+        berjaya += 1;
+
+        semuaKeputusan.push({
+          baris: item.baris,
+          no_badan: d.no_badan,
+          status: "BERJAYA",
+          mesej: "Pengguna berjaya didaftarkan."
+        });
+
+      } catch (error) {
+        const mesejAsal = String(
+          error?.message || "Pendaftaran pengguna gagal."
+        );
+
+        /*
+          Jika profil sudah wujud / pengguna sudah didaftarkan,
+          tandakan sebagai sedia ada dan jangan anggap sebagai
+          kegagalan import keseluruhan.
+        */
+        if (
+          /already registered|already exists|duplicate|sedia ada|sudah wujud|telah didaftarkan/i
+            .test(mesejAsal)
+        ) {
+          item.sediaAda = true;
+          item.data.password = "";
+          sediaAda += 1;
+
+          semuaKeputusan.push({
+            baris: item.baris,
+            no_badan: d.no_badan,
+            status: "SEDIA_ADA",
+            mesej: mesejAsal
+          });
+
+        } else {
+          gagal += 1;
+
+          const mesejPaparan =
+            /Edge Function|Failed to send|404/i.test(mesejAsal)
+              ? `${mesejAsal} Pastikan Edge Function "tambah-petugas" telah dideploy dan berfungsi.`
+              : mesejAsal;
+
+          if (
+            !item.ralat.some(ralat =>
+              String(ralat).includes(mesejPaparan)
+            )
+          ) {
+            item.ralat.push(`Import: ${mesejPaparan}`);
+          }
+
+          semuaKeputusan.push({
+            baris: item.baris,
+            no_badan: d.no_badan,
+            status: "GAGAL",
+            mesej: mesejPaparan
+          });
+        }
+      }
+
+      diproses += 1;
       paparPratontonImportPengguna();
+
+      /*
+        Jeda kecil antara akaun untuk mengurangkan risiko terlalu
+        banyak permintaan Auth dalam masa yang sangat singkat.
+      */
+      if (diproses < senarai.length) {
+        await new Promise(resolve => setTimeout(resolve, 150));
+      }
     }
 
-    const ralat = semuaKeputusan.filter(item => item.status === "GAGAL");
+    /*
+      Semak semula table profiles selepas import supaya status sebenar
+      di Supabase disahkan sebelum keputusan akhir dipaparkan.
+    */
+    try {
+      await semakPenggunaSediaAda(rekodImportPengguna);
+
+      rekodImportPengguna.forEach(item => {
+        if (item.diimport) item.sediaAda = false;
+      });
+
+      paparPratontonImportPengguna();
+    } catch (semakError) {
+      console.warn(
+        "Semakan semula profiles selepas import gagal:",
+        semakError
+      );
+    }
+
+    const ralat = semuaKeputusan.filter(
+      item => item.status === "GAGAL"
+    );
+
     const butiran = ralat.length
-      ? `<br><details><summary>Lihat ${ralat.length} ralat</summary><ul>${ralat.slice(0, 100).map(item => `<li>Baris ${escapeHtml(item.baris || "-")} — ${escapeHtml(item.no_badan || "-")}: ${escapeHtml(item.mesej || "Ralat")}</li>`).join("")}</ul></details>`
+      ? `<br><details><summary>Lihat ${ralat.length} ralat</summary><ul>${
+          ralat.slice(0, 100).map(item =>
+            `<li>Baris ${escapeHtml(item.baris || "-")} — ` +
+            `${escapeHtml(item.no_badan || "-")}: ` +
+            `${escapeHtml(item.mesej || "Ralat")}</li>`
+          ).join("")
+        }</ul></details>`
       : "";
 
     paparMesej(
       "statusImportPengguna",
-      `<strong>IMPORT PENGGUNA SELESAI</strong><br>Berjaya: ${berjaya}<br>Sedia ada/dilangkau: ${sediaAda}<br>Gagal: ${gagal}${butiran}`,
+      `<strong>IMPORT PENGGUNA SELESAI</strong><br>` +
+      `Berjaya: ${berjaya}<br>` +
+      `Sedia ada/dilangkau: ${sediaAda}<br>` +
+      `Gagal: ${gagal}${butiran}`,
       gagal ? "warning" : "success"
     );
+
+    /*
+      Muat semula dashboard jika fungsi tersedia.
+    */
+    if (berjaya > 0 && typeof muatData === "function") {
+      try {
+        await muatData(true);
+      } catch (errorMuat) {
+        console.warn(
+          "Pengguna berjaya diimport tetapi dashboard gagal dimuat semula:",
+          errorMuat
+        );
+      }
+    }
+
   } catch (error) {
     console.error("Import pengguna gagal:", error);
-    const mesej = /Edge Function|Failed to send|404/i.test(error.message)
-      ? `${error.message} Pastikan Edge Function bernama tepat \"import-pengguna\" telah dideploy.`
-      : error.message;
-    paparMesej("statusImportPengguna", `Import gagal: ${escapeHtml(mesej)}`, "error");
+
+    paparMesej(
+      "statusImportPengguna",
+      `Import gagal: ${escapeHtml(
+        error?.message || "Ralat tidak diketahui."
+      )}`,
+      "error"
+    );
+
   } finally {
     importPenggunaSedangBerjalan = false;
     butang.textContent = "IMPORT PENGGUNA KE SUPABASE";
@@ -1620,9 +2066,14 @@ function bukaModalResetDevice(petugasId) {
   el("maklumatResetDevice").innerHTML = `
     <strong>${escapeHtml(rekod.pangkat)} ${escapeHtml(rekod.nama)}</strong><br>
     No Badan: ${escapeHtml(rekod.noBadan)}<br>
-    Device ID: ${escapeHtml(rekod.deviceId || "-")}<br><br>
-    <strong>Perhatian:</strong> Hanya ikatan Device ID akan dibuang.
-    Rekod Check-In, Check-Out dan status kehadiran petugas akan dikekalkan.
+    Device ID Terikat: ${escapeHtml(rekod.deviceId || "TIADA")}<br><br>
+
+    <strong>Fungsi Reset:</strong><br>
+    Sebarang ikatan peranti petugas ini akan dibuang.
+    Rekod Check-In, Check-Out dan status kehadiran akan <strong>DIKEKALKAN</strong>.<br><br>
+
+    Selepas reset, petugas boleh login menggunakan telefon mereka sendiri
+    dan telefon tersebut akan didaftarkan sebagai peranti petugas.
   `;
   el("statusModalResetDevice").innerHTML = "";
   el("modalResetDevice").style.display = "block";
@@ -1639,13 +2090,22 @@ async function hantarResetDevice() {
   const butang = el("btnSahkanResetDevice");
 
   if (!confirm(
-    `Sahkan reset Device ID untuk ${rekodResetDevice.noBadan}? Rekod kehadiran akan dikekalkan.`
+    `Sahkan RESET DEVICE untuk ${rekodResetDevice.noBadan}? ` +
+    "Rekod Check-In, Check-Out dan status kehadiran akan dikekalkan."
   )) return;
 
   butang.disabled = true;
   butang.textContent = "SEDANG RESET...";
 
   try {
+    /*
+      RPC ini hanya membuang device_bindings petugas.
+      Ia TIDAK menyentuh:
+      - checkin
+      - checkout
+      - penugasan
+      - device_whitelist / Peranti Khas Admin
+    */
     const hasil = await denganHadMasa(
       db.rpc("nyahikat_peranti_petugas", {
         p_no_badan: rekodResetDevice.noBadan
@@ -1657,30 +2117,56 @@ async function hantarResetDevice() {
         `${hasil.error.code || ""} ${hasil.error.message || ""}`
       )) {
         throw new Error(
-          "Fungsi nyahikat_peranti_petugas belum tersedia dalam Supabase MotoGP."
+          "Fungsi nyahikat_peranti_petugas belum dipasang atau belum dikemas kini dalam Supabase."
         );
       }
+
       throw hasil.error;
     }
+
     if (!hasil.data || hasil.data.success !== true) {
-      throw new Error(hasil.data?.message || "Device ID gagal direset.");
+      throw new Error(
+        hasil.data?.message ||
+        "Reset Device gagal."
+      );
     }
 
     paparMesej(
       "statusModalResetDevice",
-      escapeHtml(
-        hasil.data.message ||
-        "Device ID berjaya direset. Rekod kehadiran dikekalkan."
-      ),
+      `<strong>RESET DEVICE BERJAYA.</strong><br>` +
+      `${escapeHtml(hasil.data.message || "Ikatan peranti telah dibuang.")}<br><br>` +
+      `Rekod kehadiran dikekalkan. Petugas kini boleh login menggunakan telefon mereka sendiri.`,
       "success"
     );
+
+    /*
+      Kemas kini data tempatan terus supaya butang/status tidak
+      bergantung kepada cache lama.
+    */
+    const idPetugas = rekodResetDevice.petugasId;
+
+    dataDashboard.forEach(item => {
+      if (item.petugasId === idPetugas) {
+        item.deviceId = "";
+        item.deviceDiikatPada = null;
+        item.deviceKaliTerakhir = null;
+      }
+    });
+
     setTimeout(async () => {
       tutupModalResetDevice();
       await muatData(false);
-    }, 1000);
+    }, 1300);
+
   } catch (error) {
     console.error("Reset Device gagal:", error);
-    paparMesej("statusModalResetDevice", escapeHtml(error.message), "error");
+
+    paparMesej(
+      "statusModalResetDevice",
+      `Reset Device gagal: ${escapeHtml(error.message)}`,
+      "error"
+    );
+
   } finally {
     butang.disabled = false;
     butang.textContent = "SAHKAN RESET DEVICE";
@@ -1697,6 +2183,12 @@ async function hantarResetDevice() {
 */
 function tutupSemuaModulPentadbir() {
   const senaraiModul = [
+    {
+      idModul: "modulPerantiKhasAdmin",
+      idKandungan: "",
+      idButang: "",
+      teksButang: ""
+    },
     {
       idModul: "modulImportPengguna",
       idKandungan: "kandunganImportPengguna",
@@ -1818,6 +2310,44 @@ function bukaDanSkrolModul(
       modul.classList.remove("modul-disorot");
     }, 1800);
   }, 100);
+}
+
+
+function tutupPerantiKhasAdmin() {
+  const modul = el("modulPerantiKhasAdmin");
+  if (!modul) return;
+
+  modul.hidden = true;
+  modul.style.display = "none";
+  modul.classList.remove("modul-disorot");
+
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
+}
+
+
+function bukaPerantiKhasAdmin() {
+  tutupSemuaModulPentadbir();
+
+  const modul = el("modulPerantiKhasAdmin");
+  if (!modul) {
+    alert("Modul Peranti Khas Pentadbir tidak dijumpai.");
+    return;
+  }
+
+  modul.hidden = false;
+  modul.removeAttribute("hidden");
+  modul.style.removeProperty("display");
+  modul.classList.add("modul-disorot");
+
+  muatPerantiKhasAdmin();
+
+  modul.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
 }
 
 
@@ -2150,9 +2680,103 @@ function paparLaporanPentadbir() {
             <td>${index + 1}</td>
             <td>${escapeHtml(item.tadbir || "-")}</td>
             <td>${escapeHtml(formatMasaLaporanAdmin(item.created_at || item.tarikh_masa))}</td>
-            <td><button class="gray compact-print" type="button" onclick="cetakSitrepAdmin('${escapeHtml(item.id)}')">CETAK</button></td>
+            <td>
+              <div
+                style="
+                  display:grid;
+                  grid-template-columns:190px 130px;
+                  gap:8px;
+                  justify-content:center;
+                  align-items:center;
+                  width:100%;
+                "
+              >
+                ${
+                  item.lampiran_path
+                    ? `
+                      <button
+                        class="compact-print"
+                        type="button"
+                        style="
+                          width:190px;
+                          min-width:190px;
+                          max-width:190px;
+                          height:42px;
+                          min-height:42px;
+                          max-height:42px;
+                          margin:0;
+                          padding:0 14px;
+                          background:#2e7d32;
+                          color:#ffffff;
+                          border:0;
+                          border-radius:8px;
+                          font-weight:700;
+                          box-sizing:border-box;
+                        "
+                        onclick="muatTurunLampiranSitrepAdmin(
+                          '${escapeHtml(item.lampiran_path)}',
+                          '${escapeHtml(item.lampiran_nama || "lampiran")}'
+                        )"
+                      >
+                        MUAT TURUN LAMPIRAN
+                      </button>
+                    `
+                    : ""
+                }
+
+                <button
+                  class="gray compact-print"
+                  type="button"
+                  style="
+                    width:130px;
+                    min-width:130px;
+                    max-width:130px;
+                    height:42px;
+                    min-height:42px;
+                    max-height:42px;
+                    margin:0;
+                    box-sizing:border-box;
+                  "
+                  onclick="cetakSitrepAdmin('${escapeHtml(item.id)}')"
+                >
+                  CETAK
+                </button>
+              </div>
+            </td>
           </tr>`).join("")
       : '<tr><td colspan="4" class="empty-row">Tiada rekod SITREP untuk tarikh ini.</td></tr>';
+
+    const jadualSitrep = tbodySitrep.closest("table");
+
+    if (jadualSitrep) {
+      const kepala = jadualSitrep.querySelectorAll("thead th");
+
+      if (kepala[2]) {
+        kepala[2].style.textAlign = "center";
+        kepala[2].style.width = "220px";
+      }
+
+      if (kepala[3]) {
+        kepala[3].style.textAlign = "center";
+        kepala[3].style.width = "340px";
+      }
+
+      jadualSitrep
+        .querySelectorAll("tbody td:nth-child(3)")
+        .forEach(td => {
+          td.style.textAlign = "center";
+          td.style.verticalAlign = "middle";
+          td.style.whiteSpace = "nowrap";
+        });
+
+      jadualSitrep
+        .querySelectorAll("tbody td:nth-child(4)")
+        .forEach(td => {
+          td.style.textAlign = "center";
+          td.style.verticalAlign = "middle";
+          td.style.width = "340px";
+        });
+    }
   }
 }
 
@@ -2183,31 +2807,272 @@ function bukaCetakanAdmin(tajuk, kandungan) {
   tetingkap.document.close();
 }
 
+function normalisasiJenisTugasCetakAdmin(nilai) {
+  const jenis = atas(nilai)
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (jenis.includes("KAWALAN KESELAMATAN")) {
+    return "KAWALAN KESELAMATAN";
+  }
+
+  if (
+    jenis.includes("KAWALAN LALULINTAS") ||
+    jenis.includes("KAWALAN LALU LINTAS")
+  ) {
+    return "KAWALAN LALULINTAS";
+  }
+
+  if (jenis.includes("RONDAAN PENCEGAHAN JENAYAH NARKOTIK")) {
+    return "RONDAAN PENCEGAHAN JENAYAH NARKOTIK";
+  }
+
+  if (jenis.includes("RONDAAN PENCEGAHAN JENAYAH KOMERSIL")) {
+    return "RONDAAN PENCEGAHAN JENAYAH KOMERSIL";
+  }
+
+  if (jenis.includes("RONDAAN PENCEGAHAN JENAYAH")) {
+    return "RONDAAN PENCEGAHAN JENAYAH";
+  }
+
+  if (jenis.includes("BALAI POLIS BERGERAK")) {
+    return "BALAI POLIS BERGERAK";
+  }
+
+  if (jenis.includes("PONDOK POLIS")) {
+    return "PONDOK POLIS";
+  }
+
+  if (
+    jenis.includes("UNIT PEMUSNAH BOM") ||
+    jenis === "UPB"
+  ) {
+    return "UNIT PEMUSNAH BOM";
+  }
+
+  return jenis;
+}
+
+
+function nilaiAdaTiadaCetakAdmin(objek) {
+  if (!objek || typeof objek !== "object") {
+    return teks(objek) || "TIADA";
+  }
+
+  const status = atas(objek.status);
+  const butiran = teks(objek.butiran);
+
+  if (status === "ADA") {
+    return butiran || "ADA";
+  }
+
+  return "TIADA";
+}
+
+
+function medanDinamikCetakLaporanAdmin(item) {
+  const tugasItem = item.penugasan || {};
+
+  const jenis = normalisasiJenisTugasCetakAdmin(
+    item.jenis_tugas ||
+    tugasItem.jenis_tugas ||
+    "-"
+  );
+
+  const data =
+    item.data_laporan &&
+    typeof item.data_laporan === "object"
+      ? item.data_laporan
+      : {};
+
+  /*
+    Laporan lama: kekalkan paparan asal jika data_laporan kosong.
+  */
+  if (!Object.keys(data).length) {
+    return [
+      ["Jumlah Pengunjung", item.jumlah_pengunjung ?? "-"],
+      ["Jumlah Kenderaan", item.jumlah_kenderaan ?? "-"],
+      ["VVIP / VIP", item.vvip_vip || "TIADA"],
+      ["Perkara Menarik", item.perkara_menarik || "TIADA"]
+    ];
+  }
+
+
+  if (jenis === "KAWALAN KESELAMATAN") {
+    const kenderaan =
+      data.kenderaan &&
+      typeof data.kenderaan === "object"
+        ? data.kenderaan
+        : {};
+
+    return [
+      ["Keadaan Keselamatan", data.keadaan_keselamatan || "-"],
+      ["Jumlah Pengunjung", data.jumlah_pengunjung ?? item.jumlah_pengunjung ?? 0],
+      ["Jumlah Kenderaan", kenderaan.jumlah ?? item.jumlah_kenderaan ?? 0],
+      ["Bas", kenderaan.bas ?? 0],
+      ["Motosikal", kenderaan.motosikal ?? 0],
+      ["Motokar", kenderaan.motokar ?? 0],
+      ["VVIP / VIP", nilaiAdaTiadaCetakAdmin(data.vvip_vip)],
+      ["Catatan", data.catatan || item.perkara_menarik || "TIADA"]
+    ];
+  }
+
+
+  if (jenis === "KAWALAN LALULINTAS") {
+    return [
+      ["Keadaan Trafik", data.keadaan_trafik || "-"],
+      ["Jumlah Kenderaan", data.jumlah_kenderaan ?? item.jumlah_kenderaan ?? 0],
+      ["Kemalangan", nilaiAdaTiadaCetakAdmin(data.kemalangan)],
+      ["Catatan / Tindakan", data.catatan_tindakan || item.perkara_menarik || "TIADA"]
+    ];
+  }
+
+
+  if (
+    jenis === "RONDAAN PENCEGAHAN JENAYAH" ||
+    jenis === "RONDAAN PENCEGAHAN JENAYAH NARKOTIK" ||
+    jenis === "RONDAAN PENCEGAHAN JENAYAH KOMERSIL"
+  ) {
+    const pemeriksaan =
+      data.pemeriksaan &&
+      typeof data.pemeriksaan === "object"
+        ? data.pemeriksaan
+        : {};
+
+    return [
+      ["Lokasi Rondaan", data.lokasi_rondaan || "-"],
+      ["Jumlah Pemeriksaan", pemeriksaan.jumlah ?? 0],
+      ["Lelaki", pemeriksaan.lelaki ?? 0],
+      ["Perempuan", pemeriksaan.perempuan ?? 0],
+      ["Tangkapan", nilaiAdaTiadaCetakAdmin(data.tangkapan)],
+      ["Rampasan", nilaiAdaTiadaCetakAdmin(data.rampasan)],
+      ["Catatan / No. Repot", data.catatan_no_repot || item.perkara_menarik || "TIADA"]
+    ];
+  }
+
+
+  if (
+    jenis === "BALAI POLIS BERGERAK" ||
+    jenis === "PONDOK POLIS"
+  ) {
+    return [
+      ["No. Repot", data.no_repot || "TIADA"],
+      ["Catatan", data.catatan || item.perkara_menarik || "TIADA"]
+    ];
+  }
+
+
+  if (jenis === "UNIT PEMUSNAH BOM") {
+    return [
+      ["Lokasi", data.lokasi || "-"],
+      ["VVIP / VIP", nilaiAdaTiadaCetakAdmin(data.vvip_vip)],
+      ["Jenis Ancaman", nilaiAdaTiadaCetakAdmin(data.jenis_ancaman)],
+      ["Catatan", data.catatan || item.perkara_menarik || "TIADA"]
+    ];
+  }
+
+
+  return [
+    ["Jumlah Pengunjung", item.jumlah_pengunjung ?? "-"],
+    ["Jumlah Kenderaan", item.jumlah_kenderaan ?? "-"],
+    ["VVIP / VIP", item.vvip_vip || "TIADA"],
+    ["Perkara Menarik", item.perkara_menarik || "TIADA"]
+  ];
+}
+
+
 function cetakLaporanPetugasAdmin(id) {
-  const item = dataLaporanPetugasAdmin.find(rekod => String(rekod.id) === String(id));
-  if (!item) return alert("Rekod laporan tidak ditemui.");
+  const item = dataLaporanPetugasAdmin.find(
+    rekod => String(rekod.id) === String(id)
+  );
+
+  if (!item) {
+    return alert("Rekod laporan tidak ditemui.");
+  }
 
   const profil = item.profil || {};
   const tugasItem = item.penugasan || {};
-  const nama = [profil.pangkat, profil.nama].filter(Boolean).join(" ") || "-";
+
+  const nama =
+    [profil.pangkat, profil.nama]
+      .filter(Boolean)
+      .join(" ") || "-";
+
+  const jenisTugas =
+    item.jenis_tugas ||
+    tugasItem.jenis_tugas ||
+    "-";
+
   const medan = [
     ["Petugas", nama],
     ["No Badan", profil.no_badan || "-"],
     ["Call Sign", tugasItem.call_sign || "-"],
-    ["Jenis Tugas", tugasItem.jenis_tugas || "-"],
+    ["Jenis Tugas", jenisTugas],
     ["Tempat Tugas", tugasItem.tempat_tugas || tugasItem.lokasi || "-"],
     ["Tarikh / Masa", formatMasaLaporanAdmin(item.tarikh_masa)],
-    ["Jumlah Pengunjung", item.jumlah_pengunjung ?? "-"],
-    ["Jumlah Kenderaan", item.jumlah_kenderaan ?? "-"],
-    ["VVIP / VIP", item.vvip_vip || "-"],
-    ["Perkara Menarik", item.perkara_menarik || "-"],
+
+    ...medanDinamikCetakLaporanAdmin(item),
+
     ["Dibaca Pada", formatMasaLaporanAdmin(item.dibaca_pada)]
   ];
 
-  bukaCetakanAdmin("LAPORAN PETUGAS", medan.map(([label, nilai]) =>
-    `<div class="field"><strong>${escapeHtml(label)}</strong>${escapeHtml(nilai)}</div>`
-  ).join(""));
+  bukaCetakanAdmin(
+    "LAPORAN PETUGAS",
+    medan.map(([label, nilai]) =>
+      `<div class="field">` +
+        `<strong>${escapeHtml(label)}</strong>` +
+        `${escapeHtml(nilai ?? "-")}` +
+      `</div>`
+    ).join("")
+  );
 }
+
+
+
+async function muatTurunLampiranSitrepAdmin(laluan, namaFail = "lampiran") {
+  if (!laluan) {
+    alert("Lampiran SITREP tidak ditemui.");
+    return;
+  }
+
+  try {
+    const { data, error } = await db.storage
+      .from(BUCKET_SITREP_ADMIN)
+      .download(laluan);
+
+    if (error) {
+      throw error;
+    }
+
+    if (!data) {
+      throw new Error("Fail lampiran tidak ditemui.");
+    }
+
+    const url = URL.createObjectURL(data);
+    const pautan = document.createElement("a");
+
+    pautan.href = url;
+    pautan.download = namaFail || "lampiran";
+    pautan.style.display = "none";
+
+    document.body.appendChild(pautan);
+    pautan.click();
+    pautan.remove();
+
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 1500);
+
+  } catch (error) {
+    console.error("Muat turun lampiran SITREP Admin gagal:", error);
+
+    alert(
+      "Lampiran gagal dimuat turun: " +
+      (error.message || "Ralat tidak diketahui.")
+    );
+  }
+}
+
 
 function cetakSitrepAdmin(id) {
   const item = dataSitrepAdmin.find(rekod => String(rekod.id) === String(id));

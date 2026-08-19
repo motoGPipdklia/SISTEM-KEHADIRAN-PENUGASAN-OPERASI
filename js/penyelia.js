@@ -12,6 +12,11 @@ const JADUAL_LAPORAN = "pelaporan";
 const JADUAL_SITREP = "sitrep";
 const BUCKET_SITREP = "sitrep-lampiran";
 
+/* Kunci sesi tempatan khusus Urusetia MotoGP. */
+const KUNCI_PENYELIA_F1 = "skpoMotoGPPenyelia";
+const NO_BADAN_ADMIN_UTAMA_F1 = "ADMINF1";
+const EMAIL_ADMIN_UTAMA_F1 = "admin@skpo.local";
+
 let penggunaPenyelia = null;
 let dataPenyelia = [];
 let dataLaporanPenyelia = [];
@@ -50,7 +55,13 @@ function htmlPenyelia(nilai) {
 
 
 function emailPenyelia(noBadan) {
-  return `${teksPenyelia(noBadan)
+  const noBadanBersih = atasPenyelia(noBadan);
+
+  if (noBadanBersih === NO_BADAN_ADMIN_UTAMA_F1) {
+    return EMAIL_ADMIN_UTAMA_F1;
+  }
+
+  return `${noBadanBersih
     .toLowerCase()
     .replace(/[^a-z0-9_-]/g, "")}@skpo.local`;
 }
@@ -313,6 +324,11 @@ if (!perananPenyeliaDibenarkan(peranan)) {
       authUserId: data.user.id
     };
 
+    localStorage.setItem(
+      KUNCI_PENYELIA_F1,
+      JSON.stringify(penggunaPenyelia)
+    );
+
     paparDashboardPenyelia();
 
     await muatSemuaDataPenyelia();
@@ -451,6 +467,11 @@ async function pulihkanSesiPenyelia() {
       authUserId:
         data.session.user.id
     };
+
+    localStorage.setItem(
+      KUNCI_PENYELIA_F1,
+      JSON.stringify(penggunaPenyelia)
+    );
 
     paparDashboardPenyelia();
 
@@ -1125,6 +1146,8 @@ async function muatLaporanPenyelia() {
           jumlah_kenderaan,
           vvip_vip,
           perkara_menarik,
+          jenis_tugas,
+          data_laporan,
           dibaca,
           dibaca_pada,
           dibaca_oleh
@@ -1261,6 +1284,17 @@ async function muatLaporanPenyelia() {
             tugas.callsign ||
             "-",
 
+          jenisTugas:
+            item.jenis_tugas ||
+            tugas.jenis_tugas ||
+            "-",
+
+          dataLaporan:
+            item.data_laporan &&
+            typeof item.data_laporan === "object"
+              ? item.data_laporan
+              : {},
+
           jumlahPengunjung:
             item.jumlah_pengunjung ??
             0,
@@ -1323,7 +1357,295 @@ async function muatLaporanPenyelia() {
    PAPAR SENARAI LAPORAN
 ================================================================ */
 
+
+function ringkasanKadLaporanPenyelia(item) {
+  const jenis = normalisasiJenisTugasLaporanPenyelia(
+    item?.jenisTugas ||
+    item?.tugas?.jenis_tugas
+  );
+
+  const data =
+    item?.dataLaporan &&
+    typeof item.dataLaporan === "object"
+      ? item.dataLaporan
+      : {};
+
+  if (
+    jenis === "RONDAAN PENCEGAHAN JENAYAH" ||
+    jenis === "RONDAAN PENCEGAHAN JENAYAH NARKOTIK" ||
+    jenis === "RONDAAN PENCEGAHAN JENAYAH KOMERSIL"
+  ) {
+    const pemeriksaan =
+      data.pemeriksaan &&
+      typeof data.pemeriksaan === "object"
+        ? data.pemeriksaan
+        : {};
+
+    return {
+      label1: "Jumlah Pemeriksaan",
+      nilai1: pemeriksaan.jumlah ?? 0,
+
+      label2: "Tangkapan",
+      nilai2: butiranAdaTiadaLaporan(
+        data.tangkapan
+      ),
+
+      label3: "Rampasan",
+      nilai3: butiranAdaTiadaLaporan(
+        data.rampasan
+      ),
+
+      label4: "Catatan / No. Repot",
+      nilai4:
+        data.catatan_no_repot ||
+        item.perkaraMenarik ||
+        "TIADA"
+    };
+  }
+
+
+  if (jenis === "KAWALAN LALULINTAS") {
+    return {
+      label1: "Keadaan Trafik",
+      nilai1:
+        data.keadaan_trafik ||
+        "TIADA",
+
+      label2: "Kenderaan",
+      nilai2:
+        data.jumlah_kenderaan ??
+        item.jumlahKenderaan ??
+        0,
+
+      label3: "Kemalangan",
+      nilai3:
+        butiranAdaTiadaLaporan(
+          data.kemalangan
+        ),
+
+      label4: "Catatan",
+      nilai4:
+        data.catatan_tindakan ||
+        item.perkaraMenarik ||
+        "TIADA"
+    };
+  }
+
+  if (jenis === "UNIT PEMUSNAH BOM") {
+    return {
+      label1: "Lokasi",
+      nilai1:
+        data.lokasi ||
+        item.tugas?.tempat_tugas ||
+        item.tugas?.lokasi ||
+        "-",
+
+      label2: "VVIP / VIP",
+      nilai2:
+        formatVvipVipBerbaris(
+          butiranAdaTiadaLaporan(
+            data.vvip_vip
+          )
+        ),
+
+      label3: "Ancaman",
+      nilai3:
+        butiranAdaTiadaLaporan(
+          data.jenis_ancaman
+        ),
+
+      label4: "Catatan",
+      nilai4:
+        data.catatan ||
+        item.perkaraMenarik ||
+        "TIADA"
+    };
+  }
+
+
+  if (
+    jenis === "BALAI POLIS BERGERAK" ||
+    jenis === "PONDOK POLIS"
+  ) {
+    return {
+      label1: "No. Repot",
+      nilai1:
+        data.no_repot ||
+        data.no_report ||
+        data.nombor_repot ||
+        data.nombor_report ||
+        "TIADA",
+
+      label2: "",
+      nilai2: "",
+
+      label3: "",
+      nilai3: "",
+
+      label4: "Catatan",
+      nilai4:
+        data.catatan ||
+        data.catatan_tindakan ||
+        item.perkaraMenarik ||
+        "TIADA"
+    };
+  }
+
+  return {
+    label1: "Pengunjung",
+    nilai1: item.jumlahPengunjung,
+
+    label2: "Kenderaan",
+    nilai2: item.jumlahKenderaan,
+
+    label3: "VVIP / VIP",
+    nilai3: item.vvipVip || "TIADA",
+
+    label4: "Perkara Menarik",
+    nilai4: item.perkaraMenarik || "TIADA"
+  };
+}
+
+
+
+function pastikanPilihanPenapisLaporanPenyelia() {
+  const penapis =
+    elemenPenyelia("penapisLaporan");
+
+  if (!penapis) {
+    return;
+  }
+
+  const nilaiSemasa =
+    penapis.value || "SEMUA";
+
+  const pilihan = [
+    {
+      value: "SEMUA",
+      label: "SEMUA"
+    },
+    {
+      value: "BELUM DIBACA",
+      label: "BELUM DIBACA"
+    },
+    {
+      value: "TELAH DIBACA",
+      label: "TELAH DIBACA"
+    },
+    {
+      value: "LAPORAN PENGUNJUNG",
+      label: "PENGUNJUNG"
+    },
+    {
+      value: "LAPORAN JENAYAH",
+      label: "JENAYAH"
+    },
+    {
+      value: "LAPORAN JENAYAH NARKOTIK",
+      label: "JENAYAH NARKOTIK"
+    },
+    {
+      value: "LAPORAN JENAYAH KOMERSIL",
+      label: "JENAYAH KOMERSIL"
+    },
+    {
+      value: "LAPORAN BALAI / PONDOK POLIS",
+      label: "BALAI POLIS BERGERAK / PONDOK POLIS"
+    },
+    {
+      value: "LAPORAN UNIT PEMUSNAH BOM",
+      label: "UNIT PEMUSNAH BOM"
+    },
+    {
+      value: "LAPORAN KAWALAN LALULINTAS",
+      label: "KAWALAN LALULINTAS"
+    }
+  ];
+
+  const htmlPilihan =
+    pilihan.map(item => `
+      <option value="${htmlPenyelia(item.value)}">
+        ${htmlPenyelia(item.label)}
+      </option>
+    `).join("");
+
+  /*
+    Hanya bina semula jika pilihan kategori belum ada.
+    Ini mengelakkan dropdown di-reset setiap kali carian dibuat.
+  */
+  if (
+    !Array.from(penapis.options || [])
+      .some(option =>
+        option.value === "LAPORAN PENGUNJUNG"
+      )
+  ) {
+    penapis.innerHTML = htmlPilihan;
+  }
+
+  const nilaiMasihSah =
+    Array.from(penapis.options || [])
+      .some(option =>
+        option.value === nilaiSemasa
+      );
+
+  penapis.value =
+    nilaiMasihSah
+      ? nilaiSemasa
+      : "SEMUA";
+}
+
+
+function kategoriLaporanPenyelia(item) {
+  const jenis =
+    normalisasiJenisTugasLaporanPenyelia(
+      item?.jenisTugas ||
+      item?.tugas?.jenis_tugas
+    );
+
+  if (jenis === "KAWALAN KESELAMATAN") {
+    return "LAPORAN PENGUNJUNG";
+  }
+
+  if (jenis === "RONDAAN PENCEGAHAN JENAYAH") {
+    return "LAPORAN JENAYAH";
+  }
+
+  if (
+    jenis ===
+    "RONDAAN PENCEGAHAN JENAYAH NARKOTIK"
+  ) {
+    return "LAPORAN JENAYAH NARKOTIK";
+  }
+
+  if (
+    jenis ===
+    "RONDAAN PENCEGAHAN JENAYAH KOMERSIL"
+  ) {
+    return "LAPORAN JENAYAH KOMERSIL";
+  }
+
+  if (
+    jenis === "BALAI POLIS BERGERAK" ||
+    jenis === "PONDOK POLIS"
+  ) {
+    return "LAPORAN BALAI / PONDOK POLIS";
+  }
+
+  if (jenis === "UNIT PEMUSNAH BOM") {
+    return "LAPORAN UNIT PEMUSNAH BOM";
+  }
+
+  if (jenis === "KAWALAN LALULINTAS") {
+    return "LAPORAN KAWALAN LALULINTAS";
+  }
+
+  return "";
+}
+
+
 function paparSenaraiLaporan() {
+  pastikanPilihanPenapisLaporanPenyelia();
+
   const carian = atasPenyelia(
     elemenPenyelia(
       "carianLaporan"
@@ -1381,7 +1703,9 @@ function paparSenaraiLaporan() {
             item.profil?.pangkat,
             item.profil?.nama,
             item.callSign,
+            item.jenisTugas,
             item.perkaraMenarik,
+            JSON.stringify(item.dataLaporan || {}),
             statusBacaan
           ].join(" "));
 
@@ -1391,14 +1715,29 @@ function paparSenaraiLaporan() {
             carian
           );
 
-        const padanStatus =
-          penapis === "SEMUA" ||
-          penapis ===
-            statusBacaan;
+        const kategoriLaporan =
+          kategoriLaporanPenyelia(item);
+
+        let padanPenapis = false;
+
+        if (penapis === "SEMUA") {
+          padanPenapis = true;
+
+        } else if (
+          penapis === "BELUM DIBACA" ||
+          penapis === "TELAH DIBACA"
+        ) {
+          padanPenapis =
+            penapis === statusBacaan;
+
+        } else {
+          padanPenapis =
+            penapis === kategoriLaporan;
+        }
 
         return (
           padanCarian &&
-          padanStatus
+          padanPenapis
         );
       }
     );
@@ -1428,6 +1767,19 @@ function paparSenaraiLaporan() {
         item.telahDibaca
           ? "TELAH DIBACA"
           : "BELUM DIBACA";
+
+      const ringkasan =
+        ringkasanKadLaporanPenyelia(item);
+
+      const jenisRingkasan =
+        normalisasiJenisTugasLaporanPenyelia(
+          item?.jenisTugas ||
+          item?.tugas?.jenis_tugas
+        );
+
+      const ringkasanBalaiPondok =
+        jenisRingkasan === "BALAI POLIS BERGERAK" ||
+        jenisRingkasan === "PONDOK POLIS";
 
       return `
         <article
@@ -1503,55 +1855,101 @@ function paparSenaraiLaporan() {
               )}
             </div>
 
-            <div class="label">
-              Pengunjung
-            </div>
+            ${
+              ringkasanBalaiPondok
+                ? `
+                  <div
+                    class="label"
+                    style="margin:0 !important; padding:0 !important;"
+                  >No. Repot</div>
+                  <div
+                    style="
+                      margin:0 !important;
+                      padding:0 !important;
+                      white-space:pre-line;
+                    "
+                  >${htmlPenyelia(ringkasan.nilai1)}</div>
 
-            <div>
-              ${htmlPenyelia(
-                item.jumlahPengunjung
-              )}
-            </div>
+                  <div
+                    class="label"
+                    style="margin:0 !important; padding:0 !important;"
+                  >Catatan</div>
+                  <div
+                    class="teks-ringkas"
+                    style="
+                      margin:0 !important;
+                      padding:0 !important;
+                      white-space:pre-line;
+                    "
+                  >${htmlPenyelia(ringkasan.nilai4)}</div>
+                `
+                : `
+                  ${
+                    ringkasan.label1
+                      ? `
+                        <div class="label">${htmlPenyelia(ringkasan.label1)}</div>
+                        <div style="white-space:pre-line;">${htmlPenyelia(ringkasan.nilai1)}</div>
+                      `
+                      : ""
+                  }
 
-            <div class="label">
-              Kenderaan
-            </div>
+                  ${
+                    ringkasan.label2
+                      ? `
+                        <div class="label">${htmlPenyelia(ringkasan.label2)}</div>
+                        <div style="white-space:pre-line;">${htmlPenyelia(ringkasan.nilai2)}</div>
+                      `
+                      : ""
+                  }
 
-            <div>
-              ${htmlPenyelia(
-                item.jumlahKenderaan
-              )}
-            </div>
+                  ${
+                    ringkasan.label3
+                      ? `
+                        <div class="label">${htmlPenyelia(ringkasan.label3)}</div>
+                        <div style="white-space:pre-line;">${htmlPenyelia(ringkasan.nilai3)}</div>
+                      `
+                      : ""
+                  }
 
-            <div class="label">
-              VVIP / VIP
-            </div>
-
-            <div>
-              ${htmlPenyelia(
-                item.vvipVip ||
-                "TIADA"
-              )}
-            </div>
-
-            <div class="label">
-              Perkara Menarik
-            </div>
-
-            <div class="teks-ringkas">
-              ${htmlPenyelia(
-                item.perkaraMenarik ||
-                "TIADA"
-              )}
-            </div>
-
+                  ${
+                    ringkasan.label4
+                      ? `
+                        <div class="label">${htmlPenyelia(ringkasan.label4)}</div>
+                        <div class="teks-ringkas" style="white-space:pre-line;">${htmlPenyelia(ringkasan.nilai4)}</div>
+                      `
+                      : ""
+                  }
+                `
+            }
           </div>
 
-          <div class="actions">
+          <div
+            class="actions"
+            style="
+              display:grid !important;
+              grid-template-columns:minmax(0, 1fr) minmax(0, 1fr) !important;
+              gap:10px !important;
+              width:100% !important;
+              align-items:stretch !important;
+            "
+          >
 
             <button
               class="btn-main"
               type="button"
+              style="
+                display:flex !important;
+                align-items:center !important;
+                justify-content:center !important;
+                width:100% !important;
+                min-width:0 !important;
+                height:46px !important;
+                min-height:46px !important;
+                max-height:46px !important;
+                margin:0 !important;
+                padding:0 16px !important;
+                box-sizing:border-box !important;
+              "
               onclick="bukaLaporanPenyelia('${htmlPenyelia(
                 item.id
               )}')"
@@ -1565,6 +1963,19 @@ function paparSenaraiLaporan() {
                   <button
                     class="btn-ok"
                     type="button"
+                    style="
+                      display:flex !important;
+                      align-items:center !important;
+                      justify-content:center !important;
+                      width:100% !important;
+                      min-width:0 !important;
+                      height:46px !important;
+                      min-height:46px !important;
+                      max-height:46px !important;
+                      margin:0 !important;
+                      padding:0 16px !important;
+                      box-sizing:border-box !important;
+                    "
                     onclick="tandaLaporanDibaca('${htmlPenyelia(
                       item.id
                     )}')"
@@ -1572,7 +1983,27 @@ function paparSenaraiLaporan() {
                     TANDA TELAH DIBACA
                   </button>
                 `
-                : ""
+                : `
+                  <button
+                    class="btn-secondary"
+                    type="button"
+                    style="
+                      display:flex !important;
+                      width:100% !important;
+                      min-width:0 !important;
+                      height:46px !important;
+                      margin:0 !important;
+                      padding:0 16px !important;
+                      box-sizing:border-box !important;
+                      visibility:hidden !important;
+                      pointer-events:none !important;
+                    "
+                    tabindex="-1"
+                    aria-hidden="true"
+                  >
+                    TANDA TELAH DIBACA
+                  </button>
+                `
             }
 
           </div>
@@ -1724,6 +2155,405 @@ function tukarTabPenyelia(tab) {
 }
 
 
+
+/* ================================================================
+   PAPARAN DINAMIK BUTIRAN LAPORAN
+================================================================ */
+
+function normalisasiJenisTugasLaporanPenyelia(nilai) {
+  const jenis = atasPenyelia(nilai)
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (jenis.includes("KAWALAN KESELAMATAN")) {
+    return "KAWALAN KESELAMATAN";
+  }
+
+  if (
+    jenis.includes("KAWALAN LALULINTAS") ||
+    jenis.includes("KAWALAN LALU LINTAS")
+  ) {
+    return "KAWALAN LALULINTAS";
+  }
+
+  if (jenis.includes("RONDAAN PENCEGAHAN JENAYAH NARKOTIK")) {
+    return "RONDAAN PENCEGAHAN JENAYAH NARKOTIK";
+  }
+
+  if (jenis.includes("RONDAAN PENCEGAHAN JENAYAH KOMERSIL")) {
+    return "RONDAAN PENCEGAHAN JENAYAH KOMERSIL";
+  }
+
+  if (jenis.includes("RONDAAN PENCEGAHAN JENAYAH")) {
+    return "RONDAAN PENCEGAHAN JENAYAH";
+  }
+
+  if (jenis.includes("BALAI POLIS BERGERAK")) {
+    return "BALAI POLIS BERGERAK";
+  }
+
+  if (jenis.includes("PONDOK POLIS")) {
+    return "PONDOK POLIS";
+  }
+
+  if (
+    jenis.includes("UNIT PEMUSNAH BOM") ||
+    jenis === "UPB"
+  ) {
+    return "UNIT PEMUSNAH BOM";
+  }
+
+  return jenis;
+}
+
+
+function nilaiPaparanLaporan(nilai, nilaiKosong = "TIADA") {
+  if (
+    nilai === undefined ||
+    nilai === null ||
+    teksPenyelia(nilai) === ""
+  ) {
+    return nilaiKosong;
+  }
+
+  return String(nilai);
+}
+
+
+function formatVvipVipBerbaris(nilai) {
+  const teks = teksPenyelia(nilai);
+
+  if (!teks) {
+    return "TIADA";
+  }
+
+  /*
+    Contoh:
+      PMX TIMBALAN PERDANA MENTERI 1
+    menjadi:
+      PMX
+      TIMBALAN PERDANA MENTERI 1
+  */
+  const padanan = teks.match(
+    /^(PMX|PM|TPM|VVIP|VIP)\s+(.+)$/i
+  );
+
+  if (padanan) {
+    return `${padanan[1].toUpperCase()}\n${padanan[2]}`;
+  }
+
+  return teks;
+}
+
+
+function butiranAdaTiadaLaporan(objek) {
+  if (!objek || typeof objek !== "object") {
+    const nilai = teksPenyelia(objek);
+    return nilai || "TIADA";
+  }
+
+  const status = atasPenyelia(objek.status);
+  const butiran = teksPenyelia(objek.butiran);
+
+  if (status === "ADA") {
+    return butiran || "ADA";
+  }
+
+  return "TIADA";
+}
+
+
+function barisModalLaporan(label, nilai) {
+  return `
+    <div class="label">${htmlPenyelia(label)}</div>
+    <div style="white-space:pre-line;">${htmlPenyelia(nilaiPaparanLaporan(nilai))}</div>
+  `;
+}
+
+
+function binaButiranDinamikLaporanPenyelia(item) {
+  const data =
+    item?.dataLaporan &&
+    typeof item.dataLaporan === "object"
+      ? item.dataLaporan
+      : {};
+
+  const jenis = normalisasiJenisTugasLaporanPenyelia(
+    item?.jenisTugas ||
+    item?.tugas?.jenis_tugas
+  );
+
+  /*
+    Jika laporan lama belum mempunyai data_laporan,
+    gunakan paparan legacy.
+  */
+  if (!Object.keys(data).length) {
+    return `
+      ${barisModalLaporan(
+        "Jumlah Pengunjung",
+        item.jumlahPengunjung
+      )}
+
+      ${barisModalLaporan(
+        "Jumlah Kenderaan",
+        item.jumlahKenderaan
+      )}
+
+      ${barisModalLaporan(
+        "VVIP / VIP",
+        item.vvipVip || "TIADA"
+      )}
+    `;
+  }
+
+
+  if (jenis === "KAWALAN KESELAMATAN") {
+    const kenderaan =
+      data.kenderaan &&
+      typeof data.kenderaan === "object"
+        ? data.kenderaan
+        : {};
+
+    const vvip =
+      formatVvipVipBerbaris(
+        butiranAdaTiadaLaporan(
+          data.vvip_vip
+        )
+      );
+
+    return `
+      ${barisModalLaporan(
+        "Keadaan Keselamatan",
+        data.keadaan_keselamatan
+      )}
+
+      ${barisModalLaporan(
+        "Jumlah Pengunjung",
+        data.jumlah_pengunjung ?? item.jumlahPengunjung
+      )}
+
+      ${barisModalLaporan(
+        "Jumlah Kenderaan",
+        kenderaan.jumlah ?? item.jumlahKenderaan
+      )}
+
+      ${barisModalLaporan(
+        "Bas",
+        kenderaan.bas ?? 0
+      )}
+
+      ${barisModalLaporan(
+        "Motosikal",
+        kenderaan.motosikal ?? 0
+      )}
+
+      ${barisModalLaporan(
+        "Motokar",
+        kenderaan.motokar ?? 0
+      )}
+
+      ${barisModalLaporan(
+        "VVIP / VIP",
+        vvip
+      )}
+    `;
+  }
+
+
+  if (jenis === "KAWALAN LALULINTAS") {
+    return `
+      ${barisModalLaporan(
+        "Keadaan Trafik",
+        data.keadaan_trafik
+      )}
+
+      ${barisModalLaporan(
+        "Jumlah Kenderaan",
+        data.jumlah_kenderaan ?? item.jumlahKenderaan
+      )}
+
+      ${barisModalLaporan(
+        "Kemalangan",
+        butiranAdaTiadaLaporan(data.kemalangan)
+      )}
+    `;
+  }
+
+
+  if (
+    jenis === "RONDAAN PENCEGAHAN JENAYAH" ||
+    jenis === "RONDAAN PENCEGAHAN JENAYAH NARKOTIK" ||
+    jenis === "RONDAAN PENCEGAHAN JENAYAH KOMERSIL"
+  ) {
+    const pemeriksaan =
+      data.pemeriksaan &&
+      typeof data.pemeriksaan === "object"
+        ? data.pemeriksaan
+        : {};
+
+    return `
+      ${barisModalLaporan(
+        "Lokasi Rondaan",
+        data.lokasi_rondaan
+      )}
+
+      ${barisModalLaporan(
+        "Jumlah Pemeriksaan",
+        pemeriksaan.jumlah ?? 0
+      )}
+
+      ${barisModalLaporan(
+        "Lelaki",
+        pemeriksaan.lelaki ?? 0
+      )}
+
+      ${barisModalLaporan(
+        "Perempuan",
+        pemeriksaan.perempuan ?? 0
+      )}
+
+      ${barisModalLaporan(
+        "Tangkapan",
+        butiranAdaTiadaLaporan(data.tangkapan)
+      )}
+
+      ${barisModalLaporan(
+        "Rampasan",
+        butiranAdaTiadaLaporan(data.rampasan)
+      )}
+    `;
+  }
+
+
+  if (
+    jenis === "BALAI POLIS BERGERAK" ||
+    jenis === "PONDOK POLIS"
+  ) {
+    return `
+      ${barisModalLaporan(
+        "No. Repot",
+        data.no_repot
+      )}
+    `;
+  }
+
+
+  if (jenis === "UNIT PEMUSNAH BOM") {
+    return `
+      ${barisModalLaporan(
+        "Lokasi",
+        data.lokasi
+      )}
+
+      ${barisModalLaporan(
+        "VVIP / VIP",
+        formatVvipVipBerbaris(
+          butiranAdaTiadaLaporan(
+            data.vvip_vip
+          )
+        )
+      )}
+
+      ${barisModalLaporan(
+        "Jenis Ancaman",
+        butiranAdaTiadaLaporan(data.jenis_ancaman)
+      )}
+    `;
+  }
+
+
+  return `
+    ${barisModalLaporan(
+      "Jumlah Pengunjung",
+      item.jumlahPengunjung
+    )}
+
+    ${barisModalLaporan(
+      "Jumlah Kenderaan",
+      item.jumlahKenderaan
+    )}
+
+    ${barisModalLaporan(
+      "VVIP / VIP",
+      item.vvipVip || "TIADA"
+    )}
+  `;
+}
+
+
+function tajukCatatanLaporanPenyelia(item) {
+  const jenis = normalisasiJenisTugasLaporanPenyelia(
+    item?.jenisTugas ||
+    item?.tugas?.jenis_tugas
+  );
+
+  if (
+    jenis === "KAWALAN LALULINTAS"
+  ) {
+    return "Catatan / Tindakan";
+  }
+
+  if (
+    jenis === "RONDAAN PENCEGAHAN JENAYAH" ||
+    jenis === "RONDAAN PENCEGAHAN JENAYAH NARKOTIK" ||
+    jenis === "RONDAAN PENCEGAHAN JENAYAH KOMERSIL"
+  ) {
+    return "Catatan / No. Repot";
+  }
+
+  if (
+    jenis === "BALAI POLIS BERGERAK" ||
+    jenis === "PONDOK POLIS" ||
+    jenis === "UNIT PEMUSNAH BOM" ||
+    jenis === "KAWALAN KESELAMATAN"
+  ) {
+    return "Catatan";
+  }
+
+  return "Perkara Menarik";
+}
+
+
+function catatanDinamikLaporanPenyelia(item) {
+  const data =
+    item?.dataLaporan &&
+    typeof item.dataLaporan === "object"
+      ? item.dataLaporan
+      : {};
+
+  const jenis = normalisasiJenisTugasLaporanPenyelia(
+    item?.jenisTugas ||
+    item?.tugas?.jenis_tugas
+  );
+
+  if (jenis === "KAWALAN KESELAMATAN") {
+    return data.catatan || item.perkaraMenarik || "TIADA";
+  }
+
+  if (jenis === "KAWALAN LALULINTAS") {
+    return data.catatan_tindakan || item.perkaraMenarik || "TIADA";
+  }
+
+  if (
+    jenis === "RONDAAN PENCEGAHAN JENAYAH" ||
+    jenis === "RONDAAN PENCEGAHAN JENAYAH NARKOTIK" ||
+    jenis === "RONDAAN PENCEGAHAN JENAYAH KOMERSIL"
+  ) {
+    return data.catatan_no_repot || item.perkaraMenarik || "TIADA";
+  }
+
+  if (
+    jenis === "BALAI POLIS BERGERAK" ||
+    jenis === "PONDOK POLIS" ||
+    jenis === "UNIT PEMUSNAH BOM"
+  ) {
+    return data.catatan || item.perkaraMenarik || "TIADA";
+  }
+
+  return item.perkaraMenarik || "TIADA";
+}
+
+
 /* ================================================================
    BUKA LAPORAN DALAM MODAL
 ================================================================ */
@@ -1773,88 +2603,51 @@ function bukaLaporanPenyelia(
     );
 
   if (kandunganModal) {
+    const butiranDinamik =
+      binaButiranDinamikLaporanPenyelia(item);
+
+    const tajukCatatan =
+      tajukCatatanLaporanPenyelia(item);
+
+    const catatan =
+      catatanDinamikLaporanPenyelia(item);
+
     kandunganModal.innerHTML = `
       <div class="grid modal-grid">
 
-        <div class="label">
-          Petugas
-        </div>
+        ${barisModalLaporan(
+          "Petugas",
+          [
+            item.profil?.pangkat || "",
+            item.profil?.nama || "-"
+          ].filter(Boolean).join(" ")
+        )}
 
-        <div>
-          ${htmlPenyelia(
-            item.profil?.pangkat ||
-            "-"
-          )}
-          ${htmlPenyelia(
-            item.profil?.nama ||
-            "-"
-          )}
-        </div>
+        ${barisModalLaporan(
+          "No Badan",
+          item.profil?.no_badan || "-"
+        )}
 
-        <div class="label">
-          No Badan
-        </div>
+        ${barisModalLaporan(
+          "Tarikh / Masa",
+          formatMasaPenyelia(
+            item.tarikhMasa
+          )
+        )}
 
-        <div>
-          ${htmlPenyelia(
-            item.profil?.no_badan ||
-            "-"
-          )}
-        </div>
+        ${barisModalLaporan(
+          "Call Sign",
+          item.callSign || "-"
+        )}
 
-        <div class="label">
-          Tarikh / Masa
-        </div>
+        ${barisModalLaporan(
+          "Jenis Tugas",
+          item.jenisTugas ||
+          item.tugas?.jenis_tugas ||
+          "-"
+        )}
 
-        <div>
-          ${htmlPenyelia(
-            formatMasaPenyelia(
-              item.tarikhMasa
-            )
-          )}
-        </div>
-
-        <div class="label">
-          Call Sign
-        </div>
-
-        <div>
-          ${htmlPenyelia(
-            item.callSign ||
-            "-"
-          )}
-        </div>
-
-        <div class="label">
-          Jumlah Pengunjung
-        </div>
-
-        <div>
-          ${htmlPenyelia(
-            item.jumlahPengunjung
-          )}
-        </div>
-
-        <div class="label">
-          Jumlah Kenderaan
-        </div>
-
-        <div>
-          ${htmlPenyelia(
-            item.jumlahKenderaan
-          )}
-        </div>
-
-        <div class="label">
-          VVIP / VIP
-        </div>
-
-        <div>
-          ${htmlPenyelia(
-            item.vvipVip ||
-            "TIADA"
-          )}
-        </div>
+        ${butiranDinamik}
 
         <div class="label">
           Status Bacaan
@@ -1871,35 +2664,48 @@ function bukaLaporanPenyelia(
         ${
           item.telahDibaca
             ? `
-              <div class="label">
-                Masa Dibaca
-              </div>
-
-              <div>
-                ${htmlPenyelia(
+                ${barisModalLaporan(
+                  "Masa Dibaca",
                   formatMasaPenyelia(
                     item.masaDibaca
                   )
                 )}
-              </div>
-            `
+              `
             : ""
         }
 
       </div>
 
-      <div class="laporan-penuh">
+      <div
+        class="laporan-penuh"
+        style="
+          margin-top:12px;
+          padding:12px;
+        "
+      >
 
-        <div class="label">
-          Perkara Menarik
+        <div
+          class="label"
+          style="
+            margin:0 0 6px 0;
+            padding:0;
+          "
+        >
+          ${htmlPenyelia(
+            tajukCatatan
+          )}
         </div>
 
-        <p>
-          ${htmlPenyelia(
-            item.perkaraMenarik ||
-            "TIADA"
-          )}
-        </p>
+        <p
+          style="
+            margin:0;
+            padding:0;
+            white-space:pre-wrap;
+            line-height:1.45;
+          "
+        >${htmlPenyelia(
+          catatan || "TIADA"
+        )}</p>
 
       </div>
     `;
@@ -2155,6 +2961,8 @@ async function logoutPenyelia() {
   await dbPenyelia?.auth
     ?.signOut()
     .catch(() => {});
+
+  localStorage.removeItem(KUNCI_PENYELIA_F1);
 
   penggunaPenyelia = null;
   dataPenyelia = [];
@@ -2430,21 +3238,21 @@ function paparSenaraiSitrep() {
                   item.lampiran_path
                     ? `
                         <button
-                          class="btn-main"
+                          class="btn-main sitrep-table-action sitrep-table-attachment"
                           type="button"
                           onclick="bukaLampiranSitrep(
                             '${htmlPenyelia(item.lampiran_path)}',
                             '${htmlPenyelia(item.lampiran_nama || "lampiran")}'
                           )"
                         >
-                          📎 LAMPIRAN
+                          LAMPIRAN
                         </button>
                       `
                     : ""
                 }
 
                 <button
-                  class="btn-secondary sitrep-table-print"
+                  class="btn-secondary sitrep-table-print sitrep-table-action"
                   type="button"
                   onclick="cetakSitrep('${htmlPenyelia(item.id)}')"
                 >
@@ -2512,6 +3320,7 @@ async function bukaLampiranSitrep(laluan, namaFail = "lampiran") {
     );
   }
 }
+
 function cetakSitrep(id) {
   const item = dataSitrepPenyelia.find(rekod => String(rekod.id) === String(id));
   if (!item) return;
