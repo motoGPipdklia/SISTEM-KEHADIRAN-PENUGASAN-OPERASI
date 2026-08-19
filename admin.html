@@ -7,7 +7,7 @@
   <title>OP LITAR motoGP | Pentadbir</title>
 
   <link rel="stylesheet" href="css/style.css?v=20260722-0045">
-  <link rel="stylesheet" href="css/admin.css?v=20260730-motogp-laporan-005">
+  <link rel="stylesheet" href="css/admin.css?v=20260730-f1-login-004">
 </head>
 
 <body>
@@ -19,7 +19,7 @@
       <div class="admin-login-brand">
         <img
           src="images/logo-utama.png"
-          alt="OPS Litar MotoGP 2026"
+          alt="OPS Laris MotoGP 2026"
           class="admin-login-logo"
         >
       </div>
@@ -73,12 +73,21 @@
       <nav class="topbar-actions" aria-label="Tindakan Pentadbir">
 
   <button
+    class="header-action-button"
+    type="button"
+    onclick="bukaPerantiKhasAdmin()"
+  >
+    PERANTI KHAS
+  </button>
+
+  <button
     class="header-action-button header-import-user"
     type="button"
     onclick="bukaImportPengguna()"
   >
     IMPORT PENGGUNA CSV
   </button>
+
 
   <button
     class="header-action-button header-import-assignment"
@@ -123,6 +132,107 @@
     </header>
 
     <main class="content">
+      <!-- ===============================================
+           PERANTI KHAS PENTADBIR
+      ================================================ -->
+      <section class="card" id="modulPerantiKhasAdmin" hidden style="display:none;">
+        <div class="section-heading">
+          <div>
+            <h2>Peranti Khas Pentadbir</h2>
+            <p class="muted">
+              Maksimum 2 peranti khas dibenarkan: 1 laptop dan 1 telefon.
+              Peranti khas boleh digunakan untuk login bagi mana-mana petugas.
+            </p>
+          </div>
+        </div>
+
+        <div class="info-box">
+          <div class="info-row">
+            <div class="info-label">Jenis Peranti:</div>
+            <div class="info-value" id="jenisPerantiAdmin">-</div>
+          </div>
+
+          <div class="info-row">
+            <div class="info-label">Device ID:</div>
+            <div
+              class="info-value"
+              id="deviceIdAdmin"
+              style="word-break:break-all"
+            >-</div>
+          </div>
+
+          <div class="info-row">
+            <div class="info-label">Status:</div>
+            <div class="info-value" id="statusPerantiKhasAdmin">MENYEMAK...</div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button
+            class="gray"
+            id="btnSalinDeviceAdmin"
+            type="button"
+            onclick="salinDeviceIdAdmin()"
+          >
+            SALIN DEVICE ID
+          </button>
+
+          <button
+            class="green-button"
+            id="btnJadikanPerantiKhas"
+            type="button"
+            onclick="jadikanPerantiKhasAdmin()"
+          >
+            JADIKAN PERANTI KHAS
+          </button>
+
+          <button
+            class="red"
+            id="btnBuangPerantiKhas"
+            type="button"
+            onclick="buangPerantiKhasAdmin()"
+            disabled
+          >
+            BUANG PERANTI KHAS
+          </button>
+        </div>
+
+        <div
+          class="status-box"
+          id="mesejPerantiKhasAdmin"
+          role="status"
+          aria-live="polite"
+        ></div>
+
+        <div class="wrap" style="margin-top:16px">
+          <table>
+            <thead>
+              <tr>
+                <th>Bil.</th>
+                <th>Jenis</th>
+                <th>Device ID</th>
+                <th>Catatan</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyPerantiKhasAdmin">
+              <tr>
+                <td colspan="4" class="empty-row">Sedang mendapatkan peranti khas...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      
+    <div style="margin-top:16px;">
+      <button
+        class="secondary"
+        type="button"
+        onclick="tutupPerantiKhasAdmin()"
+      >
+        TUTUP
+      </button>
+    </div>
+</section>
+
       <!-- ===============================================
            PENAPIS
       ================================================ -->
@@ -316,7 +426,7 @@
           <div>
             <h2>Modul Laporan</h2>
             <p class="muted">
-              Lihat Laporan Petugas dan SITREP.
+              Lihat laporan petugas yang telah dibaca dan rekod SITREP mengikut tarikh.
             </p>
           </div>
           <button class="gray" type="button" onclick="tutupModulLaporanPentadbir()">
@@ -833,7 +943,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/api-config.js?v=20260722-0215"></script>
 <script src="js/supabase-client.js?v=20260722-0215"></script>
-<script src="js/admin.js?v=20260818-pusat-kawalan-001"></script>
+<script src="js/admin.js?v=20260819-motogp-001"></script>
 
 </body>
 </html>
