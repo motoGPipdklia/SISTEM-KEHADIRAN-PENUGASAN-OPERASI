@@ -1404,6 +1404,38 @@ function ringkasanKadLaporanPenyelia(item) {
   }
 
 
+  if (jenis === "LITUPAN KESELAMATAN") {
+    return {
+      label1: "Lokasi",
+      nilai1:
+        data.lokasi ||
+        item.tugas?.tempat_tugas ||
+        item.tugas?.lokasi ||
+        "-",
+
+      label2: "",
+      nilai2: "",
+
+      label3: "VVIP / VIP",
+      nilai3:
+        item.vvipVip ||
+        data.vvip_vip ||
+        (
+          data.kategori && data.nama
+            ? `${data.kategori} — ${data.nama}`
+            : "TIADA"
+        ),
+
+      label4: "Perkara Menarik",
+      nilai4:
+        data.catatan ||
+        data.tujuan_aktiviti ||
+        item.perkaraMenarik ||
+        "TIADA"
+    };
+  }
+
+
   if (jenis === "KAWALAN LALULINTAS") {
     return {
       label1: "Keadaan Trafik",
@@ -1533,6 +1565,10 @@ function pastikanPilihanPenapisLaporanPenyelia() {
       label: "TELAH DIBACA"
     },
     {
+      value: "LAPORAN VVIP",
+      label: "VVIP"
+    },
+    {
       value: "LAPORAN PENGUNJUNG",
       label: "PENGUNJUNG"
     },
@@ -1576,6 +1612,10 @@ function pastikanPilihanPenapisLaporanPenyelia() {
   if (
     !Array.from(penapis.options || [])
       .some(option =>
+        option.value === "LAPORAN VVIP"
+      ) ||
+    !Array.from(penapis.options || [])
+      .some(option =>
         option.value === "LAPORAN PENGUNJUNG"
       )
   ) {
@@ -1601,6 +1641,10 @@ function kategoriLaporanPenyelia(item) {
       item?.jenisTugas ||
       item?.tugas?.jenis_tugas
     );
+
+  if (jenis === "LITUPAN KESELAMATAN") {
+    return "LAPORAN VVIP";
+  }
 
   if (jenis === "KAWALAN KESELAMATAN") {
     return "LAPORAN PENGUNJUNG";
@@ -2165,6 +2209,10 @@ function normalisasiJenisTugasLaporanPenyelia(nilai) {
     .replace(/\s+/g, " ")
     .trim();
 
+  if (jenis.includes("LITUPAN KESELAMATAN")) {
+    return "LITUPAN KESELAMATAN";
+  }
+
   if (jenis.includes("KAWALAN KESELAMATAN")) {
     return "KAWALAN KESELAMATAN";
   }
@@ -2302,6 +2350,58 @@ function binaButiranDinamikLaporanPenyelia(item) {
       ${barisModalLaporan(
         "VVIP / VIP",
         item.vvipVip || "TIADA"
+      )}
+    `;
+  }
+
+
+  if (jenis === "LITUPAN KESELAMATAN") {
+    return `
+      ${barisModalLaporan(
+        "Kategori",
+        data.kategori
+      )}
+
+      ${barisModalLaporan(
+        "Nama",
+        data.nama
+      )}
+
+      ${barisModalLaporan(
+        "Jawatan",
+        data.jawatan
+      )}
+
+      ${barisModalLaporan(
+        "Agensi / Organisasi",
+        data.agensi_organisasi
+      )}
+
+      ${barisModalLaporan(
+        "Masa Ketibaan",
+        data.masa_ketibaan
+      )}
+
+      ${barisModalLaporan(
+        "Masa Beredar",
+        data.masa_beredar
+      )}
+
+      ${barisModalLaporan(
+        "Lokasi",
+        data.lokasi ||
+        item.tugas?.tempat_tugas ||
+        item.tugas?.lokasi
+      )}
+
+      ${barisModalLaporan(
+        "Tujuan / Aktiviti",
+        data.tujuan_aktiviti
+      )}
+
+      ${barisModalLaporan(
+        "Catatan",
+        data.catatan
       )}
     `;
   }
