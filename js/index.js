@@ -409,6 +409,7 @@ function setProsesGps(keluar, proses, mesej = "") {
 function normalisasiJenisTugasPelaporan(nilai) {
   const jenis = atas(nilai).replace(/\s+/g, " ").trim();
 
+  if (jenis.includes("LITUPAN KESELAMATAN")) return "LITUPAN KESELAMATAN";
   if (jenis.includes("KAWALAN KESELAMATAN")) return "KAWALAN KESELAMATAN";
   if (jenis.includes("KAWALAN LALULINTAS") || jenis.includes("KAWALAN LALU LINTAS")) {
     return "KAWALAN LALULINTAS";
@@ -449,6 +450,9 @@ function bukaLaporan() {
     binaBarisMaklumat("Tempat Tugas:", tugas.lokasi) +
     binaBarisMaklumat("Penyelia:", tugas.penyelia);
 
+  const jenisLaporan = normalisasiJenisTugasPelaporan(tugas.jenisTugas);
+  const kotakTarikh = el("tarikhMasaLaporan")?.closest(".info-box");
+  if (kotakTarikh) kotakTarikh.style.display = jenisLaporan === "LITUPAN KESELAMATAN" ? "none" : "block";
   kemasKiniTarikhMasaLaporan();
   janaBorangPelaporan();
 
@@ -484,6 +488,48 @@ function janaBorangPelaporan() {
   const jenis = normalisasiJenisTugasPelaporan(tugas.jenisTugas);
 
   switch (jenis) {
+    case "LITUPAN KESELAMATAN":
+      if (!nilaiBoolean(tugas.penyelia)) {
+        ruang.innerHTML = `<div class="status-box error" style="display:block"><strong>BORANG TIDAK DIBENARKAN</strong><br><br>Borang Litupan Keselamatan hanya untuk petugas yang ditetapkan sebagai Penyelia.</div>`;
+        el("btnHantarLaporan").disabled = true;
+        break;
+      }
+      ruang.innerHTML = `
+        <div class="litupan-keselamatan-form">
+          <h2>Borang Litupan Keselamatan</h2>
+          <p class="laporan-hint">Pelaporan VVIP / VIP oleh Penyelia Litupan Keselamatan.</p>
+
+          <label for="lapKategoriVvip"><strong>Kategori *</strong></label>
+          <select id="lapKategoriVvip">
+            <option value="">-- PILIH --</option>
+            <option value="VVIP">VVIP</option>
+            <option value="VIP">VIP</option>
+          </select>
+
+          <label for="lapNamaVvip"><strong>Nama *</strong></label>
+          <input id="lapNamaVvip" type="text" placeholder="Nama VVIP / VIP">
+
+          <div class="laporan-grid-2">
+            <div><label for="lapJawatanVvip"><strong>Jawatan</strong></label><input id="lapJawatanVvip" type="text" placeholder="Contoh: MENTERI / KETUA JABATAN"></div>
+            <div><label for="lapAgensiVvip"><strong>Agensi / Organisasi</strong></label><input id="lapAgensiVvip" type="text" placeholder="Contoh: KDN / PDRM / ORGANISASI"></div>
+          </div>
+
+          <div class="laporan-grid-2">
+            <div><label for="lapMasaKetibaan"><strong>Masa Ketibaan</strong></label><input id="lapMasaKetibaan" type="time"></div>
+            <div><label for="lapMasaBeredar"><strong>Masa Beredar</strong></label><input id="lapMasaBeredar" type="time"></div>
+          </div>
+
+          <label for="lapLokasiVvip"><strong>Lokasi</strong></label>
+          <input id="lapLokasiVvip" type="text" placeholder="Contoh: PADDOCK / MAIN GRANDSTAND">
+
+          <label for="lapTujuanVvip"><strong>Tujuan / Aktiviti</strong></label>
+          <textarea id="lapTujuanVvip" placeholder="Tujuan lawatan atau aktiviti..."></textarea>
+
+          <label for="lapCatatanVvip"><strong>Catatan</strong></label>
+          <textarea id="lapCatatanVvip" placeholder="Catatan tambahan jika ada..."></textarea>
+        </div>`;
+      break;
+
     case "KAWALAN KESELAMATAN":
       ruang.innerHTML = `
         <h2>Borang Kawalan Keselamatan</h2>
@@ -688,6 +734,22 @@ function dapatkanAdaTiadaLaporan(id) {
 function binaDataLaporan() {
   const jenis = normalisasiJenisTugasPelaporan(tugas?.jenisTugas);
 
+  if (jenis === "LITUPAN KESELAMATAN") {
+    if (!nilaiBoolean(tugas?.penyelia)) throw new Error("Borang Litupan Keselamatan hanya untuk Penyelia.");
+    const kategori = atas(el("lapKategoriVvip")?.value);
+    const nama = teks(el("lapNamaVvip")?.value);
+    const jawatan = teks(el("lapJawatanVvip")?.value);
+    const agensi = teks(el("lapAgensiVvip")?.value);
+    const masaKetibaan = teks(el("lapMasaKetibaan")?.value);
+    const masaBeredar = teks(el("lapMasaBeredar")?.value);
+    const lokasi = teks(el("lapLokasiVvip")?.value);
+    const tujuanAktiviti = teks(el("lapTujuanVvip")?.value);
+    const catatan = teks(el("lapCatatanVvip")?.value);
+    if (!["VVIP", "VIP"].includes(kategori)) throw new Error("Sila pilih kategori VVIP atau VIP.");
+    if (!nama) throw new Error("Sila masukkan nama VVIP / VIP.");
+    return { kategori, nama, jawatan, agensi_organisasi: agensi, masa_ketibaan: masaKetibaan, masa_beredar: masaBeredar, lokasi, tujuan_aktiviti: tujuanAktiviti, catatan };
+  }
+
   if (jenis === "KAWALAN KESELAMATAN") {
     const keadaan = atas(el("lapKeadaanKeselamatan")?.value);
     const jumlahPengunjung = Number(el("lapJumlahPengunjung")?.value);
@@ -836,7 +898,12 @@ async function hantarLaporan() {
     };
 
     /* Kekalkan kolum lama untuk keserasian sementara dengan paparan Urusetia lama. */
-    if (jenis === "KAWALAN KESELAMATAN") {
+    if (jenis === "LITUPAN KESELAMATAN") {
+      payload.jumlah_pengunjung = 0;
+      payload.jumlah_kenderaan = 0;
+      payload.vvip_vip = `${dataLaporan.kategori} — ${dataLaporan.nama}`;
+      payload.perkara_menarik = dataLaporan.catatan || dataLaporan.tujuan_aktiviti || "";
+    } else if (jenis === "KAWALAN KESELAMATAN") {
       payload.jumlah_pengunjung = dataLaporan.jumlah_pengunjung;
       payload.jumlah_kenderaan = dataLaporan.kenderaan.jumlah;
       payload.vvip_vip = dataLaporan.vvip_vip.status === "ADA" ? dataLaporan.vvip_vip.butiran : "TIADA";
