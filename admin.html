@@ -7,7 +7,7 @@
   <title>OP LITAR motoGP | Pentadbir</title>
 
   <link rel="stylesheet" href="css/style.css?v=20260722-0045">
-  <link rel="stylesheet" href="css/admin.css?v=20260730-f1-login-004">
+  <link rel="stylesheet" href="css/admin.css?v=20260820-motogp-sama-formula1-002">
 </head>
 
 <body>
@@ -19,7 +19,7 @@
       <div class="admin-login-brand">
         <img
           src="images/logo-utama.png"
-          alt="OPS Laris MotoGP 2026"
+          alt="OPS Litar MotoGP 2026"
           class="admin-login-logo"
         >
       </div>
@@ -111,6 +111,17 @@
     onclick="bukaModulLaporanPentadbir()"
   >
     LAPORAN
+  </button>
+
+  <button
+    class="header-action-button header-charts"
+    id="btnBukaCartaPentadbir"
+    type="button"
+    onclick="bukaModulCartaPentadbir()"
+    aria-controls="modulCartaPentadbir"
+    aria-expanded="false"
+  >
+    CARTA
   </button>
 
   <a
@@ -417,6 +428,591 @@
           </table>
         </div>
       </section>
+
+      <!-- ===============================================
+           MODUL CARTA OPERASI
+      ================================================ -->
+      <section class="card admin-chart-module" id="modulCartaPentadbir" hidden>
+        <div class="section-heading">
+          <div>
+            <h2>Carta Operasi</h2>
+            <p class="muted">
+              Analitik operasi daripada laporan petugas, kehadiran, penugasan
+              dan maklumat tambahan Urusetia.
+            </p>
+          </div>
+          <button class="gray" type="button" onclick="tutupModulCartaPentadbir()">TUTUP</button>
+        </div>
+
+        <div class="admin-chart-toolbar">
+          <div>
+            <label for="tarikhCartaPentadbir">Tarikh</label>
+            <input id="tarikhCartaPentadbir" type="date" onchange="muatDataCartaPentadbir()">
+          </div>
+          <div>
+            <label for="jenisCartaPentadbir">Paparan</label>
+            <select id="jenisCartaPentadbir" onchange="tukarPaparanCartaPentadbir(this.value)">
+              <option value="SEMUA">SEMUA CARTA</option>
+              <option value="PENGUNJUNG">PENGUNJUNG</option>
+              <option value="KENDERAAN">KENDERAAN</option>
+              <option value="VVIP_VIP">VVIP / VIP</option>
+              <option value="JAWATANKUASA">JAWATANKUASA</option>
+              <option value="KEHADIRAN">KEHADIRAN</option>
+              <option value="INSIDEN">INSIDEN</option>
+              <option value="PETA">PETA LOKASI PENUGASAN</option>
+              <option value="KRONOLOGI">KRONOLOGI</option>
+            </select>
+          </div>
+          <button class="gold admin-chart-refresh" type="button" onclick="muatDataCartaPentadbir()">SEMAK SEMULA</button>
+        </div>
+
+        <div class="status-box" id="statusCartaPentadbir" role="status" aria-live="polite"></div>
+
+        <div class="admin-chart-summary-grid">
+          <article class="admin-chart-summary-card"><span>JUMLAH PENGUNJUNG</span><strong id="cartaJumlahPengunjung">0</strong></article>
+          <article class="admin-chart-summary-card"><span>JUMLAH KENDERAAN</span><strong id="cartaJumlahKenderaan">0</strong></article>
+          <article class="admin-chart-summary-card"><span>VVIP / VIP</span><strong id="cartaJumlahVvipVip">0</strong></article>
+          <article class="admin-chart-summary-card"><span>SEDANG BERTUGAS</span><strong id="cartaJumlahBertugas">0</strong></article>
+          <article class="admin-chart-summary-card"><span>INSIDEN</span><strong id="cartaJumlahInsiden">0</strong></article>
+          <article class="admin-chart-summary-card"><span>TANGKAPAN</span><strong id="cartaJumlahTangkapan">0</strong></article>
+        </div>
+
+        <div class="admin-chart-grid">
+          <section class="admin-chart-card" data-chart-section="PENGUNJUNG">
+            <div class="admin-chart-card-heading">
+              <div>
+                <h3>Carta Pengunjung</h3>
+                <p class="muted">Trend jumlah pengunjung daripada laporan Kawalan Keselamatan.</p>
+              </div>
+              <button
+                class="gray compact-button admin-chart-print-button"
+                type="button"
+                onclick="cetakCartaPentadbir('PENGUNJUNG','CARTA PENGUNJUNG')"
+              >
+                CETAK
+              </button>
+            </div>
+            <div class="admin-chart-canvas-wrap"><canvas id="canvasCartaPengunjung"></canvas></div>
+          </section>
+
+          <section
+            class="admin-chart-card admin-vehicle-chart-card"
+            data-chart-section="KENDERAAN"
+          >
+            <div class="admin-chart-card-heading">
+              <div>
+                <h3>Carta Kenderaan</h3>
+                <p class="muted">
+                  Klik Bas, Motosikal atau Motokar untuk melihat butiran di sebelah kanan.
+                </p>
+              </div>
+              <button
+                class="gray compact-button admin-chart-print-button"
+                type="button"
+                onclick="cetakCartaPentadbir('KENDERAAN','CARTA KENDERAAN')"
+              >
+                CETAK
+              </button>
+            </div>
+
+            <div class="admin-vehicle-layout">
+
+              <!-- CARTA DI KIRI -->
+              <div class="admin-vehicle-chart-panel">
+                <div class="admin-chart-canvas-wrap admin-vehicle-canvas-wrap">
+                  <canvas id="canvasCartaKenderaan"></canvas>
+                </div>
+
+                <div class="admin-vehicle-hint">
+                  Klik bar atau label Bas, Motosikal atau Motokar.
+                </div>
+              </div>
+
+              <!-- BUTIRAN DI KANAN -->
+              <aside class="admin-vehicle-detail-panel">
+                <div class="admin-vehicle-detail-heading">
+                  <div>
+                    <span>KATEGORI DIPILIH</span>
+                    <strong id="tajukButiranKenderaanPentadbir">
+                      BAS
+                    </strong>
+                  </div>
+
+                  <div
+                    class="admin-vehicle-detail-count"
+                    id="jumlahButiranKenderaanPentadbir"
+                  >
+                    0
+                  </div>
+                </div>
+
+                <div
+                  class="admin-vehicle-detail-list"
+                  id="senaraiButiranKenderaanPentadbir"
+                >
+                  <div class="empty-row">
+                    Klik carta untuk memilih kategori kenderaan.
+                  </div>
+                </div>
+              </aside>
+
+            </div>
+          </section>
+
+          <section class="admin-chart-card" data-chart-section="VVIP_VIP">
+            <div class="section-heading">
+              <div>
+                <h3>VVIP / VIP</h3>
+                <p class="muted">
+                  Maklumat VVIP/VIP daripada laporan petugas dan rekod tambahan Urusetia/Pentadbir.
+                </p>
+              </div>
+
+              <div class="section-heading-actions">
+                <button
+                  class="gray compact-button admin-chart-print-button"
+                  type="button"
+                  onclick="cetakCartaPentadbir('VVIP_VIP','VVIP / VIP')"
+                >
+                  CETAK
+                </button>
+
+                <button
+                  class="green-button compact-button"
+                  type="button"
+                  onclick="bukaTambahVvipVipPentadbir()"
+                >
+                  + TAMBAH VVIP / VIP
+                </button>
+
+                <button
+                  class="gray compact-button"
+                  type="button"
+                  onclick="muatSemulaVvipVipPentadbir()"
+                >
+                  SEMAK SEMULA
+                </button>
+              </div>
+            </div>
+
+            <div
+              class="status-box"
+              id="statusVvipVipPentadbir"
+              role="status"
+              aria-live="polite"
+            ></div>
+
+            <div class="admin-vvip-layout">
+
+              <!-- SENARAI NAMA VVIP / VIP DI KIRI -->
+              <div class="admin-vvip-list-panel">
+                <div class="admin-vvip-panel-heading">
+                  <div>
+                    <span>SENARAI VVIP / VIP</span>
+                    <strong id="jumlahSenaraiVvipVipPentadbir">0 REKOD</strong>
+                  </div>
+                </div>
+
+                <div
+                  class="admin-vvip-name-list"
+                  id="senaraiCartaVvipVip"
+                >
+                  <div class="empty-row">Belum ada data VVIP / VIP.</div>
+                </div>
+              </div>
+
+              <!-- BUTIRAN KAWALAN KESELAMATAN DI KANAN -->
+              <aside class="admin-vvip-detail-panel">
+                <div class="admin-vvip-detail-heading">
+                  <div>
+                    <span>BUTIRAN LAPORAN</span>
+                    <strong id="tajukButiranVvipVipPentadbir">
+                      PILIH VVIP / VIP
+                    </strong>
+                  </div>
+                </div>
+
+                <div
+                  class="admin-vvip-detail-content"
+                  id="butiranVvipVipPentadbir"
+                >
+                  <div class="admin-vvip-detail-empty">
+                    <strong>BUTIRAN PETUGAS</strong>
+                    <p>
+                      Klik mana-mana nama VVIP / VIP untuk melihat maklumat
+                      petugas yang menghantar laporan.
+                    </p>
+                  </div>
+                </div>
+              </aside>
+
+            </div>
+          </section>
+
+          <section
+            class="admin-chart-card admin-committee-card"
+            data-chart-section="JAWATANKUASA"
+          >
+            <div class="admin-committee-heading">
+              <div>
+                <h3>Jawatankuasa</h3>
+                <p class="muted">
+                  Senarai jawatankuasa operasi bagi tarikh dipilih.
+                  Pangkat, No. Badan, Nama dan No. Telefon diambil automatik daripada profil petugas.
+                </p>
+              </div>
+
+              <div class="admin-committee-heading-actions">
+                <button
+                  class="gray admin-chart-print-button"
+                  type="button"
+                  onclick="cetakCartaPentadbir('JAWATANKUASA','JAWATANKUASA OPERASI')"
+                >
+                  CETAK
+                </button>
+
+                <button
+                  class="green-button"
+                  type="button"
+                  onclick="bukaTambahJawatankuasaPentadbir()"
+                >
+                  + TAMBAH JAWATANKUASA
+                </button>
+
+                <button
+                  class="gray"
+                  type="button"
+                  onclick="muatSemulaJawatankuasaPentadbir()"
+                >
+                  SEMAK SEMULA
+                </button>
+              </div>
+            </div>
+
+            <div
+              class="status-box"
+              id="statusJawatankuasaPentadbir"
+              role="status"
+              aria-live="polite"
+            ></div>
+
+            <div class="admin-committee-table-wrap">
+              <table class="admin-committee-table">
+                <thead>
+                  <tr class="admin-committee-title-row">
+                    <th colspan="5" id="tajukJawatankuasaPentadbir">
+                      JAWATANKUASA OPERASI
+                    </th>
+                  </tr>
+
+                  <tr>
+                    <th class="col-bil">BIL</th>
+                    <th class="col-nama">PANGKAT / NO / NAMA</th>
+                    <th class="col-unit">BHGN / BALAI / CAW / UNIT</th>
+                    <th class="col-tugas">TUGAS</th>
+                    <th class="col-telefon">NO. TELEFON</th>
+                  </tr>
+                </thead>
+
+                <tbody id="tbodyJawatankuasaPentadbir">
+                  <tr>
+                    <td colspan="5" class="empty-row">
+                      Tiada rekod jawatankuasa untuk tarikh ini.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section
+            class="admin-chart-card admin-attendance-chart-card"
+            data-chart-section="KEHADIRAN"
+          >
+            <div class="admin-chart-card-heading">
+              <div>
+                <h3>Kehadiran Petugas</h3>
+                <p class="muted">
+                  Klik bahagian carta atau label status untuk memaparkan senarai nama petugas.
+                </p>
+              </div>
+              <button
+                class="gray compact-button admin-chart-print-button"
+                type="button"
+                onclick="cetakCartaPentadbir('KEHADIRAN','KEHADIRAN PETUGAS')"
+              >
+                CETAK
+              </button>
+            </div>
+
+            <div class="admin-attendance-layout">
+
+              <!-- CARTA DI KIRI -->
+              <div class="admin-attendance-chart-panel">
+                <div class="admin-chart-canvas-wrap admin-attendance-canvas-wrap">
+                  <canvas id="canvasCartaKehadiran"></canvas>
+                </div>
+
+                <div class="admin-attendance-hint">
+                  Klik HADIR, TIDAK HADIR, SELESAI atau MENUNGGU.
+                </div>
+              </div>
+
+              <!-- SENARAI PETUGAS DI KANAN -->
+              <aside class="admin-attendance-list-panel">
+                <div class="admin-attendance-list-heading">
+                  <div>
+                    <span>STATUS DIPILIH</span>
+                    <strong id="tajukSenaraiKehadiranPentadbir">
+                      HADIR
+                    </strong>
+                  </div>
+
+                  <div
+                    class="admin-attendance-list-count"
+                    id="jumlahSenaraiKehadiranPentadbir"
+                  >
+                    0
+                  </div>
+                </div>
+
+                <div
+                  class="admin-attendance-list"
+                  id="senaraiKehadiranPentadbir"
+                >
+                  <div class="empty-row">
+                    Klik carta untuk memilih status.
+                  </div>
+                </div>
+              </aside>
+
+            </div>
+          </section>
+
+          <section
+            class="admin-chart-card admin-incident-chart-card"
+            data-chart-section="INSIDEN"
+          >
+            <div class="admin-chart-card-heading">
+              <div>
+                <h3>Insiden Operasi</h3>
+                <p class="muted">
+                  Klik Tangkapan, Rampasan, Kemalangan atau Ancaman untuk melihat butiran di sebelah kanan.
+                </p>
+              </div>
+              <button
+                class="gray compact-button admin-chart-print-button"
+                type="button"
+                onclick="cetakCartaPentadbir('INSIDEN','INSIDEN OPERASI')"
+              >
+                CETAK
+              </button>
+            </div>
+
+            <div class="admin-incident-layout">
+
+              <!-- CARTA DI KIRI -->
+              <div class="admin-incident-chart-panel">
+                <div class="admin-chart-canvas-wrap admin-incident-canvas-wrap">
+                  <canvas id="canvasCartaInsiden"></canvas>
+                </div>
+
+                <div class="admin-incident-hint">
+                  Klik bar atau label kategori insiden.
+                </div>
+              </div>
+
+              <!-- BUTIRAN DI KANAN -->
+              <aside class="admin-incident-detail-panel">
+                <div class="admin-incident-detail-heading">
+                  <div>
+                    <span>KATEGORI DIPILIH</span>
+                    <strong id="tajukButiranInsidenPentadbir">
+                      TANGKAPAN
+                    </strong>
+                  </div>
+
+                  <div
+                    class="admin-incident-detail-count"
+                    id="jumlahButiranInsidenPentadbir"
+                  >
+                    0
+                  </div>
+                </div>
+
+                <div
+                  class="admin-incident-detail-list"
+                  id="senaraiButiranInsidenPentadbir"
+                >
+                  <div class="empty-row">
+                    Klik carta untuk memilih kategori insiden.
+                  </div>
+                </div>
+              </aside>
+
+            </div>
+          </section>
+        </div>
+
+        <section class="admin-chart-card admin-operation-map-card" id="kadCartaPeta" data-chart-section="PETA">
+          <div class="section-heading">
+            <div>
+              <h3>Peta Lokasi Penugasan</h3>
+              <p class="muted">
+                Klik marker untuk melihat petugas yang sedang bertugas,
+                belum hadir atau selesai di lokasi tersebut.
+              </p>
+            </div>
+            <div class="section-heading-actions">
+              <button
+                class="gray compact-button admin-chart-print-button"
+                type="button"
+                onclick="cetakCartaPentadbir('PETA','PETA LOKASI PENUGASAN')"
+              >
+                CETAK
+              </button>
+
+              <button
+                class="gray compact-button"
+                type="button"
+                onclick="bukaUrusPetaPentadbir()"
+              >
+                URUS MARKER
+              </button>
+
+              <button
+                class="green-button compact-button"
+                id="btnToggleMarkerPetaPentadbir"
+                type="button"
+                onclick="toggleMarkerPetaPentadbir()"
+                aria-pressed="true"
+              >
+                TUTUP MARKER
+              </button>
+
+              <button
+                class="gold compact-button"
+                type="button"
+                onclick="resetZumPetaCartaPentadbir()"
+              >
+                RESET ZOOM
+              </button>
+            </div>
+          </div>
+
+          <div class="admin-operation-map-layout">
+            <div class="admin-operation-map-stage">
+              <div class="admin-operation-map-viewport" id="viewportPetaCartaPentadbir">
+                <div class="admin-operation-map-canvas" id="kanvasPetaCartaPentadbir">
+                  <img
+                    id="imejPetaCartaPentadbir"
+                    class="admin-operation-map-image"
+                    src="images/peta.png"
+                    alt="Peta lokasi penugasan operasi"
+                    draggable="false"
+                  >
+                  <div id="lapisanMarkerPetaPentadbir" class="admin-map-marker-layer"></div>
+                </div>
+              </div>
+
+              <div class="admin-map-footer">
+                <div id="statusPetaCartaPentadbir" class="muted">Zoom: 100%</div>
+                <div class="admin-map-legend">
+                  <span>NORMAL</span>
+                  <span>PERHATIAN</span>
+                  <span>INSIDEN</span>
+                  <span>KRITIKAL</span>
+                </div>
+              </div>
+            </div>
+
+            <aside class="admin-map-location-panel" id="panelLokasiPetaPentadbir">
+              <div class="admin-map-location-empty">
+                <strong>PILIH LOKASI</strong>
+                <p>Klik marker pada peta untuk melihat maklumat lokasi dan petugas.</p>
+              </div>
+
+              <div id="kandunganLokasiPetaPentadbir" hidden>
+                <div class="admin-map-location-title">
+                  <div>
+                    <span class="muted">LOKASI</span>
+                    <h3 id="namaLokasiPetaPentadbir">-</h3>
+                  </div>
+                  <span class="admin-map-location-status" id="statusLokasiPetaPentadbir">NORMAL</span>
+                </div>
+
+                <div class="admin-map-location-stats">
+                  <div><span>DITUGASKAN</span><strong id="jumlahDitugaskanLokasi">0</strong></div>
+                  <div><span>SEDANG BERTUGAS</span><strong id="jumlahBertugasLokasi">0</strong></div>
+                  <div><span>BELUM HADIR</span><strong id="jumlahBelumHadirLokasi">0</strong></div>
+                  <div><span>SELESAI</span><strong id="jumlahSelesaiLokasi">0</strong></div>
+                </div>
+
+                <div class="admin-map-location-tabs">
+                  <button class="admin-map-location-tab active" id="tabLokasiBertugas" type="button" onclick="tukarTabPetugasLokasi('BERTUGAS')">SEDANG BERTUGAS</button>
+                  <button class="admin-map-location-tab" id="tabLokasiBelumHadir" type="button" onclick="tukarTabPetugasLokasi('BELUM_HADIR')">BELUM HADIR</button>
+                  <button class="admin-map-location-tab" id="tabLokasiSelesai" type="button" onclick="tukarTabPetugasLokasi('SELESAI')">SELESAI</button>
+                </div>
+
+                <div class="admin-map-personnel-list" id="senaraiPetugasLokasiPeta">
+                  <div class="empty-row">Tiada petugas untuk dipaparkan.</div>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="admin-chart-card admin-chronology-card admin-committee-card" data-chart-section="KRONOLOGI">
+          <div class="section-heading">
+            <div>
+              <h3>Kronologi Operasi</h3>
+              <p class="muted">Gabungan kejadian daripada laporan petugas dan catatan Urusetia.</p>
+            </div>
+            <div class="section-heading-actions">
+              <button
+                class="gray compact-button admin-chart-print-button"
+                type="button"
+                onclick="cetakCartaPentadbir('KRONOLOGI','KRONOLOGI OPERASI')"
+              >
+                CETAK
+              </button>
+              <button
+                class="gold compact-button"
+                type="button"
+                onclick="bukaTambahKronologiPentadbir()"
+              >
+                TAMBAH KRONOLOGI
+              </button>
+            </div>
+          </div>
+
+          <div class="admin-committee-table-wrap">
+            <table class="admin-committee-table admin-chronology-table">
+              <thead>
+                <tr class="admin-committee-title-row">
+                  <th colspan="4" id="tajukJadualKronologiPentadbir">
+                    KRONOLOGI OPERASI
+                  </th>
+                </tr>
+                <tr>
+                  <th style="width:18%;text-align:center;">TARIKH / MASA</th>
+                  <th style="width:24%;text-align:center;">TAJUK</th>
+                  <th style="width:18%;text-align:center;">LOKASI</th>
+                  <th style="width:40%;text-align:center;">CATATAN</th>
+                </tr>
+              </thead>
+              <tbody id="senaraiKronologiPentadbir">
+                <tr>
+                  <td colspan="4" class="empty-row">
+                    Belum ada kronologi operasi.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
 
       <!-- ===============================================
            LAPORAN PETUGAS & REKOD SITREP
@@ -913,6 +1509,376 @@
   </div>
 
   <!-- =====================================================
+       MODAL URUS PETA
+  ====================================================== -->
+  <div class="modal" id="modalUrusPetaPentadbir" role="dialog" aria-modal="true" hidden>
+    <div class="modal-card admin-map-manage-modal">
+      <div class="section-heading">
+        <div>
+          <h2>Urus Marker Lokasi Penugasan</h2>
+          <p class="muted">Pilih tempat tugas, klik pada peta untuk meletakkan marker, kemudian seret marker jika mahu melaras kedudukan.</p>
+        </div>
+        <button class="gray" type="button" onclick="tutupUrusPetaPentadbir()">TUTUP</button>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group form-group-wide">
+          <label for="failPetaPentadbir">Gambar Peta</label>
+          <input id="failPetaPentadbir" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" onchange="pratontonPetaPentadbir(event)">
+        </div>
+
+        <div class="form-group">
+          <label for="pilihanLokasiMarkerPentadbir">Tempat Tugas</label>
+          <select id="pilihanLokasiMarkerPentadbir">
+            <option value="">PILIH TEMPAT TUGAS</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="statusMarkerPentadbir">Status Lokasi</label>
+          <select id="statusMarkerPentadbir">
+            <option value="NORMAL">NORMAL</option>
+            <option value="PERHATIAN">PERHATIAN</option>
+            <option value="INSIDEN">INSIDEN</option>
+            <option value="KRITIKAL">KRITIKAL</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="admin-marker-help">
+        <strong>CARA LETAK MARKER</strong>
+        <span>1. Pilih Tempat Tugas.</span>
+        <span>2. Klik lokasi sebenar pada gambar peta.</span>
+        <span>3. Seret marker untuk melaras kedudukan.</span>
+        <span>4. Tekan SIMPAN MARKER.</span>
+      </div>
+
+      <div class="admin-marker-selected">
+        <span>LOKASI DIPILIH</span>
+        <strong id="lokasiMarkerDipilihPentadbir">BELUM DIPILIH</strong>
+      </div>
+
+      <div class="admin-map-manage-preview">
+        <div class="admin-map-manage-canvas" id="kanvasUrusPetaPentadbir">
+          <img id="imejUrusPetaPentadbir" src="images/peta.png" alt="Pratonton peta operasi" draggable="false">
+          <div id="lapisanMarkerUrusPetaPentadbir" class="admin-map-marker-layer"></div>
+        </div>
+      </div>
+
+      <p class="muted">Pilih tempat tugas, kemudian klik pada gambar peta untuk meletakkan atau memindahkan marker.</p>
+
+      <div class="status-box" id="statusUrusPetaPentadbir" role="status" aria-live="polite"></div>
+
+      <div class="modal-actions">
+        <button class="green-button" id="btnSimpanPetaPentadbir" type="button" onclick="simpanTetapanPetaPentadbir()">SIMPAN MARKER</button>
+        <button class="gray" type="button" onclick="tutupUrusPetaPentadbir()">BATAL</button>
+      </div>
+    </div>
+  </div>
+
+
+
+  <!-- =====================================================
+       MODAL TAMBAH / EDIT VVIP / VIP
+  ====================================================== -->
+  <div
+    class="modal"
+    id="modalVvipVipPentadbir"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="tajukModalVvipVipPentadbir"
+    hidden
+  >
+    <div class="modal-card">
+      <div class="section-heading">
+        <div>
+          <h2 id="tajukModalVvipVipPentadbir">Tambah VVIP / VIP</h2>
+          <p class="muted">
+            Masukkan maklumat VVIP/VIP bagi tarikh operasi yang dipilih.
+          </p>
+        </div>
+
+        <button
+          class="gray compact-button"
+          type="button"
+          onclick="tutupModalVvipVipPentadbir()"
+        >
+          TUTUP
+        </button>
+      </div>
+
+      <input id="idVvipVipPentadbir" type="hidden">
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="tarikhVvipVipPentadbir">Tarikh *</label>
+          <input id="tarikhVvipVipPentadbir" type="date">
+        </div>
+
+        <div class="form-group">
+          <label for="kategoriVvipVipPentadbir">Kategori *</label>
+          <select id="kategoriVvipVipPentadbir">
+            <option value="VVIP">VVIP</option>
+            <option value="VIP">VIP</option>
+          </select>
+        </div>
+
+        <div class="form-group form-group-wide">
+          <label for="namaVvipVipPentadbir">Nama *</label>
+          <input
+            id="namaVvipVipPentadbir"
+            type="text"
+            placeholder="Nama VVIP / VIP"
+            autocapitalize="words"
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="jawatanVvipVipPentadbir">Jawatan</label>
+          <input
+            id="jawatanVvipVipPentadbir"
+            type="text"
+            placeholder="Contoh: MENTERI / KETUA JABATAN"
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="agensiVvipVipPentadbir">Agensi / Organisasi</label>
+          <input
+            id="agensiVvipVipPentadbir"
+            type="text"
+            placeholder="Contoh: KDN / PDRM / ORGANISASI"
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="masaTibaVvipVipPentadbir">Masa Ketibaan</label>
+          <input id="masaTibaVvipVipPentadbir" type="time">
+        </div>
+
+        <div class="form-group">
+          <label for="masaBeredarVvipVipPentadbir">Masa Beredar</label>
+          <input id="masaBeredarVvipVipPentadbir" type="time">
+        </div>
+
+        <div class="form-group form-group-wide">
+          <label for="lokasiVvipVipPentadbir">Lokasi</label>
+          <input
+            id="lokasiVvipVipPentadbir"
+            type="text"
+            placeholder="Contoh: PADDOCK / MAIN GRANDSTAND"
+          >
+        </div>
+
+        <div class="form-group form-group-wide">
+          <label for="tujuanVvipVipPentadbir">Tujuan / Aktiviti</label>
+          <textarea
+            id="tujuanVvipVipPentadbir"
+            placeholder="Tujuan lawatan atau aktiviti..."
+          ></textarea>
+        </div>
+
+        <div class="form-group form-group-wide">
+          <label for="catatanVvipVipPentadbir">Catatan</label>
+          <textarea
+            id="catatanVvipVipPentadbir"
+            placeholder="Catatan tambahan jika ada..."
+          ></textarea>
+        </div>
+      </div>
+
+      <div
+        class="status-box"
+        id="statusModalVvipVipPentadbir"
+        role="status"
+        aria-live="polite"
+      ></div>
+
+      <div class="modal-actions">
+        <button
+          class="green-button"
+          id="btnSimpanVvipVipPentadbir"
+          type="button"
+          onclick="simpanVvipVipPentadbir()"
+        >
+          SIMPAN VVIP / VIP
+        </button>
+
+        <button
+          class="gray"
+          type="button"
+          onclick="tutupModalVvipVipPentadbir()"
+        >
+          BATAL
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- =====================================================
+       MODAL TAMBAH / EDIT JAWATANKUASA
+  ====================================================== -->
+  <div
+    class="modal"
+    id="modalJawatankuasaPentadbir"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="tajukModalJawatankuasaPentadbir"
+    hidden
+  >
+    <div class="modal-card admin-committee-modal-card">
+      <div class="admin-committee-modal-heading">
+        <div>
+          <h2 id="tajukModalJawatankuasaPentadbir">Tambah Jawatankuasa</h2>
+          <p class="muted">
+            Pilih petugas. Pangkat, No. Badan, Nama dan No. Telefon akan diisi automatik.
+          </p>
+        </div>
+
+        <button
+          class="gray compact-button"
+          type="button"
+          onclick="tutupModalJawatankuasaPentadbir()"
+        >
+          TUTUP
+        </button>
+      </div>
+
+      <input id="idJawatankuasaPentadbir" type="hidden">
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="tarikhJawatankuasaPentadbir">Tarikh *</label>
+          <input id="tarikhJawatankuasaPentadbir" type="date">
+        </div>
+
+        <div class="form-group">
+          <label for="petugasJawatankuasaPentadbir">Petugas *</label>
+          <select
+            id="petugasJawatankuasaPentadbir"
+            onchange="pilihPetugasJawatankuasaPentadbir()"
+          >
+            <option value="">PILIH PETUGAS</option>
+          </select>
+        </div>
+
+        <div class="form-group form-group-wide">
+          <label for="namaJawatankuasaPentadbir">Jawatankuasa / Subtek *</label>
+          <input
+            id="namaJawatankuasaPentadbir"
+            type="text"
+            placeholder="Contoh: SUBTEK / URUSETIA / MEDIA"
+            autocapitalize="characters"
+          >
+        </div>
+
+        <div class="form-group form-group-wide">
+          <label for="unitJawatankuasaPentadbir">Bhgn / Balai / Caw / Unit *</label>
+          <input
+            id="unitJawatankuasaPentadbir"
+            type="text"
+            placeholder="Contoh: BKDNKA IPD KLIA"
+            autocapitalize="characters"
+          >
+        </div>
+
+        <div class="form-group form-group-wide">
+          <label for="tugasJawatankuasaPentadbir">Tugas *</label>
+          <input
+            id="tugasJawatankuasaPentadbir"
+            type="text"
+            placeholder="Contoh: JURUTIP / KOMUNIKASI / PEGAWAI SUBTEK"
+            autocapitalize="characters"
+          >
+        </div>
+      </div>
+
+      <div class="admin-committee-profile-preview">
+        <div>
+          <span>PANGKAT</span>
+          <strong id="previewPangkatJawatankuasa">-</strong>
+        </div>
+        <div>
+          <span>NO. BADAN</span>
+          <strong id="previewNoBadanJawatankuasa">-</strong>
+        </div>
+        <div>
+          <span>NAMA</span>
+          <strong id="previewNamaJawatankuasa">-</strong>
+        </div>
+        <div>
+          <span>NO. TELEFON</span>
+          <strong id="previewTelefonJawatankuasa">-</strong>
+        </div>
+      </div>
+
+      <div
+        class="status-box"
+        id="statusModalJawatankuasaPentadbir"
+        role="status"
+        aria-live="polite"
+      ></div>
+
+      <div class="modal-actions">
+        <button
+          class="green-button"
+          id="btnSimpanJawatankuasaPentadbir"
+          type="button"
+          onclick="simpanJawatankuasaPentadbir()"
+        >
+          SIMPAN JAWATANKUASA
+        </button>
+
+        <button
+          class="gray"
+          type="button"
+          onclick="tutupModalJawatankuasaPentadbir()"
+        >
+          BATAL
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL TAMBAH KRONOLOGI -->
+  <div class="modal" id="modalTambahKronologiPentadbir" role="dialog" aria-modal="true" hidden>
+    <div class="modal-card">
+      <h2>Tambah Kronologi Operasi</h2>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="masaKronologiPentadbir">Tarikh / Masa</label>
+          <input id="masaKronologiPentadbir" type="datetime-local">
+        </div>
+
+        <div class="form-group">
+          <label for="lokasiKronologiPentadbir">Lokasi</label>
+          <input id="lokasiKronologiPentadbir" type="text" placeholder="Contoh: PADDOCK">
+        </div>
+
+        <div class="form-group form-group-wide">
+          <label for="tajukKronologiPentadbir">Tajuk / Perkara</label>
+          <input id="tajukKronologiPentadbir" type="text" placeholder="Contoh: VVIP tiba di lokasi">
+        </div>
+
+        <div class="form-group form-group-wide">
+          <label for="catatanKronologiPentadbir">Catatan</label>
+          <textarea id="catatanKronologiPentadbir" placeholder="Butiran kronologi..."></textarea>
+        </div>
+      </div>
+
+      <div class="status-box" id="statusTambahKronologiPentadbir" role="status" aria-live="polite"></div>
+
+      <div class="modal-actions">
+        <button class="green-button" type="button" onclick="simpanKronologiPentadbir()">SIMPAN KRONOLOGI</button>
+        <button class="gray" type="button" onclick="tutupTambahKronologiPentadbir()">BATAL</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- =====================================================
        MODAL RESET DEVICE
   ====================================================== -->
   <div class="modal" id="modalResetDevice" role="dialog" aria-modal="true" aria-labelledby="tajukResetDevice">
@@ -943,7 +1909,8 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/api-config.js?v=20260722-0215"></script>
 <script src="js/supabase-client.js?v=20260722-0215"></script>
-<script src="js/admin.js?v=20260819-motogp-001"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="js/admin.js?v=20260820-motogp-sama-formula1-002"></script>
 
 </body>
 </html>
