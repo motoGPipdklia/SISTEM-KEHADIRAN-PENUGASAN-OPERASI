@@ -1129,14 +1129,2367 @@ tbody tr:hover{
   }
 }
 
-@media(max-width:420px){
-  .login{
-    padding:18px 14px;
-    background-attachment:scroll;
+
+/* ================================================================
+   MODUL CARTA OPERASI PENTADBIR
+================================================================ */
+
+.header-charts{
+  background:#9a661b;
+  color:#fff;
+}
+
+.admin-chart-module{
+  margin-top:20px;
+}
+
+.admin-chart-toolbar{
+  display:grid;
+  grid-template-columns:minmax(180px,.7fr) minmax(230px,1fr) auto;
+  gap:14px;
+  align-items:end;
+  margin:18px 0;
+}
+
+.admin-chart-toolbar input,
+.admin-chart-toolbar select{
+  min-height:50px;
+}
+
+.admin-chart-refresh{
+  min-height:50px;
+  padding:0 24px;
+}
+
+.admin-chart-summary-grid{
+  display:grid;
+  grid-template-columns:repeat(6,minmax(130px,1fr));
+  gap:12px;
+  margin:18px 0;
+}
+
+.admin-chart-summary-card{
+  min-width:0;
+  padding:17px 14px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:var(--surface-dark);
+}
+
+.admin-chart-summary-card span{
+  display:block;
+  color:var(--muted);
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.03em;
+}
+
+.admin-chart-summary-card strong{
+  display:block;
+  overflow:hidden;
+  margin-top:7px;
+  color:var(--gold);
+  font-size:27px;
+  text-overflow:ellipsis;
+}
+
+.admin-chart-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
+  margin-top:14px;
+}
+
+.admin-chart-card{
+  min-width:0;
+  padding:18px;
+  border:1px solid var(--border);
+  border-radius:14px;
+  background:#181818;
+}
+
+.admin-chart-card[hidden]{
+  display:none !important;
+}
+
+.admin-chart-card h3{
+  margin:0 0 6px;
+  color:var(--gold);
+}
+
+.admin-chart-canvas-wrap{
+  position:relative;
+  width:100%;
+  height:310px;
+  margin-top:14px;
+}
+
+.admin-chart-list{
+  display:grid;
+  gap:8px;
+  margin-top:14px;
+}
+
+.admin-chart-list-item{
+  display:flex;
+  align-items:flex-start;
+  gap:11px;
+  padding:12px;
+  border:1px solid #333;
+  border-radius:10px;
+  background:#121212;
+}
+
+.admin-chart-list-number{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 30px;
+  width:30px;
+  height:30px;
+  border-radius:50%;
+  background:var(--gold-dark);
+  color:#fff;
+  font-weight:800;
+}
+
+.admin-chart-list-item strong,
+.admin-chart-list-item small{
+  display:block;
+}
+
+.admin-chart-list-item small{
+  margin-top:5px;
+  color:var(--muted);
+}
+
+
+/* ================================================================
+   PETA OPERASI
+================================================================ */
+
+.admin-operation-map-card{
+  margin-top:14px;
+}
+
+.admin-operation-map-layout{
+  display:grid;
+  grid-template-columns:minmax(0,1.8fr) minmax(320px,.8fr);
+  gap:14px;
+  align-items:start;
+}
+
+.admin-operation-map-stage,
+.admin-map-location-panel{
+  min-width:0;
+}
+
+.admin-operation-map-viewport{
+  position:relative;
+  width:100%;
+  min-height:520px;
+  overflow:auto;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:#090909;
+}
+
+.admin-operation-map-canvas{
+  position:relative;
+  width:100%;
+  min-width:760px;
+  transform-origin:center center;
+  transition:transform .16s ease;
+}
+
+.admin-operation-map-image{
+  display:block;
+  width:100%;
+  height:auto;
+  min-height:520px;
+  object-fit:contain;
+  user-select:none;
+}
+
+.admin-map-marker-layer{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+}
+
+.admin-map-marker{
+  position:absolute;
+  z-index:3;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  transform:translate(-50%,-50%);
+  min-width:64px;
+  min-height:50px;
+  padding:7px 9px;
+  border:2px solid rgba(255,255,255,.88);
+  border-radius:12px;
+  background:#277a49;
+  color:#fff;
+  box-shadow:0 5px 14px rgba(0,0,0,.55);
+  pointer-events:auto;
+  cursor:pointer;
+}
+
+.admin-map-marker:hover{
+  z-index:8;
+  transform:translate(-50%,-50%) scale(1.06);
+}
+
+.admin-map-marker-perhatian{
+  background:#a56d13;
+}
+
+.admin-map-marker-insiden{
+  background:#a33b30;
+}
+
+.admin-map-marker-kritikal{
+  background:#7b1f1f;
+  box-shadow:
+    0 0 0 4px rgba(255,64,64,.15),
+    0 5px 14px rgba(0,0,0,.55);
+}
+
+.admin-map-marker-count{
+  font-size:15px;
+  font-weight:900;
+  line-height:1;
+}
+
+.admin-map-marker-label{
+  display:block;
+  max-width:150px;
+  margin-top:4px;
+  overflow:hidden;
+  font-size:10px;
+  font-weight:800;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.admin-map-footer{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-top:10px;
+}
+
+.admin-map-legend{
+  display:flex;
+  align-items:center;
+  gap:8px 14px;
+  flex-wrap:wrap;
+  color:var(--muted);
+  font-size:11px;
+  font-weight:700;
+}
+
+.admin-map-location-panel{
+  min-height:520px;
+  padding:16px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:#111;
+}
+
+.admin-map-location-empty{
+  display:flex;
+  min-height:470px;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  color:var(--muted);
+  text-align:center;
+}
+
+.admin-map-location-empty strong{
+  color:var(--gold);
+  font-size:17px;
+}
+
+.admin-map-location-title{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+}
+
+.admin-map-location-title h3{
+  margin:4px 0 0;
+}
+
+.admin-map-location-status{
+  padding:6px 9px;
+  border-radius:999px;
+  background:#244f32;
+  color:#b9f6ca;
+  font-size:10px;
+  font-weight:800;
+}
+
+.admin-map-location-stats{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+  margin:14px 0;
+}
+
+.admin-map-location-stats > div{
+  padding:11px;
+  border:1px solid #333;
+  border-radius:9px;
+  background:#171717;
+}
+
+.admin-map-location-stats span{
+  display:block;
+  color:var(--muted);
+  font-size:9px;
+  font-weight:800;
+}
+
+.admin-map-location-stats strong{
+  display:block;
+  margin-top:5px;
+  color:var(--gold);
+  font-size:22px;
+}
+
+.admin-map-location-tabs{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:6px;
+  margin:12px 0;
+}
+
+.admin-map-location-tab{
+  min-height:38px;
+  padding:7px 6px;
+  background:#292929;
+  color:#ccc;
+  font-size:9px;
+}
+
+.admin-map-location-tab.active{
+  background:var(--gold);
+  color:#111;
+}
+
+.admin-map-personnel-list{
+  display:grid;
+  gap:8px;
+  max-height:385px;
+  overflow:auto;
+}
+
+.admin-map-personnel-card{
+  display:grid;
+  grid-template-columns:34px 1fr;
+  gap:10px;
+  padding:11px;
+  border:1px solid #333;
+  border-radius:10px;
+  background:#171717;
+}
+
+.admin-map-personnel-number{
+  display:flex;
+  width:30px;
+  height:30px;
+  align-items:center;
+  justify-content:center;
+  border-radius:50%;
+  background:#333;
+  color:var(--gold);
+  font-weight:800;
+}
+
+.admin-map-personnel-main strong{
+  display:block;
+  line-height:1.4;
+}
+
+.admin-map-personnel-main small{
+  display:block;
+  margin-top:7px;
+  color:var(--muted);
+}
+
+.admin-map-personnel-meta{
+  display:flex;
+  gap:5px 10px;
+  flex-wrap:wrap;
+  margin-top:6px;
+  color:#ccc;
+  font-size:11px;
+}
+
+
+/* ================================================================
+   URUS PETA
+================================================================ */
+
+.admin-map-manage-modal{
+  width:min(100%,1050px);
+}
+
+.admin-map-manage-preview{
+  width:100%;
+  max-height:68vh;
+  overflow:auto;
+  margin-top:16px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:#090909;
+}
+
+.admin-map-manage-canvas{
+  position:relative;
+  width:100%;
+  min-width:760px;
+  cursor:crosshair;
+}
+
+.admin-map-manage-canvas > img{
+  display:block;
+  width:100%;
+  height:auto;
+  min-height:500px;
+  object-fit:contain;
+}
+
+.admin-map-marker-manage{
+  min-width:52px;
+  min-height:38px;
+  background:#356da4;
+  pointer-events:none;
+}
+
+
+/* ================================================================
+   KRONOLOGI
+================================================================ */
+
+.admin-chronology-card{
+  margin-top:14px;
+}
+
+.admin-chronology-list{
+  display:grid;
+  gap:9px;
+  margin-top:14px;
+}
+
+.admin-chronology-item{
+  display:grid;
+  grid-template-columns:180px minmax(0,1fr);
+  gap:14px;
+  padding:13px;
+  border-left:4px solid var(--gold);
+  border-radius:8px;
+  background:#151515;
+}
+
+.admin-chronology-item time{
+  color:var(--gold);
+  font-size:12px;
+  font-weight:800;
+}
+
+.admin-chronology-item strong,
+.admin-chronology-item span{
+  display:block;
+}
+
+.admin-chronology-item span{
+  margin-top:3px;
+  color:#ccc;
+  font-size:12px;
+}
+
+.admin-chronology-item p{
+  margin:6px 0 0;
+  color:var(--muted);
+  line-height:1.5;
+}
+
+
+/* ================================================================
+   RESPONSIVE CARTA
+================================================================ */
+
+@media(max-width:1250px){
+  .admin-chart-summary-grid{
+    grid-template-columns:repeat(3,1fr);
   }
 
-  .admin-login-logo{
-    max-width:94%;
-    max-height:115px;
+  .admin-operation-map-layout{
+    grid-template-columns:1fr;
+  }
+
+  .admin-map-location-panel{
+    min-height:0;
+  }
+
+  .admin-map-location-empty{
+    min-height:180px;
+  }
+}
+
+@media(max-width:900px){
+  .admin-chart-toolbar,
+  .admin-chart-grid{
+    grid-template-columns:1fr;
+  }
+
+  .admin-chart-summary-grid{
+    grid-template-columns:repeat(2,1fr);
+  }
+}
+
+@media(max-width:700px){
+  .admin-chart-summary-grid{
+    grid-template-columns:1fr;
+  }
+
+  .admin-chart-canvas-wrap{
+    height:280px;
+  }
+
+  .admin-operation-map-viewport{
+    min-height:360px;
+  }
+
+  .admin-operation-map-canvas,
+  .admin-map-manage-canvas{
+    min-width:680px;
+  }
+
+  .admin-operation-map-image,
+  .admin-map-manage-canvas > img{
+    min-height:360px;
+  }
+
+  .admin-map-location-tabs{
+    grid-template-columns:1fr;
+  }
+
+  .admin-chronology-item{
+    grid-template-columns:1fr;
+  }
+}
+
+@media print{
+  .admin-chart-module{
+    break-before:page;
+  }
+
+  .admin-map-actions,
+  .admin-chart-refresh{
+    display:none !important;
+  }
+
+  .admin-operation-map-viewport{
+    overflow:visible;
+  }
+}
+
+
+/* ================================================================
+   URUS MARKER — KLIK + DRAG
+================================================================ */
+
+.admin-marker-help{
+  display:grid;
+  gap:5px;
+  margin-top:14px;
+  padding:13px 15px;
+  border:1px solid #4b3d12;
+  border-radius:10px;
+  background:#211c0d;
+  color:#d8d0b3;
+}
+
+.admin-marker-help strong{
+  color:var(--gold);
+  margin-bottom:2px;
+}
+
+.admin-marker-help span{
+  font-size:12px;
+}
+
+.admin-marker-selected{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-top:12px;
+  padding:11px 14px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  background:#121212;
+}
+
+.admin-marker-selected span{
+  color:var(--muted);
+  font-size:11px;
+  font-weight:800;
+}
+
+.admin-marker-selected strong{
+  color:var(--gold);
+  text-align:right;
+}
+
+.admin-map-marker-manage{
+  min-width:64px;
+  min-height:44px;
+  touch-action:none;
+  user-select:none;
+  cursor:grab;
+  pointer-events:auto;
+}
+
+.admin-map-marker-manage:active{
+  cursor:grabbing;
+  transform:translate(-50%,-50%) scale(1.08);
+}
+
+body.marker-dragging,
+body.marker-dragging *{
+  cursor:grabbing !important;
+  user-select:none !important;
+}
+
+#kanvasUrusPetaPentadbir{
+  touch-action:none;
+}
+
+#lapisanMarkerUrusPetaPentadbir{
+  pointer-events:none;
+}
+
+#lapisanMarkerUrusPetaPentadbir .admin-map-marker{
+  pointer-events:auto;
+}
+
+@media(max-width:700px){
+  .admin-marker-selected{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+
+  .admin-marker-selected strong{
+    text-align:left;
+  }
+}
+
+
+/* ================================================================
+   PAPAR / TUTUP MARKER PETA
+================================================================ */
+
+#btnToggleMarkerPetaPentadbir{
+  min-width:138px;
+}
+
+#btnToggleMarkerPetaPentadbir.marker-hidden{
+  background:#2e7d32;
+  color:#fff;
+}
+
+/*
+  Bila marker ditutup:
+  - panel kanan disembunyikan
+  - peta menggunakan keseluruhan lebar
+*/
+.admin-operation-map-layout.markers-off{
+  grid-template-columns:minmax(0,1fr);
+}
+
+.admin-operation-map-layout.markers-off
+.admin-map-location-panel{
+  display:none !important;
+}
+
+#lapisanMarkerPetaPentadbir[hidden]{
+  display:none !important;
+}
+
+@media(max-width:700px){
+  #btnToggleMarkerPetaPentadbir{
+    width:100%;
+    min-width:0;
+  }
+}
+
+
+/* ================================================================
+   CARTA KEHADIRAN INTERAKTIF
+   Carta kiri + senarai kanan
+================================================================ */
+
+.admin-attendance-chart-card{
+  grid-column:1 / -1;
+}
+
+.admin-attendance-layout{
+  display:grid;
+  grid-template-columns:minmax(340px,.9fr) minmax(420px,1.1fr);
+  gap:16px;
+  align-items:stretch;
+  margin-top:14px;
+}
+
+.admin-attendance-list-panel,
+.admin-attendance-chart-panel{
+  min-width:0;
+  border:1px solid #303030;
+  border-radius:12px;
+  background:#121212;
+}
+
+.admin-attendance-list-panel{
+  display:flex;
+  min-height:380px;
+  flex-direction:column;
+  overflow:hidden;
+}
+
+.admin-attendance-list-heading{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:14px 15px;
+  border-bottom:1px solid #303030;
+  background:#171717;
+}
+
+.admin-attendance-list-heading span{
+  display:block;
+  color:var(--muted);
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.04em;
+}
+
+.admin-attendance-list-heading strong{
+  display:block;
+  margin-top:4px;
+  color:var(--gold);
+  font-size:18px;
+}
+
+.admin-attendance-list-count{
+  display:flex;
+  width:44px;
+  height:44px;
+  flex:0 0 44px;
+  align-items:center;
+  justify-content:center;
+  border-radius:50%;
+  background:var(--gold);
+  color:#111;
+  font-size:18px;
+  font-weight:900;
+}
+
+.admin-attendance-list{
+  display:grid;
+  gap:8px;
+  max-height:390px;
+  padding:12px;
+  overflow:auto;
+}
+
+.admin-attendance-person{
+  display:grid;
+  grid-template-columns:34px minmax(0,1fr);
+  gap:10px;
+  padding:11px;
+  border:1px solid #303030;
+  border-radius:10px;
+  background:#181818;
+}
+
+.admin-attendance-person-no{
+  display:flex;
+  width:30px;
+  height:30px;
+  align-items:center;
+  justify-content:center;
+  border-radius:50%;
+  background:#303030;
+  color:var(--gold);
+  font-size:12px;
+  font-weight:900;
+}
+
+.admin-attendance-person-main{
+  min-width:0;
+}
+
+.admin-attendance-person-main > strong{
+  display:block;
+  color:#f3f3f3;
+  line-height:1.35;
+}
+
+.admin-attendance-person-meta{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:5px 12px;
+  margin-top:7px;
+  color:#bcbcbc;
+  font-size:11px;
+}
+
+.admin-attendance-person-meta span{
+  min-width:0;
+  overflow-wrap:anywhere;
+}
+
+.admin-attendance-person-meta b{
+  color:#ededed;
+  font-weight:700;
+}
+
+.admin-attendance-person-footer{
+  display:flex;
+  align-items:center;
+  gap:6px 9px;
+  flex-wrap:wrap;
+  margin-top:8px;
+}
+
+.admin-attendance-person-footer small{
+  color:var(--muted);
+}
+
+.admin-attendance-chart-panel{
+  display:flex;
+  min-height:380px;
+  flex-direction:column;
+  justify-content:center;
+  padding:12px;
+}
+
+.admin-attendance-canvas-wrap{
+  height:330px;
+  margin-top:0;
+}
+
+.admin-attendance-hint{
+  margin-top:7px;
+  color:var(--muted);
+  font-size:11px;
+  text-align:center;
+}
+
+#canvasCartaKehadiran{
+  cursor:pointer;
+}
+
+@media(max-width:1050px){
+  .admin-attendance-layout{
+    grid-template-columns:1fr;
+  }
+
+  .admin-attendance-list-panel{
+    min-height:300px;
+  }
+}
+
+@media(max-width:620px){
+  .admin-attendance-person-meta{
+    grid-template-columns:1fr;
+  }
+
+  .admin-attendance-canvas-wrap{
+    height:285px;
+  }
+}
+
+
+/* ================================================================
+   CARTA KEHADIRAN — PAPAR JUMLAH + PERATUS
+================================================================ */
+
+.admin-attendance-chart-panel{
+  overflow:hidden;
+}
+
+.admin-attendance-canvas-wrap{
+  min-height:350px;
+}
+
+/* Chart.js legend akan wrap apabila ruang sempit */
+#canvasCartaKehadiran{
+  max-width:100%;
+}
+
+@media(max-width:700px){
+  .admin-attendance-canvas-wrap{
+    min-height:320px;
+  }
+}
+
+
+/* ================================================================
+   CARTA KEHADIRAN — LEGEND PUTIH & NO. TELEFON
+================================================================ */
+
+.admin-attendance-person-meta{
+  grid-template-columns:repeat(2,minmax(0,1fr));
+}
+
+.admin-attendance-person-meta b{
+  color:#ffffff;
+}
+
+@media(max-width:620px){
+  .admin-attendance-person-meta{
+    grid-template-columns:1fr;
+  }
+}
+
+
+/* ================================================================
+   CARTA INSIDEN INTERAKTIF
+   Carta kiri + butiran kanan
+================================================================ */
+
+.admin-incident-chart-card{
+  grid-column:1 / -1;
+}
+
+.admin-incident-layout{
+  display:grid;
+  grid-template-columns:minmax(420px,.95fr) minmax(420px,1.05fr);
+  gap:16px;
+  align-items:stretch;
+  margin-top:14px;
+}
+
+.admin-incident-chart-panel,
+.admin-incident-detail-panel{
+  min-width:0;
+  border:1px solid #303030;
+  border-radius:12px;
+  background:#121212;
+}
+
+.admin-incident-chart-panel{
+  display:flex;
+  min-height:390px;
+  flex-direction:column;
+  justify-content:center;
+  padding:12px;
+}
+
+.admin-incident-canvas-wrap{
+  height:330px;
+  margin-top:0;
+}
+
+.admin-incident-hint{
+  margin-top:7px;
+  color:var(--muted);
+  font-size:11px;
+  text-align:center;
+}
+
+#canvasCartaInsiden{
+  cursor:pointer;
+}
+
+.admin-incident-detail-panel{
+  display:flex;
+  min-height:390px;
+  flex-direction:column;
+  overflow:hidden;
+}
+
+.admin-incident-detail-heading{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:14px 15px;
+  border-bottom:1px solid #303030;
+  background:#171717;
+}
+
+.admin-incident-detail-heading span{
+  display:block;
+  color:var(--muted);
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.04em;
+}
+
+.admin-incident-detail-heading strong{
+  display:block;
+  margin-top:4px;
+  color:var(--gold);
+  font-size:18px;
+}
+
+.admin-incident-detail-count{
+  display:flex;
+  width:44px;
+  height:44px;
+  flex:0 0 44px;
+  align-items:center;
+  justify-content:center;
+  border-radius:50%;
+  background:var(--gold);
+  color:#111;
+  font-size:18px;
+  font-weight:900;
+}
+
+.admin-incident-detail-list{
+  display:grid;
+  gap:9px;
+  max-height:420px;
+  padding:12px;
+  overflow:auto;
+}
+
+.admin-incident-detail-item{
+  display:grid;
+  grid-template-columns:34px minmax(0,1fr);
+  gap:10px;
+  padding:12px;
+  border:1px solid #303030;
+  border-radius:10px;
+  background:#181818;
+}
+
+.admin-incident-detail-number{
+  display:flex;
+  width:30px;
+  height:30px;
+  align-items:center;
+  justify-content:center;
+  border-radius:50%;
+  background:#303030;
+  color:var(--gold);
+  font-size:12px;
+  font-weight:900;
+}
+
+.admin-incident-detail-main{
+  min-width:0;
+}
+
+.admin-incident-detail-top{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+}
+
+.admin-incident-detail-top strong{
+  color:#fff;
+}
+
+.admin-incident-detail-top time{
+  color:var(--muted);
+  font-size:11px;
+  white-space:nowrap;
+}
+
+.admin-incident-detail-body{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px 14px;
+  margin-top:10px;
+}
+
+.admin-incident-detail-body div{
+  min-width:0;
+}
+
+.admin-incident-detail-body span,
+.admin-incident-note span{
+  display:block;
+  margin-bottom:3px;
+  color:var(--muted);
+  font-size:10px;
+  font-weight:800;
+  text-transform:uppercase;
+}
+
+.admin-incident-detail-body b{
+  display:block;
+  color:#fff;
+  font-size:12px;
+  font-weight:700;
+  line-height:1.45;
+  overflow-wrap:anywhere;
+}
+
+.admin-incident-note{
+  margin-top:10px;
+  padding:9px 10px;
+  border-left:3px solid var(--gold);
+  border-radius:6px;
+  background:#111;
+}
+
+.admin-incident-note p{
+  margin:0;
+  color:#ddd;
+  font-size:12px;
+  line-height:1.5;
+}
+
+@media(max-width:1050px){
+  .admin-incident-layout{
+    grid-template-columns:1fr;
+  }
+}
+
+@media(max-width:620px){
+  .admin-incident-detail-body{
+    grid-template-columns:1fr;
+  }
+
+  .admin-incident-detail-top{
+    flex-direction:column;
+  }
+
+  .admin-incident-canvas-wrap{
+    height:290px;
+  }
+}
+
+
+/* ================================================================
+   CARTA INSIDEN — KLIK BAR
+================================================================ */
+
+.admin-incident-chart-panel{
+  position:relative;
+}
+
+#canvasCartaInsiden{
+  cursor:pointer !important;
+}
+
+.admin-incident-detail-panel{
+  transition:border-color .18s ease, box-shadow .18s ease;
+}
+
+.admin-incident-detail-panel:has(
+  .admin-incident-detail-item
+){
+  border-color:#4a4122;
+  box-shadow:0 0 0 1px rgba(212,175,55,.08);
+}
+
+
+/* ================================================================
+   CARTA KENDERAAN INTERAKTIF
+   Carta kiri + butiran kanan
+================================================================ */
+
+.admin-vehicle-chart-card{
+  grid-column:1 / -1;
+}
+
+.admin-vehicle-layout{
+  display:grid;
+  grid-template-columns:minmax(420px,.95fr) minmax(420px,1.05fr);
+  gap:16px;
+  align-items:stretch;
+  margin-top:14px;
+}
+
+.admin-vehicle-chart-panel,
+.admin-vehicle-detail-panel{
+  min-width:0;
+  border:1px solid #303030;
+  border-radius:12px;
+  background:#121212;
+}
+
+.admin-vehicle-chart-panel{
+  display:flex;
+  min-height:390px;
+  flex-direction:column;
+  justify-content:center;
+  padding:12px;
+}
+
+.admin-vehicle-canvas-wrap{
+  height:330px;
+  margin-top:0;
+}
+
+.admin-vehicle-hint{
+  margin-top:7px;
+  color:var(--muted);
+  font-size:11px;
+  text-align:center;
+}
+
+#canvasCartaKenderaan{
+  cursor:pointer !important;
+}
+
+.admin-vehicle-detail-panel{
+  display:flex;
+  min-height:390px;
+  flex-direction:column;
+  overflow:hidden;
+}
+
+.admin-vehicle-detail-heading{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:14px 15px;
+  border-bottom:1px solid #303030;
+  background:#171717;
+}
+
+.admin-vehicle-detail-heading span{
+  display:block;
+  color:var(--muted);
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.04em;
+}
+
+.admin-vehicle-detail-heading strong{
+  display:block;
+  margin-top:4px;
+  color:var(--gold);
+  font-size:18px;
+}
+
+.admin-vehicle-detail-count{
+  display:flex;
+  width:52px;
+  height:52px;
+  flex:0 0 52px;
+  align-items:center;
+  justify-content:center;
+  border-radius:50%;
+  background:var(--gold);
+  color:#111;
+  font-size:17px;
+  font-weight:900;
+}
+
+.admin-vehicle-detail-list{
+  display:grid;
+  gap:9px;
+  max-height:420px;
+  padding:12px;
+  overflow:auto;
+}
+
+.admin-vehicle-detail-item{
+  display:grid;
+  grid-template-columns:34px minmax(0,1fr);
+  gap:10px;
+  padding:12px;
+  border:1px solid #303030;
+  border-radius:10px;
+  background:#181818;
+}
+
+.admin-vehicle-detail-number{
+  display:flex;
+  width:30px;
+  height:30px;
+  align-items:center;
+  justify-content:center;
+  border-radius:50%;
+  background:#303030;
+  color:var(--gold);
+  font-size:12px;
+  font-weight:900;
+}
+
+.admin-vehicle-detail-main{
+  min-width:0;
+}
+
+.admin-vehicle-detail-top{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+}
+
+.admin-vehicle-detail-top strong{
+  color:#fff;
+}
+
+.admin-vehicle-detail-top time{
+  color:var(--muted);
+  font-size:11px;
+  white-space:nowrap;
+}
+
+.admin-vehicle-detail-body{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px 14px;
+  margin-top:10px;
+}
+
+.admin-vehicle-detail-body div{
+  min-width:0;
+}
+
+.admin-vehicle-detail-body span{
+  display:block;
+  margin-bottom:3px;
+  color:var(--muted);
+  font-size:10px;
+  font-weight:800;
+  text-transform:uppercase;
+}
+
+.admin-vehicle-detail-body b{
+  display:block;
+  color:#fff;
+  font-size:12px;
+  font-weight:700;
+  line-height:1.45;
+  overflow-wrap:anywhere;
+}
+
+.admin-vehicle-detail-wide{
+  grid-column:1 / -1;
+}
+
+.admin-vehicle-detail-panel:has(
+  .admin-vehicle-detail-item
+){
+  border-color:#4a4122;
+  box-shadow:0 0 0 1px rgba(212,175,55,.08);
+}
+
+@media(max-width:1050px){
+  .admin-vehicle-layout{
+    grid-template-columns:1fr;
+  }
+}
+
+@media(max-width:620px){
+  .admin-vehicle-detail-body{
+    grid-template-columns:1fr;
+  }
+
+  .admin-vehicle-detail-wide{
+    grid-column:auto;
+  }
+
+  .admin-vehicle-detail-top{
+    flex-direction:column;
+  }
+
+  .admin-vehicle-canvas-wrap{
+    height:290px;
+  }
+}
+
+
+/* ================================================================
+   CARTA PENGUNJUNG — SAMAKAN SAIZ DENGAN CARTA KENDERAAN
+================================================================ */
+
+/* Pastikan keseluruhan kad Pengunjung memenuhi 2 kolum seperti Kenderaan */
+.admin-chart-card[data-chart-section="PENGUNJUNG"]{
+  grid-column:1 / -1 !important;
+  width:100% !important;
+  min-width:0 !important;
+}
+
+/* Susunan carta kiri + butiran kanan sama seperti Carta Kenderaan */
+.admin-chart-card[data-chart-section="PENGUNJUNG"] .admin-visitor-layout{
+  display:grid !important;
+  grid-template-columns:minmax(420px,.95fr) minmax(420px,1.05fr) !important;
+  gap:16px !important;
+  align-items:stretch !important;
+  width:100% !important;
+  margin-top:14px !important;
+}
+
+/* Kedua-dua panel mempunyai saiz dan rupa yang sama */
+.admin-chart-card[data-chart-section="PENGUNJUNG"] .admin-visitor-chart-panel,
+.admin-chart-card[data-chart-section="PENGUNJUNG"] .admin-visitor-detail-panel{
+  min-width:0 !important;
+  min-height:390px !important;
+  border:1px solid #303030 !important;
+  border-radius:12px !important;
+  background:#121212 !important;
+}
+
+/* Panel carta kiri */
+.admin-chart-card[data-chart-section="PENGUNJUNG"] .admin-visitor-chart-panel{
+  display:flex !important;
+  flex-direction:column !important;
+  justify-content:center !important;
+  padding:12px !important;
+}
+
+/* Saiz canvas sama seperti Carta Kenderaan */
+.admin-chart-card[data-chart-section="PENGUNJUNG"] .admin-visitor-chart-panel
+.admin-chart-canvas-wrap{
+  width:100% !important;
+  height:330px !important;
+  min-height:330px !important;
+  margin-top:0 !important;
+}
+
+/* Panel butiran kanan */
+.admin-chart-card[data-chart-section="PENGUNJUNG"] .admin-visitor-detail-panel{
+  display:flex !important;
+  flex-direction:column !important;
+  overflow:hidden !important;
+}
+
+/* Senarai butiran boleh scroll tanpa mengubah tinggi kad */
+.admin-chart-card[data-chart-section="PENGUNJUNG"] .admin-visitor-detail-list{
+  max-height:420px !important;
+  overflow:auto !important;
+}
+
+/* Desktop sederhana / tablet */
+@media(max-width:1050px){
+  .admin-chart-card[data-chart-section="PENGUNJUNG"] .admin-visitor-layout{
+    grid-template-columns:1fr !important;
+  }
+}
+
+/* Telefon */
+@media(max-width:620px){
+  .admin-chart-card[data-chart-section="PENGUNJUNG"] .admin-visitor-chart-panel
+  .admin-chart-canvas-wrap{
+    height:290px !important;
+    min-height:290px !important;
+  }
+}
+
+
+/* ================================================================
+   FIX VVIP / VIP — PENUH 100% LEBAR
+   HTML sebenar menggunakan: data-chart-section="VVIP_VIP"
+================================================================ */
+
+.admin-chart-card[data-chart-section="VVIP_VIP"]{
+  grid-column:1 / -1 !important;
+  width:100% !important;
+  max-width:none !important;
+  min-width:0 !important;
+  justify-self:stretch !important;
+  align-self:stretch !important;
+}
+
+/* Pastikan isi dalaman juga menggunakan lebar penuh */
+.admin-chart-card[data-chart-section="VVIP_VIP"] > *{
+  width:100%;
+  max-width:none;
+}
+
+/* Jika senarai VVIP/VIP menggunakan class list sedia ada */
+.admin-chart-card[data-chart-section="VVIP_VIP"] .admin-chart-list{
+  width:100% !important;
+  max-width:none !important;
+}
+
+/* Paparan SEMUA CARTA juga kekal penuh */
+.admin-chart-grid > .admin-chart-card[data-chart-section="VVIP_VIP"]{
+  grid-column:1 / -1 !important;
+}
+
+
+/* ================================================================
+   JAWATANKUASA — JADUAL PENUGASAN
+================================================================ */
+
+.admin-committee-card{
+  grid-column:1 / -1 !important;
+  width:100% !important;
+  min-width:0 !important;
+}
+
+.admin-committee-table-wrap{
+  width:100%;
+  margin-top:14px;
+  overflow:auto;
+  border:1px solid #3a3a3a;
+  border-radius:10px;
+  background:#f5f5f5;
+}
+
+.admin-committee-table{
+  width:100%;
+  min-width:980px;
+  border-collapse:collapse;
+  table-layout:fixed;
+  background:#ffffff;
+  color:#111111;
+  font-size:12px;
+}
+
+.admin-committee-table th,
+.admin-committee-table td{
+  padding:8px 9px;
+  border:1px solid #6f6f6f;
+  vertical-align:middle;
+  line-height:1.35;
+}
+
+.admin-committee-table thead th{
+  background:#ffffff;
+  color:#111111;
+  font-weight:900;
+  text-align:center;
+}
+
+.admin-committee-table .admin-committee-title-row th{
+  padding:9px 12px;
+  background:#050505;
+  color:#ffffff;
+  border-color:#050505;
+  font-size:13px;
+  letter-spacing:.03em;
+}
+
+.admin-committee-group-row td{
+  padding:6px 10px !important;
+  background:#252525 !important;
+  color:#ffffff !important;
+  border-color:#252525 !important;
+  font-weight:900;
+  text-align:left;
+  letter-spacing:.02em;
+}
+
+.admin-committee-table tbody tr:not(.admin-committee-group-row):nth-child(even){
+  background:#fafafa;
+}
+
+.admin-committee-table tbody tr:not(.admin-committee-group-row):hover{
+  background:#fff8d9;
+}
+
+.admin-committee-table .col-bil{
+  width:5%;
+  text-align:center;
+}
+
+.admin-committee-table .col-nama{
+  width:34%;
+}
+
+.admin-committee-table .col-unit{
+  width:24%;
+  text-align:center;
+}
+
+.admin-committee-table .col-tugas{
+  width:22%;
+  text-align:center;
+}
+
+.admin-committee-table .col-telefon{
+  width:15%;
+  text-align:center;
+  white-space:nowrap;
+}
+
+.admin-committee-table .empty-row{
+  height:90px;
+  background:#ffffff !important;
+  color:#666666;
+  text-align:center;
+}
+
+@media(max-width:760px){
+  .admin-committee-table{
+    min-width:900px;
+  }
+}
+
+
+/* ================================================================
+   JAWATANKUASA OPERASI — TAMBAH / EDIT / PADAM
+================================================================ */
+
+.admin-committee-heading{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+  margin-bottom:12px;
+}
+
+.admin-committee-heading h3{
+  margin:0 0 7px;
+}
+
+.admin-committee-heading-actions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:9px;
+  flex-wrap:wrap;
+}
+
+.admin-committee-heading-actions button{
+  min-height:42px;
+  white-space:nowrap;
+}
+
+.admin-committee-row-actions{
+  display:flex;
+  justify-content:center;
+  gap:6px;
+  flex-wrap:wrap;
+  margin-top:7px;
+}
+
+.admin-committee-row-actions button{
+  min-height:28px;
+  padding:5px 9px;
+  border-radius:6px;
+  font-size:10px;
+  font-weight:900;
+}
+
+.admin-committee-edit-button{
+  background:#356da4;
+  color:#fff;
+}
+
+.admin-committee-delete-button{
+  background:#8f2e2e;
+  color:#fff;
+}
+
+.admin-committee-task-text{
+  font-weight:700;
+}
+
+.admin-committee-modal-card{
+  width:min(100%,760px);
+}
+
+.admin-committee-modal-heading{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:14px;
+  margin-bottom:18px;
+}
+
+.admin-committee-modal-heading h2{
+  margin:0 0 6px;
+}
+
+.admin-committee-profile-preview{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+  margin-top:16px;
+}
+
+.admin-committee-profile-preview > div{
+  min-width:0;
+  padding:12px;
+  border:1px solid #3a3a3a;
+  border-radius:10px;
+  background:#151515;
+}
+
+.admin-committee-profile-preview span{
+  display:block;
+  margin-bottom:5px;
+  color:#aaa;
+  font-size:10px;
+  font-weight:900;
+}
+
+.admin-committee-profile-preview strong{
+  display:block;
+  color:#fff;
+  font-size:13px;
+  line-height:1.4;
+  overflow-wrap:anywhere;
+}
+
+@media(max-width:760px){
+  .admin-committee-heading,
+  .admin-committee-modal-heading{
+    flex-direction:column;
+  }
+
+  .admin-committee-heading-actions{
+    width:100%;
+    justify-content:stretch;
+  }
+
+  .admin-committee-heading-actions button{
+    flex:1 1 180px;
+  }
+
+  .admin-committee-profile-preview{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
+
+@media(max-width:480px){
+  .admin-committee-profile-preview{
+    grid-template-columns:1fr;
+  }
+}
+
+
+/* ================================================================
+   JAWATANKUASA — TEMA GELAP SELARAS DENGAN CARTA LAIN
+================================================================ */
+
+.admin-committee-table-wrap{
+  background:#121212 !important;
+  border-color:#303030 !important;
+}
+
+.admin-committee-table{
+  background:#171717 !important;
+  color:#ffffff !important;
+}
+
+.admin-committee-table th,
+.admin-committee-table td{
+  border-color:#343434 !important;
+  color:#ffffff !important;
+}
+
+.admin-committee-table thead th{
+  background:#1a1a1a !important;
+  color:#ffffff !important;
+}
+
+.admin-committee-table .admin-committee-title-row th{
+  background:#111111 !important;
+  color:var(--gold) !important;
+  border-color:#2f2f2f !important;
+}
+
+.admin-committee-group-row td{
+  background:#2a2411 !important;
+  color:var(--gold) !important;
+  border-color:#4a3d18 !important;
+}
+
+.admin-committee-table tbody tr:not(.admin-committee-group-row){
+  background:#171717 !important;
+}
+
+.admin-committee-table tbody tr:not(.admin-committee-group-row):nth-child(even){
+  background:#1d1d1d !important;
+}
+
+.admin-committee-table tbody tr:not(.admin-committee-group-row):hover{
+  background:#262626 !important;
+}
+
+.admin-committee-table .empty-row{
+  background:#171717 !important;
+  color:#bdbdbd !important;
+}
+
+.admin-committee-table .col-bil,
+.admin-committee-table .col-nama,
+.admin-committee-table .col-unit,
+.admin-committee-table .col-tugas,
+.admin-committee-table .col-telefon{
+  color:#ffffff !important;
+}
+
+.admin-committee-task-text{
+  color:#ffffff !important;
+}
+
+
+/* ================================================================
+   FIX JAWATANKUASA — LEBAR PENUH + SAIZ KOLUM
+   BIL kecil, PANGKAT / NO / NAMA lebih panjang
+================================================================ */
+
+.admin-chart-grid > .admin-committee-card,
+.admin-chart-grid > [data-chart-section="JAWATANKUASA"],
+.admin-chart-card[data-chart-section="JAWATANKUASA"]{
+  grid-column:1 / -1 !important;
+  grid-row:auto !important;
+  width:100% !important;
+  max-width:none !important;
+  min-width:0 !important;
+  justify-self:stretch !important;
+  align-self:stretch !important;
+}
+
+.admin-chart-card[data-chart-section="JAWATANKUASA"] > *,
+.admin-committee-card > *{
+  width:100% !important;
+  max-width:none !important;
+}
+
+.admin-chart-card[data-chart-section="JAWATANKUASA"] .admin-committee-table-wrap,
+.admin-committee-card .admin-committee-table-wrap{
+  width:100% !important;
+  max-width:100% !important;
+  overflow-x:auto !important;
+}
+
+.admin-chart-card[data-chart-section="JAWATANKUASA"] .admin-committee-table,
+.admin-committee-card .admin-committee-table{
+  width:100% !important;
+  min-width:0 !important;
+  max-width:100% !important;
+  table-layout:fixed !important;
+}
+
+.admin-committee-table th:nth-child(1),
+.admin-committee-table td:nth-child(1),
+.admin-committee-table .col-bil{
+  width:5% !important;
+  min-width:46px !important;
+  max-width:60px !important;
+  padding-left:6px !important;
+  padding-right:6px !important;
+  text-align:center !important;
+  white-space:nowrap !important;
+}
+
+.admin-committee-table th:nth-child(2),
+.admin-committee-table td:nth-child(2),
+.admin-committee-table .col-nama{
+  width:40% !important;
+  text-align:left !important;
+}
+
+.admin-committee-table th:nth-child(3),
+.admin-committee-table td:nth-child(3),
+.admin-committee-table .col-unit{
+  width:20% !important;
+}
+
+.admin-committee-table th:nth-child(4),
+.admin-committee-table td:nth-child(4),
+.admin-committee-table .col-tugas{
+  width:22% !important;
+}
+
+.admin-committee-table th:nth-child(5),
+.admin-committee-table td:nth-child(5),
+.admin-committee-table .col-telefon{
+  width:13% !important;
+  white-space:nowrap !important;
+}
+
+.admin-committee-table .admin-committee-title-row th,
+.admin-committee-table .admin-committee-group-row td{
+  width:auto !important;
+  max-width:none !important;
+}
+
+@media(max-width:760px){
+  .admin-chart-card[data-chart-section="JAWATANKUASA"] .admin-committee-table,
+  .admin-committee-card .admin-committee-table{
+    min-width:900px !important;
+  }
+}
+
+
+/* ================================================================
+   JAWATANKUASA — FIX AKHIR SAIZ KOLUM
+   BIL sangat kecil, PANGKAT / NO / NAMA lebih besar
+================================================================ */
+
+/*
+  Gunakan AUTO layout supaya browser menghormati lebar sebenar
+  kolum BIL. table-layout:fixed sebelum ini menyebabkan BIL
+  kelihatan terlalu besar kerana baris tajuk menggunakan colspan.
+*/
+.admin-chart-card[data-chart-section="JAWATANKUASA"] .admin-committee-table,
+.admin-committee-card .admin-committee-table{
+  table-layout:auto !important;
+  width:100% !important;
+}
+
+/* BIL — hanya untuk nombor 1, 2, 3... */
+.admin-committee-table th.col-bil,
+.admin-committee-table td.col-bil,
+.admin-committee-table th:nth-child(1):not([colspan]),
+.admin-committee-table td:nth-child(1):not([colspan]){
+  width:42px !important;
+  min-width:42px !important;
+  max-width:42px !important;
+  padding-left:4px !important;
+  padding-right:4px !important;
+  text-align:center !important;
+  white-space:nowrap !important;
+}
+
+/* PANGKAT / NO / NAMA — beri ruang paling besar */
+.admin-committee-table th.col-nama,
+.admin-committee-table td.col-nama,
+.admin-committee-table th:nth-child(2),
+.admin-committee-table td:nth-child(2){
+  width:44% !important;
+  min-width:340px !important;
+  text-align:left !important;
+}
+
+/* Kolum lain kekal hampir sama */
+.admin-committee-table th.col-unit,
+.admin-committee-table td.col-unit,
+.admin-committee-table th:nth-child(3),
+.admin-committee-table td:nth-child(3){
+  width:20% !important;
+}
+
+.admin-committee-table th.col-tugas,
+.admin-committee-table td.col-tugas,
+.admin-committee-table th:nth-child(4),
+.admin-committee-table td:nth-child(4){
+  width:22% !important;
+}
+
+.admin-committee-table th.col-telefon,
+.admin-committee-table td.col-telefon,
+.admin-committee-table th:nth-child(5),
+.admin-committee-table td:nth-child(5){
+  width:14% !important;
+  white-space:nowrap !important;
+}
+
+/* Tajuk colspan jangan mempengaruhi saiz kolum */
+.admin-committee-table .admin-committee-title-row th[colspan],
+.admin-committee-table .admin-committee-group-row td[colspan]{
+  width:auto !important;
+  min-width:0 !important;
+  max-width:none !important;
+}
+
+/* ================================================================
+   JAWATANKUASA — PANGKAT / NO / NAMA DI TENGAH
+================================================================ */
+
+.admin-committee-table th.col-nama,
+.admin-committee-table td.col-nama,
+.admin-committee-table th:nth-child(2),
+.admin-committee-table td:nth-child(2){
+  text-align: center !important;
+  vertical-align: middle !important;
+}
+
+/* =========================================================
+   KRONOLOGI OPERASI - PELARASAN TEKS
+========================================================= */
+
+/* TAJUK - contoh "PMX TIBA" tidak bold */
+.admin-chronology-table tbody td:nth-child(2),
+.admin-chronology-table tbody td:nth-child(2) strong {
+  font-weight: 400 !important;
+}
+
+/* CATATAN - contoh "PMX TIBA DI PADDOCK" di tengah */
+.admin-chronology-table tbody td:nth-child(4) {
+  text-align: center !important;
+  vertical-align: middle !important;
+}
+
+
+/* ================================================================
+   CETAK CARTA INDIVIDU
+================================================================ */
+
+.admin-chart-card-heading{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+  margin-bottom:12px;
+}
+
+.admin-chart-card-heading > div{
+  min-width:0;
+}
+
+.admin-chart-card-heading h3{
+  margin-top:0;
+}
+
+.admin-chart-print-button{
+  flex:0 0 auto;
+  min-width:88px;
+  white-space:nowrap;
+}
+
+/* Pada skrin kecil, butang cetak turun ke baris bawah */
+@media(max-width:760px){
+  .admin-chart-card-heading{
+    flex-direction:column;
+  }
+
+  .admin-chart-print-button{
+    width:100%;
+  }
+}
+
+
+/* ================================================================
+   JAWATANKUASA — SAMAKAN SAIZ BUTANG DENGAN VVIP / VIP
+================================================================ */
+
+.admin-committee-heading-actions button{
+  min-height:0 !important;
+  height:auto !important;
+  padding:9px 12px !important;
+  border-radius:9px !important;
+  font-size:11px !important;
+  line-height:1.2 !important;
+  white-space:nowrap !important;
+  flex:0 0 auto !important;
+}
+
+.admin-committee-heading-actions .admin-chart-print-button{
+  min-width:78px !important;
+  width:auto !important;
+}
+
+.admin-committee-heading-actions .green-button{
+  min-width:0 !important;
+  width:auto !important;
+}
+
+.admin-committee-heading-actions .gray{
+  min-width:0 !important;
+  width:auto !important;
+}
+
+.admin-committee-heading-actions{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:flex-end !important;
+  gap:10px !important;
+  flex-wrap:wrap !important;
+}
+
+@media(max-width:760px){
+  .admin-committee-heading-actions{
+    width:100% !important;
+    display:grid !important;
+    grid-template-columns:1fr !important;
+  }
+
+  .admin-committee-heading-actions button{
+    width:100% !important;
+    min-width:0 !important;
+  }
+}
+
+
+/* ================================================================
+   VVIP / VIP — SENARAI KIRI + BUTIRAN KANAN
+   Panel kanan digunakan untuk semua sumber VVIP / VIP.
+================================================================ */
+
+.admin-chart-card[data-chart-section="VVIP_VIP"]{
+  grid-column:1 / -1 !important;
+  width:100% !important;
+  min-width:0 !important;
+}
+
+.admin-vvip-layout{
+  display:grid;
+  grid-template-columns:minmax(420px,.95fr) minmax(420px,1.05fr);
+  gap:16px;
+  align-items:stretch;
+  width:100%;
+  margin-top:14px;
+}
+
+.admin-vvip-list-panel,
+.admin-vvip-detail-panel{
+  min-width:0;
+  min-height:390px;
+  overflow:hidden;
+  border:1px solid #303030;
+  border-radius:12px;
+  background:#121212;
+}
+
+.admin-vvip-list-panel{
+  display:flex;
+  flex-direction:column;
+}
+
+.admin-vvip-panel-heading,
+.admin-vvip-detail-heading{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:14px 15px;
+  border-bottom:1px solid #303030;
+  background:#171717;
+}
+
+.admin-vvip-panel-heading span,
+.admin-vvip-detail-heading span{
+  display:block;
+  color:var(--muted);
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.04em;
+}
+
+.admin-vvip-panel-heading strong,
+.admin-vvip-detail-heading strong{
+  display:block;
+  margin-top:4px;
+  color:var(--gold);
+  font-size:17px;
+  line-height:1.35;
+}
+
+.admin-vvip-name-list{
+  display:grid;
+  gap:9px;
+  max-height:430px;
+  padding:12px;
+  overflow:auto;
+}
+
+.admin-vvip-name-item{
+  display:grid;
+  grid-template-columns:36px minmax(0,1fr);
+  gap:10px;
+  align-items:flex-start;
+  padding:12px;
+  border:1px solid #303030;
+  border-radius:10px;
+  background:#181818;
+  transition:
+    border-color .18s ease,
+    background .18s ease,
+    transform .18s ease;
+}
+
+.admin-vvip-name-item.clickable{
+  cursor:pointer;
+}
+
+.admin-vvip-name-item.clickable:hover{
+  border-color:#6d5b1e;
+  background:#1f1d15;
+}
+
+.admin-vvip-name-item.clickable:active{
+  transform:translateY(1px);
+}
+
+.admin-vvip-name-item.active{
+  border-color:var(--gold);
+  background:#282310;
+  box-shadow:0 0 0 1px rgba(212,175,55,.18);
+}
+
+.admin-vvip-name-item.manual{
+  cursor:default;
+}
+
+.admin-vvip-name-number{
+  display:flex;
+  width:30px;
+  height:30px;
+  align-items:center;
+  justify-content:center;
+  border-radius:50%;
+  background:var(--gold-dark);
+  color:#fff;
+  font-size:12px;
+  font-weight:900;
+}
+
+.admin-vvip-name-main{
+  min-width:0;
+}
+
+.admin-vvip-name-main > strong{
+  display:block;
+  color:#fff;
+  font-size:14px;
+  line-height:1.45;
+  overflow-wrap:anywhere;
+}
+
+.admin-vvip-name-main > small{
+  display:block;
+  margin-top:5px;
+  color:var(--muted);
+  font-size:11px;
+}
+
+.admin-vvip-open-hint{
+  display:inline-block;
+  margin-top:8px;
+  padding:4px 7px;
+  border:1px solid #5a4b1c;
+  border-radius:999px;
+  background:#29230f;
+  color:#f0ce55;
+  font-size:9px;
+  font-weight:800;
+  letter-spacing:.02em;
+}
+
+.admin-vvip-manual-actions{
+  display:flex;
+  gap:7px;
+  margin-top:10px;
+  flex-wrap:wrap;
+}
+
+.admin-vvip-detail-panel{
+  display:flex;
+  flex-direction:column;
+}
+
+.admin-vvip-detail-content{
+  flex:1;
+  min-height:0;
+  padding:14px;
+  overflow:auto;
+}
+
+.admin-vvip-detail-empty{
+  display:flex;
+  min-height:320px;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+  color:var(--muted);
+  text-align:center;
+}
+
+.admin-vvip-detail-empty strong{
+  color:var(--gold);
+  font-size:17px;
+}
+
+.admin-vvip-detail-empty p{
+  max-width:430px;
+  margin:9px auto 0;
+  line-height:1.6;
+}
+
+.admin-vvip-detail-source{
+  margin-bottom:12px;
+  padding:8px 10px;
+  border:1px solid #5a4b1c;
+  border-radius:8px;
+  background:#29230f;
+  color:#f1d15b;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.04em;
+}
+
+.admin-vvip-detail-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+}
+
+.admin-vvip-detail-grid > div{
+  min-width:0;
+  padding:12px;
+  border:1px solid #303030;
+  border-radius:9px;
+  background:#171717;
+}
+
+.admin-vvip-detail-grid span{
+  display:block;
+  margin-bottom:4px;
+  color:var(--muted);
+  font-size:10px;
+  font-weight:800;
+}
+
+.admin-vvip-detail-grid b{
+  display:block;
+  color:#fff;
+  font-size:13px;
+  line-height:1.5;
+  overflow-wrap:anywhere;
+}
+
+.admin-vvip-detail-wide{
+  grid-column:1 / -1;
+}
+
+/* Cetakan: kekalkan dua panel jika ruang mencukupi */
+.print-chart-container .admin-vvip-layout{
+  display:grid !important;
+  grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr) !important;
+  gap:12px !important;
+}
+
+.print-chart-container .admin-vvip-list-panel,
+.print-chart-container .admin-vvip-detail-panel,
+.print-chart-container .admin-vvip-name-item,
+.print-chart-container .admin-vvip-detail-grid > div{
+  background:#fff !important;
+  color:#111 !important;
+  border-color:#bbb !important;
+}
+
+.print-chart-container .admin-vvip-name-main > strong,
+.print-chart-container .admin-vvip-detail-grid b{
+  color:#111 !important;
+}
+
+@media(max-width:1050px){
+  .admin-vvip-layout{
+    grid-template-columns:1fr;
+  }
+}
+
+@media(max-width:620px){
+  .admin-vvip-detail-grid{
+    grid-template-columns:1fr;
+  }
+
+  .admin-vvip-detail-wide{
+    grid-column:auto;
   }
 }
