@@ -3625,3 +3625,47 @@ body.marker-dragging *{
     grid-template-columns:1fr;
   }
 }
+
+
+/* ================================================================
+   MOTOGP — SAIZ TULISAN MARKER SAMA SEPERTI FORMULA 1
+================================================================ */
+.admin-map-marker{
+  min-width:64px !important;
+  min-height:50px !important;
+  padding:7px 9px !important;
+  border:2px solid rgba(255,255,255,.88) !important;
+  border-radius:12px !important;
+}
+
+.admin-map-marker-count{
+  font-size:15px !important;
+  font-weight:900 !important;
+  line-height:1 !important;
+}
+
+.admin-map-marker-label,
+.admin-map-marker-name{
+  display:block !important;
+  max-width:150px !important;
+  margin-top:4px !important;
+  overflow:hidden !important;
+  font-size:10px !important;
+  font-weight:800 !important;
+  line-height:1.15 !important;
+  text-overflow:ellipsis !important;
+  white-space:nowrap !important;
+}
+
+.admin-map-marker-task{
+  display:block !important;
+  max-width:150px !important;
+  margin-top:3px !important;
+  overflow:hidden !important;
+  color:#fff4bd !important;
+  font-size:8px !important;
+  font-weight:700 !important;
+  line-height:1.15 !important;
+  text-overflow:ellipsis !important;
+  white-space:nowrap !important;
+}
