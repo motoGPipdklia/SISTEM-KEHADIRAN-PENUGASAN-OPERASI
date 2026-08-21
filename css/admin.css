@@ -3562,3 +3562,66 @@ body.marker-dragging *{
     min-width:760px;
   }
 }
+
+/* ================================================================
+   PENAPIS JENIS TUGAS MARKER PETA
+================================================================ */
+.admin-map-task-filter{
+  display:grid;
+  grid-template-columns:minmax(260px,380px) 1fr;
+  gap:14px;
+  align-items:end;
+  margin:14px 0 12px;
+  padding:12px;
+  border:1px solid #333;
+  border-radius:10px;
+  background:#171717;
+}
+
+.admin-map-task-filter label{
+  color:var(--gold);
+  font-size:12px;
+}
+
+.admin-map-task-filter .muted{
+  align-self:center;
+}
+
+.admin-map-location-task{
+  margin-top:7px;
+}
+
+.admin-map-location-task strong{
+  display:block;
+  margin-top:3px;
+  color:var(--gold);
+  font-size:13px;
+}
+
+.admin-map-marker-task{
+  display:block;
+  overflow:hidden;
+  max-width:140px;
+  margin-top:2px;
+  font-size:8px;
+  font-weight:700;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  opacity:.9;
+}
+
+#penapisJenisTugasPetaPentadbir,
+#pilihanJenisTugasMarkerPentadbir{
+  text-overflow:ellipsis;
+}
+
+#penapisJenisTugasPetaPentadbir option,
+#pilihanJenisTugasMarkerPentadbir option{
+  white-space:normal;
+}
+
+@media (max-width:760px){
+  .admin-map-task-filter{
+    grid-template-columns:1fr;
+  }
+}
