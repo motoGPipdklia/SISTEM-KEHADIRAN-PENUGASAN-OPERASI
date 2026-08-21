@@ -453,14 +453,17 @@ let lokasiPetaDipilihPentadbir = "";
 let tabPetugasLokasiAktif = "BERTUGAS";
 let zumPetaCartaPentadbir = 1;
 let markerPetaDipaparkanPentadbir = true;
+let jenisTugasPetaDipilihPentadbir = "SEMUA";
+let jenisTugasMarkerUrusPentadbir = "";
 
 let sedangSeretMarkerPetaPentadbir = false;
 let lokasiMarkerSeretPentadbir = "";
+let jenisTugasMarkerSeretPentadbir = "";
 let kanvasMarkerSeretPentadbir = null;
 
 
 const KUNCI_TETAPAN_PETA_CARTA_MOTOGP = "skpoTetapanPetaCarta";
-const URL_PETA_ADMIN_MOTOGP = "images/petaadmin.png?v=20260821-1532";
+const URL_PETA_ADMIN_MOTOGP = "images/petaadmin.png?v=20260821-1640";
 const KUNCI_KRONOLOGI_CARTA_MOTOGP = "skpoKronologiCarta";
 
 
@@ -8912,12 +8915,34 @@ function simpanTetapanPetaCartaTempatan(
 }
 
 
-function lokasiUnikCartaPentadbir() {
+function normalisasiJenisTugasMarkerPentadbir(nilai) {
+  return atas(nilai)
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+
+function jenisTugasMarkerDisokongPentadbir(nilai) {
+  const jenis =
+    normalisasiJenisTugasMarkerPentadbir(
+      nilai
+    );
+
+  return Boolean(
+    jenis &&
+    jenis !== "-"
+  );
+}
+
+
+function jenisTugasUnikCartaPentadbir() {
   return [
     ...new Set(
       dataDashboard
         .map(item =>
-          teks(item.tempatTugas)
+          normalisasiJenisTugasMarkerPentadbir(
+            item.jenisTugas
+          )
         )
         .filter(item =>
           item &&
@@ -8926,7 +8951,340 @@ function lokasiUnikCartaPentadbir() {
     )
   ].sort(
     (a, b) =>
-      a.localeCompare(b, "ms")
+      a.localeCompare(
+        b,
+        "ms"
+      )
+  );
+}
+
+
+function binaPilihanJenisTugasPetaPentadbir() {
+  const semuaJenis =
+    jenisTugasUnikCartaPentadbir();
+
+  const penapis =
+    el("penapisJenisTugasPetaPentadbir");
+
+  if (penapis) {
+    const nilaiSemasa =
+      normalisasiJenisTugasMarkerPentadbir(
+        penapis.value ||
+        jenisTugasPetaDipilihPentadbir ||
+        "SEMUA"
+      ) || "SEMUA";
+
+    penapis.innerHTML =
+      '<option value="SEMUA">SEMUA JENIS TUGAS</option>' +
+      semuaJenis
+        .map(item => `
+          <option value="${escapeHtml(item)}">
+            ${escapeHtml(item)}
+          </option>
+        `)
+        .join("");
+
+    penapis.value =
+      (
+        nilaiSemasa === "SEMUA" ||
+        semuaJenis.includes(nilaiSemasa)
+      )
+        ? nilaiSemasa
+        : "SEMUA";
+
+    jenisTugasPetaDipilihPentadbir =
+      penapis.value ||
+      "SEMUA";
+  }
+
+  const urus =
+    el("pilihanJenisTugasMarkerPentadbir");
+
+  if (urus) {
+    const nilaiSemasa =
+      normalisasiJenisTugasMarkerPentadbir(
+        urus.value ||
+        jenisTugasMarkerUrusPentadbir
+      );
+
+    urus.innerHTML =
+      '<option value="">PILIH JENIS TUGAS</option>' +
+      semuaJenis
+        .map(item => `
+          <option value="${escapeHtml(item)}">
+            ${escapeHtml(item)}
+          </option>
+        `)
+        .join("");
+
+    if (
+      nilaiSemasa &&
+      semuaJenis.includes(nilaiSemasa)
+    ) {
+      urus.value =
+        nilaiSemasa;
+      jenisTugasMarkerUrusPentadbir =
+        nilaiSemasa;
+    } else {
+      urus.value = "";
+      jenisTugasMarkerUrusPentadbir = "";
+    }
+  }
+}
+
+
+function padanJenisTugasMarkerPentadbir(nilaiData, pilihan) {
+  const dipilih =
+    normalisasiJenisTugasMarkerPentadbir(
+      pilihan
+    );
+
+  if (
+    !dipilih ||
+    dipilih === "SEMUA"
+  ) {
+    return true;
+  }
+
+  return (
+    normalisasiJenisTugasMarkerPentadbir(
+      nilaiData
+    ) === dipilih
+  );
+}
+
+
+function kunciMarkerPetaPentadbir(jenisTugas, lokasi) {
+  return (
+    normalisasiJenisTugasMarkerPentadbir(
+      jenisTugas
+    ) +
+    "|||" +
+    atas(lokasi)
+  );
+}
+
+
+function pecahKunciMarkerPetaPentadbir(kunci) {
+  const bahagian =
+    teks(kunci).split("|||");
+
+  return {
+    jenisTugas:
+      bahagian[0] ||
+      "",
+    lokasi:
+      bahagian
+        .slice(1)
+        .join("|||") ||
+      ""
+  };
+}
+
+
+function jenisTugasPetaSemasaPentadbir() {
+  return (
+    normalisasiJenisTugasMarkerPentadbir(
+      el("penapisJenisTugasPetaPentadbir")?.value ||
+      jenisTugasPetaDipilihPentadbir ||
+      "SEMUA"
+    ) ||
+    "SEMUA"
+  );
+}
+
+
+function tukarJenisTugasPetaPentadbir(nilai) {
+  jenisTugasPetaDipilihPentadbir =
+    normalisasiJenisTugasMarkerPentadbir(
+      nilai ||
+      "SEMUA"
+    ) ||
+    "SEMUA";
+
+  lokasiPetaDipilihPentadbir = "";
+  tabPetugasLokasiAktif = "BERTUGAS";
+
+  const kosong =
+    el("panelLokasiPetaPentadbir")
+      ?.querySelector(
+        ".admin-map-location-empty"
+      );
+
+  if (kosong) {
+    kosong.style.display = "";
+  }
+
+  const kandungan =
+    el("kandunganLokasiPetaPentadbir");
+
+  if (kandungan) {
+    kandungan.hidden = true;
+    kandungan.setAttribute(
+      "hidden",
+      ""
+    );
+  }
+
+  paparMarkerPetaPentadbir();
+}
+
+
+function tukarJenisTugasUrusMarkerPentadbir(nilai) {
+  jenisTugasMarkerUrusPentadbir =
+    normalisasiJenisTugasMarkerPentadbir(
+      nilai
+    );
+
+  binaPilihanLokasiMarkerPentadbir();
+  paparMarkerUrusPetaPentadbir();
+
+  if (
+    el("lokasiMarkerDipilihPentadbir")
+  ) {
+    el(
+      "lokasiMarkerDipilihPentadbir"
+    ).textContent =
+      "BELUM DIPILIH";
+  }
+}
+
+
+function kombinasiMarkerPetaPentadbir(
+  jenisPilihan =
+    jenisTugasPetaSemasaPentadbir()
+) {
+  const pilihan =
+    normalisasiJenisTugasMarkerPentadbir(
+      jenisPilihan ||
+      "SEMUA"
+    );
+
+  const pasangan =
+    new Map();
+
+  dataDashboard.forEach(item => {
+    const jenis =
+      normalisasiJenisTugasMarkerPentadbir(
+        item.jenisTugas
+      );
+
+    const lokasi =
+      teks(
+        item.tempatTugas
+      );
+
+    if (
+      !jenisTugasMarkerDisokongPentadbir(
+        jenis
+      ) ||
+      !lokasi ||
+      lokasi === "-"
+    ) {
+      return;
+    }
+
+    if (
+      pilihan !== "SEMUA" &&
+      jenis !== pilihan
+    ) {
+      return;
+    }
+
+    const kunci =
+      kunciMarkerPetaPentadbir(
+        jenis,
+        lokasi
+      );
+
+    if (!pasangan.has(kunci)) {
+      pasangan.set(
+        kunci,
+        {
+          kunci,
+          jenisTugas: jenis,
+          lokasi
+        }
+      );
+    }
+  });
+
+  return [
+    ...pasangan.values()
+  ].sort(
+    (a, b) =>
+      a.jenisTugas.localeCompare(
+        b.jenisTugas,
+        "ms"
+      ) ||
+      a.lokasi.localeCompare(
+        b.lokasi,
+        "ms"
+      )
+  );
+}
+
+
+function posisiMarkerJenisLokasiPentadbir(
+  tetapan,
+  jenisTugas,
+  lokasi,
+  index,
+  jumlah
+) {
+  const kunci =
+    kunciMarkerPetaPentadbir(
+      jenisTugas,
+      lokasi
+    );
+
+  return (
+    tetapan.marker?.[kunci] ||
+    tetapan.marker?.[lokasi] ||
+    posisiAutomatikMarker(
+      index,
+      jumlah
+    )
+  );
+}
+
+
+
+function lokasiUnikCartaPentadbir(
+  jenisTugas = "SEMUA"
+) {
+  const pilihan =
+    normalisasiJenisTugasMarkerPentadbir(
+      jenisTugas ||
+      "SEMUA"
+    );
+
+  return [
+    ...new Set(
+      dataDashboard
+        .filter(item =>
+          pilihan === "SEMUA" ||
+          padanJenisTugasMarkerPentadbir(
+            item.jenisTugas,
+            pilihan
+          )
+        )
+        .map(item =>
+          teks(
+            item.tempatTugas
+          )
+        )
+        .filter(item =>
+          item &&
+          item !== "-"
+        )
+    )
+  ].sort(
+    (a, b) =>
+      a.localeCompare(
+        b,
+        "ms"
+      )
   );
 }
 
@@ -9062,6 +9420,7 @@ function muatPetaCartaPentadbir() {
     delete imejUrus.dataset.imejBaharu;
   }
 
+  binaPilihanJenisTugasPetaPentadbir();
   binaPilihanLokasiMarkerPentadbir();
   paparMarkerPetaPentadbir();
   paparMarkerUrusPetaPentadbir();
@@ -9073,15 +9432,30 @@ function muatPetaCartaPentadbir() {
 }
 
 function dataPetugasLokasiPentadbir(
-  lokasi
+  lokasi,
+  jenisTugas =
+    jenisTugasPetaSemasaPentadbir()
 ) {
   const namaLokasi =
     atas(lokasi);
 
-  return dataDashboard.filter(
-    item =>
-      atas(item.tempatTugas) ===
-      namaLokasi
+  const tugas =
+    normalisasiJenisTugasMarkerPentadbir(
+      jenisTugas ||
+      "SEMUA"
+    );
+
+  return dataDashboard.filter(item =>
+    atas(
+      item.tempatTugas
+    ) === namaLokasi &&
+    (
+      tugas === "SEMUA" ||
+      padanJenisTugasMarkerPentadbir(
+        item.jenisTugas,
+        tugas
+      )
+    )
   );
 }
 
@@ -9109,68 +9483,101 @@ function paparMarkerPetaPentadbir() {
 
   if (!lapisan) return;
 
-  const lokasi =
-    lokasiUnikCartaPentadbir();
+  const jenisDipilih =
+    jenisTugasPetaSemasaPentadbir();
+
+  const kombinasi =
+    kombinasiMarkerPetaPentadbir(
+      jenisDipilih
+    );
 
   const tetapan =
     tetapanPetaCartaPentadbir();
 
   lapisan.innerHTML =
-    lokasi.map((nama, index) => {
-      const posisi =
-        tetapan.marker?.[nama] ||
-        posisiAutomatikMarker(
-          index,
-          lokasi.length
-        );
+    kombinasi
+      .map(
+        (
+          item,
+          index
+        ) => {
+          const posisi =
+            posisiMarkerJenisLokasiPentadbir(
+              tetapan,
+              item.jenisTugas,
+              item.lokasi,
+              index,
+              kombinasi.length
+            );
 
-      const petugas =
-        dataPetugasLokasiPentadbir(
-          nama
-        );
+          const petugas =
+            dataPetugasLokasiPentadbir(
+              item.lokasi,
+              item.jenisTugas
+            );
 
-      const bertugas =
-        petugas.filter(
-          item =>
-            statusPetugasLokasiPentadbir(
-              item
-            ) === "BERTUGAS"
-        ).length;
+          const bertugas =
+            petugas.filter(
+              p =>
+                statusPetugasLokasiPentadbir(
+                  p
+                ) === "BERTUGAS"
+            ).length;
 
-      const status =
-        atas(
-          posisi.status ||
-          "NORMAL"
-        );
+          const status =
+            atas(
+              posisi.status ||
+              "NORMAL"
+            );
 
-      return `
-        <button
-          class="admin-map-marker admin-map-marker-${escapeHtml(status.toLowerCase())}"
-          type="button"
-          style="
-            left:${Number(posisi.x).toFixed(3)}%;
-            top:${Number(posisi.y).toFixed(3)}%;
-          "
-          onclick="pilihMarkerLokasiPentadbir('${escapeHtml(
-            nama.replace(/'/g, "\\'")
-          )}')"
-          title="${escapeHtml(nama)}"
-        >
-          <span class="admin-map-marker-count">
-            ${bertugas}/${petugas.length}
-          </span>
-          <span class="admin-map-marker-label">
-            ${escapeHtml(nama)}
-          </span>
-        </button>
-      `;
-    }).join("");
+          const lokasiJs =
+            item.lokasi
+              .replace(
+                /\\/g,
+                "\\\\"
+              )
+              .replace(
+                /'/g,
+                "\\'"
+              );
+
+          const jenisJs =
+            item.jenisTugas
+              .replace(
+                /\\/g,
+                "\\\\"
+              )
+              .replace(
+                /'/g,
+                "\\'"
+              );
+
+          return `
+            <button
+              class="admin-map-marker admin-map-marker-${escapeHtml(status.toLowerCase())}"
+              type="button"
+              style="left:${Number(posisi.x).toFixed(3)}%;top:${Number(posisi.y).toFixed(3)}%;"
+              onclick="pilihMarkerLokasiPentadbir('${lokasiJs}','${jenisJs}')"
+              title="${escapeHtml(item.jenisTugas)} — ${escapeHtml(item.lokasi)}"
+            >
+              <span class="admin-map-marker-count">
+                ${bertugas}/${petugas.length}
+              </span>
+              <span class="admin-map-marker-name">
+                ${escapeHtml(item.lokasi)}
+              </span>
+              <small class="admin-map-marker-task">
+                ${escapeHtml(item.jenisTugas)}
+              </small>
+            </button>
+          `;
+        }
+      )
+      .join("");
 }
 
 
-function pilihMarkerLokasiPentadbir(
-  lokasi
-) {
+function pilihMarkerLokasiPentadbir(lokasi, jenisTugas = jenisTugasPetaSemasaPentadbir()) {
   lokasiPetaDipilihPentadbir =
     lokasi;
 
@@ -9381,49 +9788,111 @@ function paparSenaraiPetugasLokasiPentadbir(
 
 function binaPilihanLokasiMarkerPentadbir() {
   const select =
-    el("pilihanLokasiMarkerPentadbir");
+    el(
+      "pilihanLokasiMarkerPentadbir"
+    );
 
   if (!select) return;
+
+  const jenis =
+    normalisasiJenisTugasMarkerPentadbir(
+      el("pilihanJenisTugasMarkerPentadbir")?.value ||
+      jenisTugasMarkerUrusPentadbir
+    );
+
+  jenisTugasMarkerUrusPentadbir =
+    jenis;
 
   const semasa =
     select.value;
 
   const lokasi =
-    lokasiUnikCartaPentadbir();
+    jenis
+      ? lokasiUnikCartaPentadbir(
+          jenis
+        )
+      : [];
 
   select.innerHTML =
     '<option value="">PILIH TEMPAT TUGAS</option>' +
-    lokasi.map(item => `
-      <option value="${escapeHtml(item)}">
-        ${escapeHtml(item)}
-      </option>
-    `).join("");
+    lokasi
+      .map(item => `
+        <option value="${escapeHtml(item)}">
+          ${escapeHtml(item)}
+        </option>
+      `)
+      .join("");
 
-  if (lokasi.includes(semasa)) {
-    select.value = semasa;
+  if (
+    lokasi.includes(
+      semasa
+    )
+  ) {
+    select.value =
+      semasa;
   }
 
-  if (!select.dataset.listenerLokasiMarker) {
-    select.dataset.listenerLokasiMarker = "1";
+  if (
+    !select.dataset.listenerLokasiMarker
+  ) {
+    select.dataset.listenerLokasiMarker =
+      "1";
 
-    select.addEventListener("change", () => {
-      const nama = teks(select.value);
+    select.addEventListener(
+      "change",
+      () => {
+        const nama =
+          teks(
+            select.value
+          );
 
-      if (el("lokasiMarkerDipilihPentadbir")) {
-        el("lokasiMarkerDipilihPentadbir").textContent =
-          nama || "BELUM DIPILIH";
+        const jenisSemasa =
+          normalisasiJenisTugasMarkerPentadbir(
+            el("pilihanJenisTugasMarkerPentadbir")?.value ||
+            jenisTugasMarkerUrusPentadbir
+          );
+
+        if (
+          el(
+            "lokasiMarkerDipilihPentadbir"
+          )
+        ) {
+          el(
+            "lokasiMarkerDipilihPentadbir"
+          ).textContent =
+            nama
+              ? `${jenisSemasa} — ${nama}`
+              : "BELUM DIPILIH";
+        }
+
+        const tetapan =
+          tetapanPetaCartaPentadbir();
+
+        const kunci =
+          kunciMarkerPetaPentadbir(
+            jenisSemasa,
+            nama
+          );
+
+        const status =
+          atas(
+            tetapan.marker?.[kunci]?.status ||
+            tetapan.marker?.[nama]?.status ||
+            "NORMAL"
+          );
+
+        if (
+          el(
+            "statusMarkerPentadbir"
+          )
+        ) {
+          el(
+            "statusMarkerPentadbir"
+          ).value =
+            status;
+        }
       }
-
-      const tetapan = tetapanPetaCartaPentadbir();
-      const status = atas(
-        tetapan.marker?.[nama]?.status ||
-        "NORMAL"
-      );
-
-      if (el("statusMarkerPentadbir")) {
-        el("statusMarkerPentadbir").value = status;
-      }
-    });
+    );
   }
 }
 
@@ -9439,6 +9908,7 @@ function bukaUrusPetaPentadbir() {
     return;
   }
 
+  binaPilihanJenisTugasPetaPentadbir();
   binaPilihanLokasiMarkerPentadbir();
   muatPetaCartaPentadbir();
 
@@ -9498,77 +9968,91 @@ function pratontonPetaPentadbir(event) {
 
 function paparMarkerUrusPetaPentadbir() {
   const lapisan =
-    el("lapisanMarkerUrusPetaPentadbir");
+    el(
+      "lapisanMarkerUrusPetaPentadbir"
+    );
 
   if (!lapisan) return;
 
+  const jenis =
+    normalisasiJenisTugasMarkerPentadbir(
+      el("pilihanJenisTugasMarkerPentadbir")?.value ||
+      jenisTugasMarkerUrusPentadbir
+    );
+
+  jenisTugasMarkerUrusPentadbir =
+    jenis;
+
+  if (!jenis) {
+    lapisan.innerHTML = "";
+    return;
+  }
+
   const lokasi =
-    lokasiUnikCartaPentadbir();
+    lokasiUnikCartaPentadbir(
+      jenis
+    );
 
   const tetapan =
     tetapanPetaCartaPentadbir();
 
   lapisan.innerHTML =
-    lokasi.map((nama, index) => {
-      const posisi =
-        tetapan.marker?.[nama] ||
-        posisiAutomatikMarker(
-          index,
-          lokasi.length
-        );
+    lokasi
+      .map(
+        (
+          nama,
+          index
+        ) => {
+          const posisi =
+            posisiMarkerJenisLokasiPentadbir(
+              tetapan,
+              jenis,
+              nama,
+              index,
+              lokasi.length
+            );
 
-      const status =
-        atas(posisi.status || "NORMAL");
+          const lokasiJs =
+            nama
+              .replace(
+                /\\/g,
+                "\\\\"
+              )
+              .replace(
+                /'/g,
+                "\\'"
+              );
 
-      const namaAtribut =
-        escapeHtml(nama);
+          const jenisJs =
+            jenis
+              .replace(
+                /\\/g,
+                "\\\\"
+              )
+              .replace(
+                /'/g,
+                "\\'"
+              );
 
-      const namaJs =
-        nama
-          .replace(/\\/g, "\\\\")
-          .replace(/'/g, "\\'");
-
-      return `
-        <button
-          class="admin-map-marker admin-map-marker-manage admin-map-marker-${escapeHtml(status.toLowerCase())}"
-          type="button"
-          style="
-            left:${Number(posisi.x).toFixed(3)}%;
-            top:${Number(posisi.y).toFixed(3)}%;
-          "
-          data-lokasi="${namaAtribut}"
-          title="Seret untuk pindahkan: ${namaAtribut}"
-          onpointerdown="mulaSeretMarkerPetaPentadbir(event, '${namaJs}')"
-          onclick="event.stopPropagation(); pilihLokasiUrusMarkerPentadbir('${namaJs}')"
-        >
-          <span class="admin-map-marker-label">
-            ${namaAtribut}
-          </span>
-        </button>
-      `;
-    }).join("");
-
-  const kanvas =
-    el("kanvasUrusPetaPentadbir");
-
-  if (
-    kanvas &&
-    !kanvas.dataset.listenerMarker
-  ) {
-    kanvas.dataset.listenerMarker =
-      "1";
-
-    kanvas.addEventListener(
-      "click",
-      event => {
-        if (sedangSeretMarkerPetaPentadbir) {
-          return;
+          return `
+            <button
+              class="admin-map-marker admin-map-marker-manage"
+              type="button"
+              style="left:${Number(posisi.x).toFixed(3)}%;top:${Number(posisi.y).toFixed(3)}%;"
+              onpointerdown="mulaSeretMarkerPetaPentadbir(event,'${jenisJs}','${lokasiJs}')"
+              onclick="pilihLokasiUntukUrusMarkerPentadbir('${lokasiJs}','${jenisJs}')"
+            >
+              <span class="admin-map-marker-name">
+                ${escapeHtml(nama)}
+              </span>
+              <small class="admin-map-marker-task">
+                ${escapeHtml(jenis)}
+              </small>
+            </button>
+          `;
         }
-
-        letakMarkerPetaPentadbir(event);
-      }
-    );
-  }
+      )
+      .join("");
 }
 
 
@@ -9585,12 +10069,17 @@ function pilihLokasiUrusMarkerPentadbir(lokasi) {
 }
 
 
-function mulaSeretMarkerPetaPentadbir(event, lokasi) {
+function mulaSeretMarkerPetaPentadbir(event, jenisTugas, lokasi) {
   event.preventDefault();
   event.stopPropagation();
 
   sedangSeretMarkerPetaPentadbir = true;
   lokasiMarkerSeretPentadbir = lokasi;
+  jenisTugasMarkerSeretPentadbir =
+    normalisasiJenisTugasMarkerPentadbir(
+      jenisTugas ||
+      jenisTugasMarkerUrusPentadbir
+    );
   kanvasMarkerSeretPentadbir =
     el("kanvasUrusPetaPentadbir");
 
@@ -9760,7 +10249,7 @@ function letakMarkerPetaPentadbir(
   const tetapan =
     tetapanPetaCartaPentadbir();
 
-  tetapan.marker[lokasi] = {
+  tetapan.marker[kunciMarkerPetaPentadbir(jenisTugasMarkerUrusPentadbir, lokasi)] = {
     x:
       Math.max(
         0,
