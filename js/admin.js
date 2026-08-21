@@ -12,6 +12,7 @@ const MASA_TAMAT_PERMINTAAN = 15000;
 
 /* Kunci sesi khusus Pentadbir MotoGP. */
 const KUNCI_ADMIN_MOTOGP = "skpoAdmin";
+
 let adminLogin = null;
 let dataDashboard = [];
 let dataLaporanPetugasAdmin = [];
@@ -438,6 +439,8 @@ let cartaJawatankuasaPentadbir = null;
 let dataJawatankuasaOperasiPentadbir = [];
 let dataPilihanPetugasJawatankuasaPentadbir = [];
 let rekodJawatankuasaSedangEditPentadbir = null;
+let dataAgensiLuarOperasiPentadbir = [];
+let rekodAgensiLuarSedangEditPentadbir = null;
 let dataVvipVipOperasiPentadbir = [];
 let rekodVvipVipSedangEditPentadbir = null;
 let idVvipVipDipilihPentadbir = "";
@@ -457,6 +460,7 @@ let kanvasMarkerSeretPentadbir = null;
 
 
 const KUNCI_TETAPAN_PETA_CARTA_MOTOGP = "skpoTetapanPetaCarta";
+const URL_PETA_ADMIN_MOTOGP = "images/peta.png?v=20260821-1519";
 const KUNCI_KRONOLOGI_CARTA_MOTOGP = "skpoKronologiCarta";
 
 
@@ -494,7 +498,6 @@ function emailDalaman(noBadan) {
 
   return `${nilai}@skpo.local`;
 }
-
 
 function hariIniMalaysia() {
   return new Intl.DateTimeFormat("en-CA", {
@@ -3840,14 +3843,9 @@ async function muatDataCartaPentadbir() {
         );
 
     await Promise.all([
-      muatJawatankuasaOperasiPentadbir(
-        tarikh,
-        false
-      ),
-      muatVvipVipOperasiPentadbir(
-        tarikh,
-        false
-      )
+      muatJawatankuasaOperasiPentadbir(tarikh, false),
+      muatAgensiLuarOperasiPentadbir(tarikh, false),
+      muatVvipVipOperasiPentadbir(tarikh, false)
     ]);
 
     paparRingkasanCartaPentadbir();
@@ -3857,6 +3855,7 @@ async function muatDataCartaPentadbir() {
     paparCartaInsidenPentadbir();
     paparCartaVvipVipPentadbir();
     paparCartaJawatankuasaPentadbir();
+    paparCartaAgensiLuarPentadbir();
 
     muatPetaCartaPentadbir();
     paparKronologiPentadbir();
@@ -7262,6 +7261,767 @@ function paparCartaVvipVipPentadbir() {
 }
 
 
+
+/* ================================================================
+   AGENSI LUAR OPERASI — SUPABASE CRUD
+================================================================ */
+
+function nomborAgensiLuarPentadbir(nilai) {
+  const nombor =
+    Number(nilai);
+
+  if (
+    !Number.isFinite(nombor) ||
+    nombor < 0
+  ) {
+    return 0;
+  }
+
+  return Math.floor(nombor);
+}
+
+
+function dataAgensiLuarPentadbir() {
+  return [...dataAgensiLuarOperasiPentadbir]
+    .sort((a, b) =>
+      atas(a.jabatan_agensi)
+        .localeCompare(
+          atas(b.jabatan_agensi),
+          "ms"
+        )
+    );
+}
+
+
+function ralatJadualAgensiLuarBelumWujud(error) {
+  return (
+    error?.code === "42P01" ||
+    /agensi_luar_operasi|relation.*does not exist|could not find.*table/i.test(
+      error?.message || ""
+    )
+  );
+}
+
+
+function ralatKolumAgensiLuarBelumWujud(error) {
+  return (
+    /kekuatan|kenderaan|column.*does not exist|schema cache/i.test(
+      error?.message || ""
+    )
+  );
+}
+
+
+async function muatAgensiLuarOperasiPentadbir(
+  tarikh,
+  paparStatus = true
+) {
+  const tarikhDipilih =
+    tarikh ||
+    el("tarikhCartaPentadbir")?.value ||
+    el("tarikh")?.value ||
+    hariIniMalaysia();
+
+  try {
+    const { data, error } =
+      await denganHadMasa(
+        db.from("agensi_luar_operasi")
+          .select("*")
+          .eq(
+            "tarikh",
+            tarikhDipilih
+          )
+          .order(
+            "jabatan_agensi",
+            {
+              ascending: true
+            }
+          )
+      );
+
+    if (error) {
+      throw error;
+    }
+
+    dataAgensiLuarOperasiPentadbir =
+      data || [];
+
+    paparCartaAgensiLuarPentadbir();
+
+    if (paparStatus) {
+      paparMesej(
+        "statusAgensiLuarPentadbir",
+        `${dataAgensiLuarOperasiPentadbir.length} rekod agensi luar berjaya dimuatkan.`,
+        "success"
+      );
+    }
+
+    return true;
+
+  } catch (error) {
+    console.error(
+      "Gagal memuatkan agensi luar:",
+      error
+    );
+
+    dataAgensiLuarOperasiPentadbir = [];
+    paparCartaAgensiLuarPentadbir();
+
+    let mesej =
+      `Ralat agensi luar: ${error.message || "Ralat tidak diketahui."}`;
+
+    if (
+      ralatJadualAgensiLuarBelumWujud(
+        error
+      )
+    ) {
+      mesej =
+        "Jadual agensi_luar_operasi belum diwujudkan. Jalankan SQL yang disediakan.";
+
+    } else if (
+      ralatKolumAgensiLuarBelumWujud(
+        error
+      )
+    ) {
+      mesej =
+        "Kolum KEKUATAN / KENDERAAN belum diwujudkan. Jalankan SQL kemas kini Agensi Luar yang disediakan.";
+    }
+
+    paparMesej(
+      "statusAgensiLuarPentadbir",
+      escapeHtml(mesej),
+      "error"
+    );
+
+    return false;
+  }
+}
+
+
+async function muatSemulaAgensiLuarPentadbir() {
+  const tarikh =
+    el("tarikhCartaPentadbir")?.value ||
+    el("tarikh")?.value ||
+    hariIniMalaysia();
+
+  await muatAgensiLuarOperasiPentadbir(
+    tarikh,
+    true
+  );
+}
+
+
+function resetBorangAgensiLuarPentadbir() {
+  [
+    "idAgensiLuarPentadbir",
+    "jabatanAgensiLuarPentadbir",
+    "pegawaiAgensiLuarPentadbir",
+    "telefonAgensiLuarPentadbir"
+  ].forEach(id => {
+    if (el(id)) {
+      el(id).value = "";
+    }
+  });
+
+  [
+    "pegawaiKekuatanAgensiLuarPentadbir",
+    "anggotaKekuatanAgensiLuarPentadbir",
+    "basAgensiLuarPentadbir",
+    "jenteraAgensiLuarPentadbir",
+    "loriAgensiLuarPentadbir",
+    "vanAgensiLuarPentadbir",
+    "motokarAgensiLuarPentadbir",
+    "motosikalAgensiLuarPentadbir"
+  ].forEach(id => {
+    if (el(id)) {
+      el(id).value = "0";
+    }
+  });
+
+  const status =
+    el("statusModalAgensiLuarPentadbir");
+
+  if (status) {
+    status.innerHTML = "";
+    status.style.display = "none";
+  }
+}
+
+
+function bukaTambahAgensiLuarPentadbir() {
+  const modal =
+    document.getElementById(
+      "modalAgensiLuarPentadbir"
+    );
+
+  /*
+    Buka modal TERLEBIH DAHULU.
+    Jadi walaupun ada masalah pada reset borang,
+    modal masih akan kelihatan.
+  */
+  if (modal) {
+    modal.hidden = false;
+    modal.removeAttribute("hidden");
+    modal.classList.add("open");
+    modal.style.display = "block";
+    modal.style.zIndex = "99999";
+  }
+
+  try {
+    rekodAgensiLuarSedangEditPentadbir =
+      null;
+
+    resetBorangAgensiLuarPentadbir();
+
+    const tarikh =
+      el("tarikhCartaPentadbir")?.value ||
+      el("tarikh")?.value ||
+      hariIniMalaysia();
+
+    if (
+      el("tarikhAgensiLuarPentadbir")
+    ) {
+      el(
+        "tarikhAgensiLuarPentadbir"
+      ).value = tarikh;
+    }
+
+    if (
+      el("tajukModalAgensiLuarPentadbir")
+    ) {
+      el(
+        "tajukModalAgensiLuarPentadbir"
+      ).textContent =
+        "Tambah Bantuan Luar";
+    }
+
+  } catch (error) {
+    console.error(
+      "Ralat menyediakan borang Agensi Luar:",
+      error
+    );
+  }
+}
+
+function bukaEditAgensiLuarPentadbir(id) {
+  const item =
+    dataAgensiLuarOperasiPentadbir
+      .find(rekod =>
+        teks(rekod.id) ===
+        teks(id)
+      );
+
+  if (!item) {
+    alert(
+      "Rekod agensi luar tidak ditemui."
+    );
+    return;
+  }
+
+  rekodAgensiLuarSedangEditPentadbir =
+    item;
+
+  const nilai = {
+    idAgensiLuarPentadbir:
+      item.id || "",
+
+    tarikhAgensiLuarPentadbir:
+      item.tarikh || "",
+
+    jabatanAgensiLuarPentadbir:
+      item.jabatan_agensi || "",
+
+    pegawaiKekuatanAgensiLuarPentadbir:
+      item.pegawai ?? 0,
+
+    anggotaKekuatanAgensiLuarPentadbir:
+      item.anggota ??
+      Math.max(
+        0,
+        nomborAgensiLuarPentadbir(item.kekuatan) -
+        nomborAgensiLuarPentadbir(item.pegawai)
+      ),
+
+    basAgensiLuarPentadbir:
+      item.bas ?? 0,
+
+    jenteraAgensiLuarPentadbir:
+      item.jentera ?? 0,
+
+    loriAgensiLuarPentadbir:
+      item.lori ?? 0,
+
+    vanAgensiLuarPentadbir:
+      item.van ?? 0,
+
+    motokarAgensiLuarPentadbir:
+      item.motokar ?? 0,
+
+    motosikalAgensiLuarPentadbir:
+      item.motosikal ?? 0,
+
+    pegawaiAgensiLuarPentadbir:
+      item.pegawai_penyelaras || "",
+
+    telefonAgensiLuarPentadbir:
+      item.telefon || ""
+  };
+
+  Object.entries(nilai)
+    .forEach(
+      ([idElemen, nilaiElemen]) => {
+        if (el(idElemen)) {
+          el(idElemen).value =
+            nilaiElemen;
+        }
+      }
+    );
+
+  if (
+    el("tajukModalAgensiLuarPentadbir")
+  ) {
+    el(
+      "tajukModalAgensiLuarPentadbir"
+    ).textContent =
+      "Edit Bantuan Luar";
+  }
+
+  const status =
+    el("statusModalAgensiLuarPentadbir");
+
+  if (status) {
+    status.innerHTML = "";
+    status.style.display = "none";
+  }
+
+  const modal =
+    el("modalAgensiLuarPentadbir");
+
+  if (modal) {
+    modal.hidden = false;
+    modal.removeAttribute("hidden");
+    modal.classList.add("open");
+    modal.style.display = "block";
+    modal.style.zIndex = "99999";
+  }
+}
+
+
+function tutupModalAgensiLuarPentadbir() {
+  const modal =
+    document.getElementById(
+      "modalAgensiLuarPentadbir"
+    );
+
+  if (modal) {
+    modal.classList.remove("open");
+    modal.style.display = "none";
+    modal.hidden = true;
+    modal.setAttribute(
+      "hidden",
+      ""
+    );
+  }
+
+  rekodAgensiLuarSedangEditPentadbir =
+    null;
+}
+
+async function simpanAgensiLuarPentadbir() {
+  const btn =
+    el("btnSimpanAgensiLuarPentadbir");
+
+  const id =
+    teks(
+      el(
+        "idAgensiLuarPentadbir"
+      )?.value
+    );
+
+  const payload = {
+    tarikh:
+      teks(
+        el(
+          "tarikhAgensiLuarPentadbir"
+        )?.value
+      ),
+
+    jabatan_agensi:
+      atas(
+        el(
+          "jabatanAgensiLuarPentadbir"
+        )?.value
+      ),
+
+    pegawai:
+      nomborAgensiLuarPentadbir(
+        el("pegawaiKekuatanAgensiLuarPentadbir")?.value
+      ),
+
+    anggota:
+      nomborAgensiLuarPentadbir(
+        el("anggotaKekuatanAgensiLuarPentadbir")?.value
+      ),
+
+    bas:
+      nomborAgensiLuarPentadbir(
+        el("basAgensiLuarPentadbir")?.value
+      ),
+
+    jentera:
+      nomborAgensiLuarPentadbir(
+        el("jenteraAgensiLuarPentadbir")?.value
+      ),
+
+    lori:
+      nomborAgensiLuarPentadbir(
+        el("loriAgensiLuarPentadbir")?.value
+      ),
+
+    van:
+      nomborAgensiLuarPentadbir(
+        el("vanAgensiLuarPentadbir")?.value
+      ),
+
+    motokar:
+      nomborAgensiLuarPentadbir(
+        el("motokarAgensiLuarPentadbir")?.value
+      ),
+
+    motosikal:
+      nomborAgensiLuarPentadbir(
+        el("motosikalAgensiLuarPentadbir")?.value
+      ),
+
+    pegawai_penyelaras:
+      atas(
+        el(
+          "pegawaiAgensiLuarPentadbir"
+        )?.value
+      ),
+
+    telefon:
+      teks(
+        el(
+          "telefonAgensiLuarPentadbir"
+        )?.value
+      )
+  };
+
+  /*
+    Kolum KEKUATAN dan KENDERAAN dalam jadual utama kekal sebagai JUMLAH.
+    Pecahan disimpan dalam kolum masing-masing.
+  */
+  payload.kekuatan =
+    payload.pegawai +
+    payload.anggota;
+
+  payload.kenderaan =
+    payload.bas +
+    payload.jentera +
+    payload.lori +
+    payload.van +
+    payload.motokar +
+    payload.motosikal;
+
+  if (!payload.tarikh) {
+    paparMesej(
+      "statusModalAgensiLuarPentadbir",
+      "Tarikh wajib diisi.",
+      "error"
+    );
+    return;
+  }
+
+  if (!payload.jabatan_agensi) {
+    paparMesej(
+      "statusModalAgensiLuarPentadbir",
+      "Jabatan / Agensi wajib diisi.",
+      "error"
+    );
+    return;
+  }
+
+  if (!payload.pegawai_penyelaras) {
+    paparMesej(
+      "statusModalAgensiLuarPentadbir",
+      "Pegawai Penyelaras wajib diisi.",
+      "error"
+    );
+    return;
+  }
+
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent =
+      id
+        ? "SEDANG MENGEMAS KINI..."
+        : "SEDANG MENYIMPAN...";
+  }
+
+  try {
+    let hasil;
+
+    if (id) {
+      hasil =
+        await denganHadMasa(
+          db.from(
+            "agensi_luar_operasi"
+          )
+            .update({
+              ...payload,
+              updated_at:
+                new Date().toISOString()
+            })
+            .eq(
+              "id",
+              id
+            )
+            .select("*")
+            .single()
+        );
+
+    } else {
+      hasil =
+        await denganHadMasa(
+          db.from(
+            "agensi_luar_operasi"
+          )
+            .insert({
+              ...payload,
+              created_by:
+                adminLogin?.id ||
+                adminLogin?.authUserId ||
+                null
+            })
+            .select("*")
+            .single()
+        );
+    }
+
+    if (hasil.error) {
+      throw hasil.error;
+    }
+
+    await muatAgensiLuarOperasiPentadbir(
+      el(
+        "tarikhCartaPentadbir"
+      )?.value ||
+      payload.tarikh,
+      false
+    );
+
+    tutupModalAgensiLuarPentadbir();
+
+  } catch (error) {
+    console.error(
+      "Gagal menyimpan Agensi Luar:",
+      error
+    );
+
+    let mesej =
+      `Gagal menyimpan rekod: ${error.message || "Ralat tidak diketahui."}`;
+
+    if (
+      ralatKolumAgensiLuarBelumWujud(
+        error
+      )
+    ) {
+      mesej =
+        "Kolum KEKUATAN / KENDERAAN belum diwujudkan dalam Supabase. Jalankan SQL kemas kini yang disediakan.";
+    }
+
+    paparMesej(
+      "statusModalAgensiLuarPentadbir",
+      escapeHtml(mesej),
+      "error"
+    );
+
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent =
+        "SIMPAN BANTUAN LUAR";
+    }
+  }
+}
+
+
+async function padamAgensiLuarPentadbir(id) {
+  const item =
+    dataAgensiLuarOperasiPentadbir
+      .find(rekod =>
+        teks(rekod.id) ===
+        teks(id)
+      );
+
+  if (!item) {
+    alert(
+      "Rekod agensi luar tidak ditemui."
+    );
+    return;
+  }
+
+  if (
+    !confirm(
+      `Padam rekod agensi luar "${item.jabatan_agensi || "-"}"?`
+    )
+  ) {
+    return;
+  }
+
+  try {
+    const { error } =
+      await denganHadMasa(
+        db.from(
+          "agensi_luar_operasi"
+        )
+          .delete()
+          .eq(
+            "id",
+            id
+          )
+      );
+
+    if (error) {
+      throw error;
+    }
+
+    await muatSemulaAgensiLuarPentadbir();
+
+  } catch (error) {
+    alert(
+      `Gagal memadam rekod: ${error.message || "Ralat tidak diketahui."}`
+    );
+  }
+}
+
+
+function paparCartaAgensiLuarPentadbir() {
+  const tbody =
+    el("tbodyAgensiLuarPentadbir");
+
+  if (!tbody) {
+    return;
+  }
+
+  const senarai =
+    dataAgensiLuarPentadbir();
+
+  const tarikh =
+    el("tarikhCartaPentadbir")?.value ||
+    el("tarikh")?.value ||
+    "";
+if (!senarai.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td
+          colspan="6"
+          class="empty-row"
+        >
+          Tiada rekod agensi luar untuk tarikh ini.
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML =
+    senarai
+      .map((item, index) => {
+        const jumlahKekuatan =
+          (item.pegawai != null || item.anggota != null)
+            ? (
+                nomborAgensiLuarPentadbir(item.pegawai) +
+                nomborAgensiLuarPentadbir(item.anggota)
+              )
+            : nomborAgensiLuarPentadbir(item.kekuatan);
+
+        const jumlahKenderaan =
+          (item.bas != null ||
+           item.jentera != null ||
+           item.lori != null ||
+           item.van != null ||
+           item.motokar != null ||
+           item.motosikal != null)
+            ? (
+                nomborAgensiLuarPentadbir(item.bas) +
+                nomborAgensiLuarPentadbir(item.jentera) +
+                nomborAgensiLuarPentadbir(item.lori) +
+                nomborAgensiLuarPentadbir(item.van) +
+                nomborAgensiLuarPentadbir(item.motokar) +
+                nomborAgensiLuarPentadbir(item.motosikal)
+              )
+            : (item.kenderaan ??
+          (
+            nomborAgensiLuarPentadbir(item.bas) +
+            nomborAgensiLuarPentadbir(item.lori) +
+            nomborAgensiLuarPentadbir(item.jentera) +
+            nomborAgensiLuarPentadbir(item.van) +
+            nomborAgensiLuarPentadbir(item.motokar) +
+            nomborAgensiLuarPentadbir(item.motosikal)
+              ));
+
+        return `
+          <tr>
+            <td style="text-align:center;">
+              ${index + 1}
+            </td>
+
+            <td>
+              <div class="admin-committee-task-text">
+                ${escapeHtml(
+                  item.jabatan_agensi || "-"
+                )}
+              </div>
+
+              <div class="admin-committee-row-actions">
+                <button
+                  class="admin-committee-edit-button"
+                  type="button"
+                  onclick="bukaEditAgensiLuarPentadbir('${escapeHtml(item.id)}')"
+                >
+                  EDIT
+                </button>
+
+                <button
+                  class="admin-committee-delete-button"
+                  type="button"
+                  onclick="padamAgensiLuarPentadbir('${escapeHtml(item.id)}')"
+                >
+                  PADAM
+                </button>
+              </div>
+            </td>
+
+            <td style="text-align:center;">
+              ${jumlahKekuatan}
+            </td>
+
+            <td style="text-align:center;">
+              ${nomborAgensiLuarPentadbir(
+                jumlahKenderaan
+              )}
+            </td>
+
+            <td style="text-align:center;">
+              ${escapeHtml(
+                item.pegawai_penyelaras || "-"
+              )}
+            </td>
+
+            <td style="text-align:center;">
+              ${escapeHtml(
+                item.telefon || "-"
+              )}
+            </td>
+          </tr>
+        `;
+      })
+      .join("");
+}
+
+
 /* ================================================================
    JAWATANKUASA OPERASI — SUPABASE CRUD
 ================================================================ */
@@ -7940,15 +8700,7 @@ function paparCartaJawatankuasaPentadbir() {
     el("tarikhCartaPentadbir")?.value ||
     el("tarikh")?.value ||
     "";
-
-  if (el("tajukJawatankuasaPentadbir")) {
-    el("tajukJawatankuasaPentadbir").textContent =
-      tarikh
-        ? `JAWATANKUASA OPERASI — ${formatTarikhMalaysia(tarikh)}`
-        : "JAWATANKUASA OPERASI";
-  }
-
-  if (!senarai.length) {
+if (!senarai.length) {
     tbody.innerHTML = `
       <tr>
         <td colspan="5" class="empty-row">
@@ -8135,9 +8887,7 @@ function tetapanPetaCartaPentadbir() {
       );
 
     return {
-      imej:
-        data.imej ||
-        "images/peta.png",
+      imej: URL_PETA_ADMIN_MOTOGP,
       marker:
         data.marker &&
         typeof data.marker === "object"
@@ -8146,12 +8896,11 @@ function tetapanPetaCartaPentadbir() {
     };
   } catch (_) {
     return {
-      imej: "images/peta.png",
+      imej: URL_PETA_ADMIN_MOTOGP,
       marker: {}
     };
   }
 }
-
 
 function simpanTetapanPetaCartaTempatan(
   data
@@ -8298,36 +9047,30 @@ function toggleMarkerPetaPentadbir() {
 
 
 function muatPetaCartaPentadbir() {
-  const tetapan =
-    tetapanPetaCartaPentadbir();
-
   const imej =
     el("imejPetaCartaPentadbir");
 
   if (imej) {
-    imej.src =
-      tetapan.imej ||
-      "images/peta.png";
+    imej.src = URL_PETA_ADMIN_MOTOGP;
   }
 
   const imejUrus =
     el("imejUrusPetaPentadbir");
 
   if (imejUrus) {
-    imejUrus.src =
-      tetapan.imej ||
-      "images/peta.png";
+    imejUrus.src = URL_PETA_ADMIN_MOTOGP;
+    delete imejUrus.dataset.imejBaharu;
   }
 
   binaPilihanLokasiMarkerPentadbir();
   paparMarkerPetaPentadbir();
   paparMarkerUrusPetaPentadbir();
   pasangZoomPetaPentadbir();
+
   setPaparanMarkerPetaPentadbir(
     markerPetaDipaparkanPentadbir
   );
 }
-
 
 function dataPetugasLokasiPentadbir(
   lokasi
@@ -8733,59 +9476,25 @@ function tutupUrusPetaPentadbir() {
 }
 
 
-function pratontonPetaPentadbir(
-  event
-) {
-  const fail =
-    event?.target?.files?.[0];
-
-  if (!fail) return;
-
-  if (
-    !/^image\/(jpeg|png|webp)$/i.test(
-      fail.type || ""
-    )
-  ) {
-    paparMesej(
-      "statusUrusPetaPentadbir",
-      "Gunakan gambar JPG, PNG atau WEBP.",
-      "error"
-    );
-    return;
+function pratontonPetaPentadbir(event) {
+  if (event?.target) {
+    event.target.value = "";
   }
 
-  /*
-    localStorage mempunyai had saiz.
-    Hadkan fail untuk fungsi tempatan ini.
-  */
-  if (fail.size > 2.5 * 1024 * 1024) {
-    paparMesej(
-      "statusUrusPetaPentadbir",
-      "Gambar terlalu besar. Untuk versi ini gunakan gambar tidak melebihi 2.5 MB.",
-      "error"
-    );
-    return;
+  const imej =
+    el("imejUrusPetaPentadbir");
+
+  if (imej) {
+    imej.src = URL_PETA_ADMIN_MOTOGP;
+    delete imej.dataset.imejBaharu;
   }
 
-  const pembaca =
-    new FileReader();
-
-  pembaca.onload = () => {
-    const hasil =
-      String(pembaca.result || "");
-
-    const imej =
-      el("imejUrusPetaPentadbir");
-
-    if (imej) {
-      imej.src = hasil;
-      imej.dataset.imejBaharu = hasil;
-    }
-  };
-
-  pembaca.readAsDataURL(fail);
+  paparMesej(
+    "statusUrusPetaPentadbir",
+    "Peta Admin MotoGP menggunakan images/peta.png dari GitHub. Tukar fail peta.png di GitHub jika mahu menukar gambar.",
+    "warning"
+  );
 }
-
 
 function paparMarkerUrusPetaPentadbir() {
   const lapisan =
@@ -9094,16 +9803,6 @@ function simpanTetapanPetaPentadbir() {
   const tetapan =
     tetapanPetaCartaPentadbir();
 
-  const imej =
-    el("imejUrusPetaPentadbir");
-
-  if (imej?.dataset?.imejBaharu) {
-    tetapan.imej =
-      imej.dataset.imejBaharu;
-
-    delete imej.dataset.imejBaharu;
-  }
-
   const lokasi =
     el(
       "pilihanLokasiMarkerPentadbir"
@@ -9123,13 +9822,14 @@ function simpanTetapanPetaPentadbir() {
   }
 
   try {
-    simpanTetapanPetaCartaTempatan(
-      tetapan
-    );
+    simpanTetapanPetaCartaTempatan({
+      imej: URL_PETA_ADMIN_MOTOGP,
+      marker: tetapan.marker || {}
+    });
   } catch (error) {
     paparMesej(
       "statusUrusPetaPentadbir",
-      "Tetapan peta gagal disimpan. Gambar mungkin terlalu besar untuk storan browser.",
+      "Tetapan marker gagal disimpan.",
       "error"
     );
     return;
@@ -9139,11 +9839,10 @@ function simpanTetapanPetaPentadbir() {
 
   paparMesej(
     "statusUrusPetaPentadbir",
-    "Marker dan tetapan peta berjaya disimpan pada peranti Pentadbir ini.",
+    "Marker berjaya disimpan. Peta MotoGP menggunakan peta.png dari GitHub.",
     "success"
   );
 }
-
 
 function pasangZoomPetaPentadbir() {
   const viewport =
@@ -9378,16 +10077,7 @@ function paparKronologiPentadbir() {
     el("tarikhCartaPentadbir")
       ?.value ||
     hariIniMalaysia();
-
-  const tajukJadual =
-    el("tajukJadualKronologiPentadbir");
-
-  if (tajukJadual) {
-    tajukJadual.textContent =
-      `KRONOLOGI OPERASI — ${formatTarikhMalaysia(tarikh)}`;
-  }
-
-  const manual =
+const manual =
     dapatkanKronologiTempatanPentadbir()
       .filter(item =>
         teks(item.masa).slice(0, 10) ===
@@ -9540,3 +10230,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
   pulihkanSesiPentadbir();
 });
+
+
+/* ================================================================
+   AGENSI LUAR — PASTIKAN INLINE ONCLICK BOLEH AKSES
+================================================================ */
+window.bukaTambahAgensiLuarPentadbir =
+  bukaTambahAgensiLuarPentadbir;
+
+window.bukaEditAgensiLuarPentadbir =
+  bukaEditAgensiLuarPentadbir;
+
+window.tutupModalAgensiLuarPentadbir =
+  tutupModalAgensiLuarPentadbir;
+
+window.simpanAgensiLuarPentadbir =
+  simpanAgensiLuarPentadbir;
+
+window.padamAgensiLuarPentadbir =
+  padamAgensiLuarPentadbir;
