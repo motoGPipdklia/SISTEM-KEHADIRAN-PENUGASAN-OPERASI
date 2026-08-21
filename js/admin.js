@@ -9577,141 +9577,42 @@ function paparMarkerPetaPentadbir() {
 }
 
 
-function pilihMarkerLokasiPentadbir(lokasi, jenisTugas = jenisTugasPetaSemasaPentadbir()) {
-  lokasiPetaDipilihPentadbir =
-    lokasi;
-
-  tabPetugasLokasiAktif =
-    "BERTUGAS";
-
-  const kosong =
-    el("panelLokasiPetaPentadbir")
-      ?.querySelector(
-        ".admin-map-location-empty"
-      );
-
-  if (kosong) {
-    kosong.style.display = "none";
-  }
-
-  const kandungan =
-    el("kandunganLokasiPetaPentadbir");
-
-  if (kandungan) {
-    kandungan.hidden = false;
-    kandungan.removeAttribute("hidden");
-  }
-
+function pilihMarkerLokasiPentadbir(lokasi, jenisTugas) {
+  lokasiPetaDipilihPentadbir = lokasi;
+  jenisTugasPetaDipilihPentadbir = normalisasiJenisTugasMarkerPentadbir(jenisTugas || jenisTugasPetaSemasaPentadbir());
+  tabPetugasLokasiAktif = "BERTUGAS";
+  const kosong = el("panelLokasiPetaPentadbir")?.querySelector(".admin-map-location-empty");
+  if (kosong) kosong.style.display = "none";
+  const kandungan = el("kandunganLokasiPetaPentadbir");
+  if (kandungan) { kandungan.hidden = false; kandungan.removeAttribute("hidden"); }
   paparPanelLokasiPentadbir();
 }
 
-
 function paparPanelLokasiPentadbir() {
-  if (!lokasiPetaDipilihPentadbir) {
-    return;
-  }
-
-  const senarai =
-    dataPetugasLokasiPentadbir(
-      lokasiPetaDipilihPentadbir
-    );
-
+  if (!lokasiPetaDipilihPentadbir) return;
+  const jenisTugas = normalisasiJenisTugasMarkerPentadbir(jenisTugasPetaDipilihPentadbir || jenisTugasPetaSemasaPentadbir());
+  const senarai = dataPetugasLokasiPentadbir(lokasiPetaDipilihPentadbir,jenisTugas);
   const kategori = {
-    BERTUGAS:
-      senarai.filter(
-        item =>
-          statusPetugasLokasiPentadbir(
-            item
-          ) === "BERTUGAS"
-      ),
-
-    BELUM_HADIR:
-      senarai.filter(
-        item =>
-          statusPetugasLokasiPentadbir(
-            item
-          ) === "BELUM_HADIR"
-      ),
-
-    SELESAI:
-      senarai.filter(
-        item =>
-          statusPetugasLokasiPentadbir(
-            item
-          ) === "SELESAI"
-      )
+    BERTUGAS: senarai.filter(item => statusPetugasLokasiPentadbir(item) === "BERTUGAS"),
+    BELUM_HADIR: senarai.filter(item => statusPetugasLokasiPentadbir(item) === "BELUM_HADIR"),
+    SELESAI: senarai.filter(item => statusPetugasLokasiPentadbir(item) === "SELESAI")
   };
-
-  const tetapan =
-    tetapanPetaCartaPentadbir();
-
-  const status =
-    atas(
-      tetapan.marker?.[
-        lokasiPetaDipilihPentadbir
-      ]?.status ||
-      "NORMAL"
-    );
-
-  if (el("namaLokasiPetaPentadbir")) {
-    el("namaLokasiPetaPentadbir")
-      .textContent =
-      lokasiPetaDipilihPentadbir;
-  }
-
-  if (el("statusLokasiPetaPentadbir")) {
-    el("statusLokasiPetaPentadbir")
-      .textContent =
-      status;
-  }
-
-  if (el("jumlahDitugaskanLokasi")) {
-    el("jumlahDitugaskanLokasi")
-      .textContent =
-      senarai.length;
-  }
-
-  if (el("jumlahBertugasLokasi")) {
-    el("jumlahBertugasLokasi")
-      .textContent =
-      kategori.BERTUGAS.length;
-  }
-
-  if (el("jumlahBelumHadirLokasi")) {
-    el("jumlahBelumHadirLokasi")
-      .textContent =
-      kategori.BELUM_HADIR.length;
-  }
-
-  if (el("jumlahSelesaiLokasi")) {
-    el("jumlahSelesaiLokasi")
-      .textContent =
-      kategori.SELESAI.length;
-  }
-
-  ["BERTUGAS", "BELUM_HADIR", "SELESAI"]
-    .forEach(kategoriTab => {
-      const id =
-        kategoriTab === "BERTUGAS"
-          ? "tabLokasiBertugas"
-          : kategoriTab === "BELUM_HADIR"
-            ? "tabLokasiBelumHadir"
-            : "tabLokasiSelesai";
-
-      el(id)?.classList.toggle(
-        "active",
-        tabPetugasLokasiAktif ===
-          kategoriTab
-      );
-    });
-
-  paparSenaraiPetugasLokasiPentadbir(
-    kategori[
-      tabPetugasLokasiAktif
-    ] || []
-  );
+  const tetapan = tetapanPetaCartaPentadbir();
+  const kunci = kunciMarkerPetaPentadbir(jenisTugas,lokasiPetaDipilihPentadbir);
+  const status = atas(tetapan.marker?.[kunci]?.status || tetapan.marker?.[lokasiPetaDipilihPentadbir]?.status || "NORMAL");
+  if (el("namaLokasiPetaPentadbir")) el("namaLokasiPetaPentadbir").textContent = lokasiPetaDipilihPentadbir;
+  if (el("jenisTugasLokasiPetaPentadbir")) el("jenisTugasLokasiPetaPentadbir").textContent = jenisTugas || "-";
+  if (el("statusLokasiPetaPentadbir")) el("statusLokasiPetaPentadbir").textContent = status;
+  if (el("jumlahDitugaskanLokasi")) el("jumlahDitugaskanLokasi").textContent = senarai.length;
+  if (el("jumlahBertugasLokasi")) el("jumlahBertugasLokasi").textContent = kategori.BERTUGAS.length;
+  if (el("jumlahBelumHadirLokasi")) el("jumlahBelumHadirLokasi").textContent = kategori.BELUM_HADIR.length;
+  if (el("jumlahSelesaiLokasi")) el("jumlahSelesaiLokasi").textContent = kategori.SELESAI.length;
+  ["BERTUGAS","BELUM_HADIR","SELESAI"].forEach(kategoriTab => {
+    const id = kategoriTab === "BERTUGAS" ? "tabLokasiBertugas" : kategoriTab === "BELUM_HADIR" ? "tabLokasiBelumHadir" : "tabLokasiSelesai";
+    el(id)?.classList.toggle("active",tabPetugasLokasiAktif === kategoriTab);
+  });
+  paparSenaraiPetugasLokasiPentadbir(kategori[tabPetugasLokasiAktif] || []);
 }
-
 
 function tukarTabPetugasLokasi(
   tab
