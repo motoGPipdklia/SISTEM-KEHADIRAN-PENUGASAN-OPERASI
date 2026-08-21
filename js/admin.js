@@ -460,7 +460,7 @@ let kanvasMarkerSeretPentadbir = null;
 
 
 const KUNCI_TETAPAN_PETA_CARTA_MOTOGP = "skpoTetapanPetaCarta";
-const URL_PETA_ADMIN_MOTOGP = "images/peta.png?v=20260821-1519";
+const URL_PETA_ADMIN_MOTOGP = "images/petaadmin.png?v=20260821-1532";
 const KUNCI_KRONOLOGI_CARTA_MOTOGP = "skpoKronologiCarta";
 
 
@@ -9491,7 +9491,7 @@ function pratontonPetaPentadbir(event) {
 
   paparMesej(
     "statusUrusPetaPentadbir",
-    "Peta Admin MotoGP menggunakan images/peta.png dari GitHub. Tukar fail peta.png di GitHub jika mahu menukar gambar.",
+    "Peta Admin MotoGP menggunakan images/petaadmin.png dari GitHub. Tukar fail petaadmin.png di GitHub jika mahu menukar gambar.",
     "warning"
   );
 }
@@ -9839,7 +9839,7 @@ function simpanTetapanPetaPentadbir() {
 
   paparMesej(
     "statusUrusPetaPentadbir",
-    "Marker berjaya disimpan. Peta MotoGP menggunakan peta.png dari GitHub.",
+    "Marker berjaya disimpan. Peta MotoGP menggunakan petaadmin.png dari GitHub.",
     "success"
   );
 }
