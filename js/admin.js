@@ -9563,7 +9563,7 @@ function paparMarkerPetaPentadbir() {
               <span class="admin-map-marker-count">
                 ${bertugas}/${petugas.length}
               </span>
-              <span class="admin-map-marker-name">
+              <span class="admin-map-marker-label">
                 ${escapeHtml(item.lokasi)}
               </span>
               <small class="admin-map-marker-task">
@@ -10042,7 +10042,7 @@ function paparMarkerUrusPetaPentadbir() {
               onpointerdown="mulaSeretMarkerPetaPentadbir(event,'${jenisJs}','${lokasiJs}')"
               onclick="pilihLokasiUntukUrusMarkerPentadbir('${lokasiJs}','${jenisJs}')"
             >
-              <span class="admin-map-marker-name">
+              <span class="admin-map-marker-label">
                 ${escapeHtml(nama)}
               </span>
               <small class="admin-map-marker-task">
