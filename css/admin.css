@@ -3493,3 +3493,72 @@ body.marker-dragging *{
     grid-column:auto;
   }
 }
+
+
+/* ================================================================
+   PETA LOKASI PENUGASAN — LEBAR PENUH
+================================================================ */
+
+.admin-chart-card[data-chart-section="PETA"],
+.admin-operation-map-card{
+  grid-column:1 / -1 !important;
+  width:100% !important;
+  max-width:none !important;
+  min-width:0 !important;
+}
+
+/*
+  Peta menggunakan keseluruhan ruang kad.
+  Panel butiran lokasi masih kekal di kanan apabila marker dipaparkan.
+*/
+.admin-operation-map-layout{
+  width:100% !important;
+  grid-template-columns:minmax(0,2.25fr) minmax(330px,.75fr) !important;
+}
+
+.admin-operation-map-stage{
+  width:100% !important;
+  max-width:none !important;
+}
+
+.admin-operation-map-viewport{
+  width:100% !important;
+  min-height:620px !important;
+}
+
+.admin-operation-map-canvas{
+  width:100% !important;
+  min-width:900px;
+}
+
+.admin-operation-map-image{
+  width:100% !important;
+  min-height:620px !important;
+  height:auto !important;
+  object-fit:contain !important;
+}
+
+/* Bila marker ditutup, panel kanan hilang dan peta penuh 100%. */
+.admin-operation-map-layout.markers-off{
+  grid-template-columns:minmax(0,1fr) !important;
+}
+
+@media(max-width:1250px){
+  .admin-operation-map-layout{
+    grid-template-columns:1fr !important;
+  }
+
+  .admin-operation-map-viewport{
+    min-height:520px !important;
+  }
+
+  .admin-operation-map-image{
+    min-height:520px !important;
+  }
+}
+
+@media(max-width:700px){
+  .admin-operation-map-canvas{
+    min-width:760px;
+  }
+}
