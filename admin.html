@@ -7,7 +7,7 @@
   <title>OP LITAR motoGP | Pentadbir</title>
 
   <link rel="stylesheet" href="css/style.css?v=20260722-0045">
-  <link rel="stylesheet" href="css/admin.css?v=20260821-motogp-sama-f1-001">
+  <link rel="stylesheet" href="css/admin.css?v=20260821-motogp-marker-all-tasks-001">
 </head>
 
 <body>
@@ -730,6 +730,17 @@
             </div>
           </div>
 
+          <div class="admin-map-task-filter">
+            <div>
+              <label for="penapisJenisTugasPetaPentadbir">JENIS TUGAS MARKER</label>
+              <select id="penapisJenisTugasPetaPentadbir" onchange="tukarJenisTugasPetaPentadbir(this.value)">
+                <option value="SEMUA">SEMUA JENIS TUGAS</option>
+              </select>
+            </div>
+            <p class="muted">Hanya marker bagi jenis tugas yang dipilih akan dipaparkan pada peta.</p>
+          </div>
+
+
           <div class="admin-operation-map-layout">
             <div class="admin-operation-map-stage">
               <div class="admin-operation-map-viewport" id="viewportPetaCartaPentadbir">
@@ -737,7 +748,7 @@
                   <img
                     id="imejPetaCartaPentadbir"
                     class="admin-operation-map-image"
-                    src="images/petaadmin.png?v=20260821-1532"
+                    src="images/petaadmin.png?v=20260821-1640"
                     alt="Peta lokasi penugasan operasi"
                     draggable="false"
                   >
@@ -767,6 +778,10 @@
                   <div>
                     <span class="muted">LOKASI</span>
                     <h3 id="namaLokasiPetaPentadbir">-</h3>
+                    <div class="admin-map-location-task">
+                      <span class="muted">JENIS TUGAS</span>
+                      <strong id="jenisTugasLokasiPetaPentadbir">-</strong>
+                    </div>
                   </div>
                   <span class="admin-map-location-status" id="statusLokasiPetaPentadbir">NORMAL</span>
                 </div>
@@ -1578,7 +1593,7 @@
       <div class="section-heading">
         <div>
           <h2>Urus Marker Lokasi Penugasan</h2>
-          <p class="muted">Pilih tempat tugas, klik pada peta untuk meletakkan marker, kemudian seret marker jika mahu melaras kedudukan.</p>
+          <p class="muted">Pilih Jenis Tugas dan Tempat Tugas, klik pada peta untuk meletakkan marker, kemudian seret marker jika mahu melaras kedudukan.</p>
         </div>
         <button class="gray" type="button" onclick="tutupUrusPetaPentadbir()">TUTUP</button>
       </div>
@@ -1587,6 +1602,13 @@
         <div class="form-group form-group-wide">
           <label for="failPetaPentadbir">Gambar Peta</label>
           <input id="failPetaPentadbir" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" onchange="pratontonPetaPentadbir(event)">
+        </div>
+
+        <div class="form-group form-group-wide">
+          <label for="pilihanJenisTugasMarkerPentadbir">Jenis Tugas</label>
+          <select id="pilihanJenisTugasMarkerPentadbir" onchange="tukarJenisTugasUrusMarkerPentadbir(this.value)">
+            <option value="">PILIH JENIS TUGAS</option>
+          </select>
         </div>
 
         <div class="form-group">
@@ -1609,10 +1631,11 @@
 
       <div class="admin-marker-help">
         <strong>CARA LETAK MARKER</strong>
-        <span>1. Pilih Tempat Tugas.</span>
-        <span>2. Klik lokasi sebenar pada gambar peta.</span>
-        <span>3. Seret marker untuk melaras kedudukan.</span>
-        <span>4. Tekan SIMPAN MARKER.</span>
+        <span>1. Pilih Jenis Tugas.</span>
+        <span>2. Pilih Tempat Tugas.</span>
+        <span>3. Klik lokasi sebenar pada gambar peta.</span>
+        <span>4. Seret marker untuk melaras kedudukan.</span>
+        <span>5. Tekan SIMPAN MARKER.</span>
       </div>
 
       <div class="admin-marker-selected">
@@ -1622,7 +1645,7 @@
 
       <div class="admin-map-manage-preview">
         <div class="admin-map-manage-canvas" id="kanvasUrusPetaPentadbir">
-          <img id="imejUrusPetaPentadbir" src="images/petaadmin.png?v=20260821-1532" alt="Pratonton peta operasi" draggable="false">
+          <img id="imejUrusPetaPentadbir" src="images/petaadmin.png?v=20260821-1640" alt="Pratonton peta operasi" draggable="false">
           <div id="lapisanMarkerUrusPetaPentadbir" class="admin-map-marker-layer"></div>
         </div>
       </div>
@@ -2152,7 +2175,7 @@
 <script src="js/api-config.js?v=20260722-0215"></script>
 <script src="js/supabase-client.js?v=20260722-0215"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-<script src="js/admin.js?v=20260821-motogp-petaadmin-002"></script>
+<script src="js/admin.js?v=20260821-motogp-marker-all-tasks-001"></script>
 
 </body>
 </html>
