@@ -272,15 +272,97 @@ function formatTempoh(minit) {
   if (!Number.isFinite(Number(minit))) return "-";
   const m = Math.max(0, Number(minit)); return `${Math.floor(m / 60)} jam ${Math.round(m % 60)} minit`;
 }
-function petugasLayakHantarLaporan(t) { return !!t && (nilaiBoolean(t.penyelia) || nilaiBoolean(t.pemegangSet)); }
+function petugasLayakHantarLaporan(t) {
+  if (!t) return false;
+
+  const ialahPenyelia = atas(t.penyelia) === "YA";
+  const ialahPemegangSet = atas(t.pemegangSet) === "YA";
+  const jenis = normalisasiJenisTugasPelaporan(t.jenisTugas);
+
+  /*
+    LITUPAN KESELAMATAN:
+    Borang khas ini hanya dibenarkan kepada PENYELIA.
+    Pemegang Set yang bukan Penyelia tidak diberi akses.
+  */
+  if (jenis === "LITUPAN KESELAMATAN") {
+    return ialahPenyelia;
+  }
+
+  return ialahPenyelia || ialahPemegangSet;
+}
+
 function kemasKiniButangPelaporan(t) {
-  const b = el("btnLaporan"); if (!b) return;
-  const layak = petugasLayakHantarLaporan(t);
-  b.style.display = layak ? "block" : "none";
-  b.disabled = !(layak && statusKehadiranSemasa === "HADIR" && !sudahCheckOutSemasa);
-  b.textContent = !layak ? "HANTAR PELAPORAN" : sudahCheckOutSemasa
-    ? "PELAPORAN DITUTUP SELEPAS CHECK-OUT"
-    : statusKehadiranSemasa !== "HADIR" ? "PELAPORAN MENUNGGU PENGESAHAN URUSETIA" : "HANTAR PELAPORAN";
+  const b = el("btnLaporan");
+  const skrinLaporan = el("laporan");
+  const ruangBorang = el("borangLaporanDinamik");
+
+  if (!b) return;
+
+  const jenis =
+    t
+      ? normalisasiJenisTugasPelaporan(t.jenisTugas)
+      : "";
+
+  const ialahLitupan =
+    jenis === "LITUPAN KESELAMATAN";
+
+  const layak =
+    petugasLayakHantarLaporan(t);
+
+  /*
+    Jika bukan petugas yang layak:
+    - Litupan Keselamatan mesti PENYELIA.
+    - Jenis lain kekal Penyelia atau Pemegang Set.
+  */
+  if (!layak) {
+    b.style.display = "none";
+    b.disabled = true;
+    b.textContent =
+      ialahLitupan
+        ? "LAPORAN LITUPAN KESELAMATAN"
+        : "HANTAR PELAPORAN";
+
+    if (ruangBorang) {
+      ruangBorang.innerHTML = "";
+    }
+
+    if (skrinLaporan) {
+      skrinLaporan.style.display = "none";
+    }
+
+    return;
+  }
+
+  b.style.display = "block";
+
+  b.disabled =
+    !(
+      statusKehadiranSemasa === "HADIR" &&
+      !sudahCheckOutSemasa
+    );
+
+  if (sudahCheckOutSemasa) {
+    b.textContent =
+      ialahLitupan
+        ? "LAPORAN LITUPAN DITUTUP SELEPAS CHECK-OUT"
+        : "PELAPORAN DITUTUP SELEPAS CHECK-OUT";
+
+    return;
+  }
+
+  if (statusKehadiranSemasa !== "HADIR") {
+    b.textContent =
+      ialahLitupan
+        ? "LAPORAN LITUPAN MENUNGGU PENGESAHAN URUSETIA"
+        : "PELAPORAN MENUNGGU PENGESAHAN URUSETIA";
+
+    return;
+  }
+
+  b.textContent =
+    ialahLitupan
+      ? "HANTAR LAPORAN LITUPAN KESELAMATAN"
+      : "HANTAR PELAPORAN";
 }
 
 function mulaCheckin() { bukaSkrinGps("checkin"); }
@@ -426,23 +508,74 @@ function normalisasiJenisTugasPelaporan(nilai) {
   if (jenis.includes("BALAI POLIS BERGERAK")) return "BALAI POLIS BERGERAK";
   if (jenis.includes("PONDOK POLIS")) return "PONDOK POLIS";
   if (jenis.includes("UNIT PEMUSNAH BOM")) return "UNIT PEMUSNAH BOM";
+  if (jenis.includes("SUBTEK")) return "SUBTEK";
 
   return jenis;
 }
 
 function bukaLaporan() {
-  if (!petugasLayakHantarLaporan(tugas) || statusKehadiranSemasa !== "HADIR" || sudahCheckOutSemasa) {
-    alert("Pelaporan hanya dibenarkan selepas kehadiran disahkan, sebelum Check-Out, kepada Penyelia atau Pemegang Set.");
-    return;
-  }
-
   if (!tugas) {
     alert("Maklumat tugasan tidak dijumpai.");
     return;
   }
 
+  /* Perlindungan utama: hanya Penyelia atau Pemegang Set. */
+  if (!petugasLayakHantarLaporan(tugas)) {
+    const ruangBorang = el("borangLaporanDinamik");
+
+    if (ruangBorang) ruangBorang.innerHTML = "";
+    if (el("laporan")) el("laporan").style.display = "none";
+
+    const jenis = normalisasiJenisTugasPelaporan(tugas.jenisTugas);
+
+    alert(
+      jenis === "LITUPAN KESELAMATAN"
+        ? "Borang Litupan Keselamatan hanya disediakan kepada Penyelia."
+        : "Borang pelaporan hanya disediakan kepada Penyelia atau Pemegang Set."
+    );
+    return;
+  }
+
+  if (statusKehadiranSemasa !== "HADIR" || sudahCheckOutSemasa) {
+    alert("Pelaporan hanya dibenarkan selepas kehadiran disahkan dan sebelum Check-Out.");
+    return;
+  }
+
   el("dashboard").style.display = "none";
   el("laporan").style.display = "block";
+
+  const jenisLaporan =
+    normalisasiJenisTugasPelaporan(tugas.jenisTugas);
+
+  const ialahLitupan =
+    jenisLaporan === "LITUPAN KESELAMATAN";
+
+  const ialahSubtek =
+    jenisLaporan === "SUBTEK";
+
+  const tajukLaporan =
+    el("tajukLaporanPetugas");
+
+  if (tajukLaporan) {
+    tajukLaporan.textContent =
+      ialahLitupan
+        ? "Pelaporan Litupan Keselamatan"
+        : ialahSubtek
+          ? "Pelaporan SUBTEK"
+          : "Pelaporan Petugas";
+  }
+
+  /*
+    Pengguna meminta TARIKH tidak dipaparkan
+    dalam Borang Litupan Keselamatan.
+  */
+  const blokTarikh =
+    el("blokTarikhMasaLaporan");
+
+  if (blokTarikh) {
+    blokTarikh.style.display =
+      ialahLitupan ? "none" : "block";
+  }
 
   el("tugasLaporan").innerHTML =
     binaBarisMaklumat("Call Sign:", tugas.callSign) +
@@ -450,9 +583,6 @@ function bukaLaporan() {
     binaBarisMaklumat("Tempat Tugas:", tugas.lokasi) +
     binaBarisMaklumat("Penyelia:", tugas.penyelia);
 
-  const jenisLaporan = normalisasiJenisTugasPelaporan(tugas.jenisTugas);
-  const kotakTarikh = el("tarikhMasaLaporan")?.closest(".info-box");
-  if (kotakTarikh) kotakTarikh.style.display = jenisLaporan === "LITUPAN KESELAMATAN" ? "none" : "block";
   kemasKiniTarikhMasaLaporan();
   janaBorangPelaporan();
 
@@ -465,7 +595,12 @@ function bukaLaporan() {
   const btn = el("btnHantarLaporan");
   if (btn) {
     btn.disabled = false;
-    btn.textContent = "HANTAR LAPORAN KEPADA URUSETIA";
+    btn.textContent =
+      jenisLaporan === "LITUPAN KESELAMATAN"
+        ? "HANTAR LAPORAN LITUPAN KESELAMATAN"
+        : jenisLaporan === "SUBTEK"
+          ? "HANTAR LAPORAN SUBTEK KEPADA URUSETIA"
+          : "HANTAR LAPORAN KEPADA URUSETIA";
   }
 
   window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
@@ -489,45 +624,209 @@ function janaBorangPelaporan() {
 
   switch (jenis) {
     case "LITUPAN KESELAMATAN":
-      if (!nilaiBoolean(tugas.penyelia)) {
-        ruang.innerHTML = `<div class="status-box error" style="display:block"><strong>BORANG TIDAK DIBENARKAN</strong><br><br>Borang Litupan Keselamatan hanya untuk petugas yang ditetapkan sebagai Penyelia.</div>`;
-        el("btnHantarLaporan").disabled = true;
-        break;
-      }
       ruang.innerHTML = `
-        <div class="litupan-keselamatan-form">
+        <div class="litupan-report-header">
           <h2>Borang Litupan Keselamatan</h2>
-          <p class="laporan-hint">Pelaporan VVIP / VIP oleh Penyelia Litupan Keselamatan.</p>
+          <p>
+            Masukkan maklumat VVIP / VIP yang diliputi.
+            Borang ini hanya boleh dihantar oleh Penyelia.
+          </p>
+        </div>
 
-          <label for="lapKategoriVvip"><strong>Kategori *</strong></label>
-          <select id="lapKategoriVvip">
-            <option value="">-- PILIH --</option>
-            <option value="VVIP">VVIP</option>
-            <option value="VIP">VIP</option>
-          </select>
-
-          <label for="lapNamaVvip"><strong>Nama *</strong></label>
-          <input id="lapNamaVvip" type="text" placeholder="Nama VVIP / VIP">
-
-          <div class="laporan-grid-2">
-            <div><label for="lapJawatanVvip"><strong>Jawatan</strong></label><input id="lapJawatanVvip" type="text" placeholder="Contoh: MENTERI / KETUA JABATAN"></div>
-            <div><label for="lapAgensiVvip"><strong>Agensi / Organisasi</strong></label><input id="lapAgensiVvip" type="text" placeholder="Contoh: KDN / PDRM / ORGANISASI"></div>
+        <div class="litupan-grid">
+          <div class="litupan-field">
+            <label for="lapLitupanKategori">
+              <strong>Kategori *</strong>
+            </label>
+            <select id="lapLitupanKategori">
+              <option value="">-- PILIH --</option>
+              <option value="VVIP">VVIP</option>
+              <option value="VIP">VIP</option>
+            </select>
           </div>
 
-          <div class="laporan-grid-2">
-            <div><label for="lapMasaKetibaan"><strong>Masa Ketibaan</strong></label><input id="lapMasaKetibaan" type="time"></div>
-            <div><label for="lapMasaBeredar"><strong>Masa Beredar</strong></label><input id="lapMasaBeredar" type="time"></div>
+          <div class="litupan-field litupan-field-wide">
+            <label for="lapLitupanNama">
+              <strong>Nama *</strong>
+            </label>
+            <input
+              id="lapLitupanNama"
+              type="text"
+              placeholder="Nama VVIP / VIP"
+              autocomplete="off"
+            >
           </div>
 
-          <label for="lapLokasiVvip"><strong>Lokasi</strong></label>
-          <input id="lapLokasiVvip" type="text" placeholder="Contoh: PADDOCK / MAIN GRANDSTAND">
+          <div class="litupan-field">
+            <label for="lapLitupanJawatan">
+              <strong>Jawatan</strong>
+            </label>
+            <input
+              id="lapLitupanJawatan"
+              type="text"
+              placeholder="Contoh: MENTERI / KETUA JABATAN"
+              autocomplete="off"
+            >
+          </div>
 
-          <label for="lapTujuanVvip"><strong>Tujuan / Aktiviti</strong></label>
-          <textarea id="lapTujuanVvip" placeholder="Tujuan lawatan atau aktiviti..."></textarea>
+          <div class="litupan-field">
+            <label for="lapLitupanAgensi">
+              <strong>Agensi / Organisasi</strong>
+            </label>
+            <input
+              id="lapLitupanAgensi"
+              type="text"
+              placeholder="Contoh: KDN / PDRM / ORGANISASI"
+              autocomplete="off"
+            >
+          </div>
 
-          <label for="lapCatatanVvip"><strong>Catatan</strong></label>
-          <textarea id="lapCatatanVvip" placeholder="Catatan tambahan jika ada..."></textarea>
-        </div>`;
+          <div class="litupan-field">
+            <label for="lapLitupanMasaKetibaan">
+              <strong>Masa Ketibaan</strong>
+            </label>
+            <input
+              id="lapLitupanMasaKetibaan"
+              type="time"
+            >
+          </div>
+
+          <div class="litupan-field">
+            <label for="lapLitupanMasaBeredar">
+              <strong>Masa Beredar</strong>
+            </label>
+            <input
+              id="lapLitupanMasaBeredar"
+              type="time"
+            >
+          </div>
+
+          <div class="litupan-field litupan-field-wide">
+            <label for="lapLitupanLokasi">
+              <strong>Lokasi</strong>
+            </label>
+            <input
+              id="lapLitupanLokasi"
+              type="text"
+              placeholder="Contoh: PADDOCK / MAIN GRANDSTAND"
+              autocomplete="off"
+            >
+          </div>
+
+          <div class="litupan-field litupan-field-wide">
+            <label for="lapLitupanTujuan">
+              <strong>Tujuan / Aktiviti</strong>
+            </label>
+            <textarea
+              id="lapLitupanTujuan"
+              placeholder="Tujuan lawatan atau aktiviti..."
+            ></textarea>
+          </div>
+
+          <div class="litupan-field litupan-field-wide">
+            <label for="lapLitupanCatatan">
+              <strong>Catatan</strong>
+            </label>
+            <textarea
+              id="lapLitupanCatatan"
+              placeholder="Catatan tambahan jika ada..."
+            ></textarea>
+          </div>
+        </div>
+      `;
+      break;
+
+    case "SUBTEK":
+      ruang.innerHTML = `
+        <div class="subtek-report-header">
+          <h2>Borang Pelaporan SUBTEK</h2>
+          <p>
+            Masukkan maklumat situasi semasa SUBTEK untuk dihantar kepada Urusetia.
+          </p>
+        </div>
+
+        <div class="subtek-grid">
+          <div class="subtek-field subtek-field-wide">
+            <label for="lapSubtekKeadaanKeselamatan">
+              <strong>Keadaan Keselamatan *</strong>
+            </label>
+            <select id="lapSubtekKeadaanKeselamatan">
+              <option value="">-- PILIH --</option>
+              <option value="TERKAWAL">TERKAWAL</option>
+              <option value="TIDAK TERKAWAL">TIDAK TERKAWAL</option>
+            </select>
+          </div>
+
+          <div class="subtek-field subtek-field-wide">
+            <label for="lapSubtekLokasi">
+              <strong>Lokasi *</strong>
+            </label>
+            <input
+              id="lapSubtekLokasi"
+              type="text"
+              placeholder="Contoh: PADDOCK / MAIN GRANDSTAND / SUBTEK"
+              autocomplete="off"
+            >
+          </div>
+
+          <div class="subtek-field subtek-field-wide">
+            ${binaPilihanAdaTiada(
+              "lapSubtekVvipVip",
+              "VVIP / VIP",
+              "Butiran VVIP / VIP",
+              "Masukkan nama / jawatan VVIP atau VIP."
+            )}
+          </div>
+
+          <div class="subtek-field">
+            <label for="lapSubtekJumlahPengunjung">
+              <strong>Jumlah Pengunjung *</strong>
+            </label>
+            <input
+              id="lapSubtekJumlahPengunjung"
+              type="number"
+              min="0"
+              step="1"
+              value="0"
+              inputmode="numeric"
+            >
+          </div>
+
+          <div class="subtek-field">
+            <label for="lapSubtekJumlahKenderaanPengunjung">
+              <strong>Jumlah Kenderaan Pengunjung *</strong>
+            </label>
+            <input
+              id="lapSubtekJumlahKenderaanPengunjung"
+              type="number"
+              min="0"
+              step="1"
+              value="0"
+              inputmode="numeric"
+            >
+          </div>
+
+          <div class="subtek-field subtek-field-wide">
+            <label for="lapSubtekKeperluanBantuan">
+              <strong>Keperluan Bantuan / Sokongan *</strong>
+            </label>
+            <textarea
+              id="lapSubtekKeperluanBantuan"
+              placeholder="Masukkan keperluan bantuan atau sokongan. Jika tiada, masukkan TIADA."
+            ></textarea>
+          </div>
+
+          <div class="subtek-field subtek-field-wide">
+            <label for="lapSubtekCatatan">
+              <strong>Catatan *</strong>
+            </label>
+            <textarea
+              id="lapSubtekCatatan"
+              placeholder="Masukkan catatan. Jika tiada, masukkan TIADA."
+            ></textarea>
+          </div>
+        </div>
+      `;
       break;
 
     case "KAWALAN KESELAMATAN":
@@ -735,19 +1034,207 @@ function binaDataLaporan() {
   const jenis = normalisasiJenisTugasPelaporan(tugas?.jenisTugas);
 
   if (jenis === "LITUPAN KESELAMATAN") {
-    if (!nilaiBoolean(tugas?.penyelia)) throw new Error("Borang Litupan Keselamatan hanya untuk Penyelia.");
-    const kategori = atas(el("lapKategoriVvip")?.value);
-    const nama = teks(el("lapNamaVvip")?.value);
-    const jawatan = teks(el("lapJawatanVvip")?.value);
-    const agensi = teks(el("lapAgensiVvip")?.value);
-    const masaKetibaan = teks(el("lapMasaKetibaan")?.value);
-    const masaBeredar = teks(el("lapMasaBeredar")?.value);
-    const lokasi = teks(el("lapLokasiVvip")?.value);
-    const tujuanAktiviti = teks(el("lapTujuanVvip")?.value);
-    const catatan = teks(el("lapCatatanVvip")?.value);
-    if (!["VVIP", "VIP"].includes(kategori)) throw new Error("Sila pilih kategori VVIP atau VIP.");
-    if (!nama) throw new Error("Sila masukkan nama VVIP / VIP.");
-    return { kategori, nama, jawatan, agensi_organisasi: agensi, masa_ketibaan: masaKetibaan, masa_beredar: masaBeredar, lokasi, tujuan_aktiviti: tujuanAktiviti, catatan };
+    const kategori =
+      atas(el("lapLitupanKategori")?.value);
+
+    const nama =
+      teks(el("lapLitupanNama")?.value);
+
+    const jawatan =
+      teks(el("lapLitupanJawatan")?.value);
+
+    const agensi =
+      teks(el("lapLitupanAgensi")?.value);
+
+    const masaKetibaan =
+      teks(el("lapLitupanMasaKetibaan")?.value);
+
+    const masaBeredar =
+      teks(el("lapLitupanMasaBeredar")?.value);
+
+    const lokasi =
+      teks(el("lapLitupanLokasi")?.value);
+
+    const tujuan =
+      teks(el("lapLitupanTujuan")?.value);
+
+    const catatan =
+      teks(el("lapLitupanCatatan")?.value);
+
+    if (!["VVIP", "VIP"].includes(kategori)) {
+      throw new Error("Sila pilih Kategori VVIP atau VIP.");
+    }
+
+    if (!nama) {
+      throw new Error("Sila masukkan nama VVIP / VIP.");
+    }
+
+    /*
+      Tarikh tidak diminta dalam borang.
+      Tarikh penghantaran akan direkod oleh pangkalan data
+      melalui rekod pelaporan / created_at.
+    */
+    return {
+      kategori,
+      nama,
+      jawatan,
+      agensi_organisasi: agensi,
+      masa_ketibaan: masaKetibaan,
+      masa_beredar: masaBeredar,
+      lokasi,
+      tujuan_aktiviti: tujuan,
+      catatan,
+
+      /*
+        Nilai ringkas ini memastikan Modul Carta VVIP/VIP
+        sedia ada boleh mengenal pasti laporan ini.
+      */
+      vvip_vip: `${kategori} — ${nama}`,
+
+      /*
+        Maklumat penugasan disimpan bersama untuk kegunaan
+        paparan Pentadbir/Urusetia jika diperlukan.
+      */
+      petugas: {
+        id: userLogin?.id || null,
+        no_badan: userLogin?.noBadan || "",
+        pangkat: userLogin?.pangkat || "",
+        nama: userLogin?.nama || ""
+      },
+
+      penugasan: {
+        id: tugas?.id || null,
+        call_sign: tugas?.callSign || "",
+        jenis_tugas: tugas?.jenisTugas || "",
+        tempat_tugas: tugas?.lokasi || "",
+        penyelia: tugas?.penyelia || ""
+      }
+    };
+  }
+
+  if (jenis === "SUBTEK") {
+    const keadaanKeselamatan =
+      atas(
+        el(
+          "lapSubtekKeadaanKeselamatan"
+        )?.value
+      );
+
+    const lokasi =
+      teks(
+        el(
+          "lapSubtekLokasi"
+        )?.value
+      );
+
+    const vvipVip =
+      dapatkanAdaTiadaLaporan(
+        "lapSubtekVvipVip"
+      );
+
+    const jumlahPengunjung =
+      Number(
+        el(
+          "lapSubtekJumlahPengunjung"
+        )?.value
+      );
+
+    const jumlahKenderaanPengunjung =
+      Number(
+        el(
+          "lapSubtekJumlahKenderaanPengunjung"
+        )?.value
+      );
+
+    const keperluanBantuanSokongan =
+      teks(
+        el(
+          "lapSubtekKeperluanBantuan"
+        )?.value
+      );
+
+    const catatan =
+      teks(
+        el(
+          "lapSubtekCatatan"
+        )?.value
+      );
+
+    if (!keadaanKeselamatan) {
+      throw new Error(
+        "Sila pilih Keadaan Keselamatan."
+      );
+    }
+
+    if (!lokasi) {
+      throw new Error(
+        "Sila masukkan Lokasi."
+      );
+    }
+
+    if (
+      vvipVip.status === "ADA" &&
+      !vvipVip.butiran
+    ) {
+      throw new Error(
+        "Sila masukkan butiran VVIP / VIP."
+      );
+    }
+
+    if (
+      !Number.isInteger(
+        jumlahPengunjung
+      ) ||
+      jumlahPengunjung < 0
+    ) {
+      throw new Error(
+        "Sila masukkan Jumlah Pengunjung yang sah."
+      );
+    }
+
+    if (
+      !Number.isInteger(
+        jumlahKenderaanPengunjung
+      ) ||
+      jumlahKenderaanPengunjung < 0
+    ) {
+      throw new Error(
+        "Sila masukkan Jumlah Kenderaan Pengunjung yang sah."
+      );
+    }
+
+    if (!keperluanBantuanSokongan) {
+      throw new Error(
+        "Sila masukkan Keperluan Bantuan / Sokongan. Jika tiada, masukkan TIADA."
+      );
+    }
+
+    if (!catatan) {
+      throw new Error(
+        "Sila masukkan Catatan. Jika tiada, masukkan TIADA."
+      );
+    }
+
+    return {
+      keadaan_keselamatan:
+        keadaanKeselamatan,
+
+      lokasi,
+
+      vvip_vip:
+        vvipVip,
+
+      jumlah_pengunjung:
+        jumlahPengunjung,
+
+      jumlah_kenderaan_pengunjung:
+        jumlahKenderaanPengunjung,
+
+      keperluan_bantuan_sokongan:
+        keperluanBantuanSokongan,
+
+      catatan
+    };
   }
 
   if (jenis === "KAWALAN KESELAMATAN") {
@@ -868,6 +1355,27 @@ function binaDataLaporan() {
 async function hantarLaporan() {
   const btn = el("btnHantarLaporan");
 
+  const jenisSemasa =
+    normalisasiJenisTugasPelaporan(
+      tugas?.jenisTugas
+    );
+
+  /*
+    Perlindungan pada masa submit juga.
+    Litupan Keselamatan mesti PENYELIA.
+  */
+  if (
+    jenisSemasa === "LITUPAN KESELAMATAN" &&
+    atas(tugas?.penyelia) !== "YA"
+  ) {
+    paparStatus(
+      "statusLaporan",
+      "Borang Litupan Keselamatan hanya boleh dihantar oleh Penyelia.",
+      "error"
+    );
+    return;
+  }
+
   if (!petugasLayakHantarLaporan(tugas) || statusKehadiranSemasa !== "HADIR" || sudahCheckOutSemasa) {
     paparStatus("statusLaporan", "Pelaporan tidak dibenarkan.", "error");
     return;
@@ -897,12 +1405,37 @@ async function hantarLaporan() {
       data_laporan: dataLaporan
     };
 
-    /* Kekalkan kolum lama untuk keserasian sementara dengan paparan Urusetia lama. */
+    /* Kekalkan kolum lama untuk keserasian sementara dengan paparan Urusetia/Admin lama. */
     if (jenis === "LITUPAN KESELAMATAN") {
       payload.jumlah_pengunjung = 0;
       payload.jumlah_kenderaan = 0;
-      payload.vvip_vip = `${dataLaporan.kategori} — ${dataLaporan.nama}`;
-      payload.perkara_menarik = dataLaporan.catatan || dataLaporan.tujuan_aktiviti || "";
+
+      /*
+        Carta VVIP/VIP sedia ada boleh terus membaca rekod ini.
+      */
+      payload.vvip_vip =
+        `${dataLaporan.kategori} — ${dataLaporan.nama}`;
+
+      payload.perkara_menarik =
+        dataLaporan.catatan ||
+        dataLaporan.tujuan_aktiviti ||
+        "";
+
+    } else if (jenis === "SUBTEK") {
+      payload.jumlah_pengunjung =
+        dataLaporan.jumlah_pengunjung;
+
+      payload.jumlah_kenderaan =
+        dataLaporan.jumlah_kenderaan_pengunjung;
+
+      payload.vvip_vip =
+        dataLaporan.vvip_vip.status === "ADA"
+          ? dataLaporan.vvip_vip.butiran
+          : "TIADA";
+
+      payload.perkara_menarik =
+        dataLaporan.catatan;
+
     } else if (jenis === "KAWALAN KESELAMATAN") {
       payload.jumlah_pengunjung = dataLaporan.jumlah_pengunjung;
       payload.jumlah_kenderaan = dataLaporan.kenderaan.jumlah;
@@ -931,7 +1464,13 @@ async function hantarLaporan() {
   } catch (err) {
     console.error("Ralat menghantar laporan:", err);
     btn.disabled = false;
-    btn.textContent = "HANTAR LAPORAN KEPADA URUSETIA";
+    btn.textContent =
+      jenisSemasa === "LITUPAN KESELAMATAN"
+        ? "HANTAR LAPORAN LITUPAN KESELAMATAN"
+        : jenisSemasa === "SUBTEK"
+          ? "HANTAR LAPORAN SUBTEK KEPADA URUSETIA"
+          : "HANTAR LAPORAN KEPADA URUSETIA";
+
     paparStatus("statusLaporan", `Ralat menghantar laporan: ${escapeHtml(err.message)}`, "error");
   }
 }
