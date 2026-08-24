@@ -3669,3 +3669,26 @@ body.marker-dragging *{
   text-overflow:ellipsis !important;
   white-space:nowrap !important;
 }
+
+/* ================================================================
+   REKOD MANUAL CARTA — PENGUNJUNG / KENDERAAN
+================================================================ */
+.admin-chart-manual-button{
+  padding:9px 12px;
+  font-size:11px;
+}
+
+.admin-manual-record-actions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+  margin-top:10px;
+  padding-top:9px;
+  border-top:1px solid #333;
+}
+
+#modalPengunjungManualPentadbir .modal-card,
+#modalKenderaanManualPentadbir .modal-card{
+  width:min(100%,720px);
+}
