@@ -848,10 +848,133 @@ body.peta-terbuka{ overflow:hidden; }
   }
 }
 
-/* BORANG LITUPAN KESELAMATAN */
-.litupan-keselamatan-form{margin-top:14px;text-align:left;}
-.litupan-keselamatan-form h2{color:var(--gold);text-align:center;margin-bottom:6px;}
-.laporan-hint{margin:0 0 16px;color:var(--muted);font-size:13px;text-align:center;}
-.laporan-grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
-.laporan-grid-2 > div{min-width:0;}
-@media(max-width:520px){.laporan-grid-2{grid-template-columns:1fr;gap:0;}}
+
+/* ==========================================
+   BORANG LITUPAN KESELAMATAN
+========================================== */
+
+.litupan-report-header{
+  margin:4px 0 18px;
+  padding:16px;
+  border:1px solid #6b581d;
+  border-radius:11px;
+  background:#211d10;
+  text-align:left;
+}
+
+.litupan-report-header h2{
+  margin:0 0 6px;
+  color:var(--gold);
+}
+
+.litupan-report-header p{
+  margin:0;
+  color:#d8d0b5;
+  font-size:13px;
+  line-height:1.55;
+}
+
+.litupan-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:4px 12px;
+  width:100%;
+}
+
+.litupan-field{
+  min-width:0;
+}
+
+.litupan-field-wide{
+  grid-column:1 / -1;
+}
+
+.litupan-field label{
+  margin-top:10px;
+}
+
+.litupan-field input,
+.litupan-field select,
+.litupan-field textarea{
+  margin-top:7px;
+  margin-bottom:5px;
+}
+
+.litupan-field textarea{
+  min-height:100px;
+}
+
+@media(max-width:520px){
+  .litupan-grid{
+    grid-template-columns:1fr;
+  }
+
+  .litupan-field-wide{
+    grid-column:auto;
+  }
+}
+
+/* ==========================================
+   BORANG PELAPORAN SUBTEK
+========================================== */
+
+.subtek-report-header{
+  margin:4px 0 18px;
+  padding:16px;
+  border:1px solid #315d73;
+  border-radius:11px;
+  background:#12242d;
+  text-align:left;
+}
+
+.subtek-report-header h2{
+  margin:0 0 6px;
+  color:#9edcff;
+}
+
+.subtek-report-header p{
+  margin:0;
+  color:#bfd4df;
+  font-size:13px;
+  line-height:1.55;
+}
+
+.subtek-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:4px 12px;
+  width:100%;
+}
+
+.subtek-field{
+  min-width:0;
+}
+
+.subtek-field-wide{
+  grid-column:1 / -1;
+}
+
+.subtek-field label{
+  margin-top:10px;
+}
+
+.subtek-field input,
+.subtek-field select,
+.subtek-field textarea{
+  margin-top:7px;
+  margin-bottom:5px;
+}
+
+.subtek-field textarea{
+  min-height:100px;
+}
+
+@media(max-width:520px){
+  .subtek-grid{
+    grid-template-columns:1fr;
+  }
+
+  .subtek-field-wide{
+    grid-column:auto;
+  }
+}
