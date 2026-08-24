@@ -432,6 +432,10 @@ function cetakCartaPentadbir(
 ================================================================ */
 
 let dataCartaLaporanPentadbir = [];
+let dataPengunjungManualPentadbir = [];
+let dataKenderaanManualPentadbir = [];
+const JADUAL_CARTA_MANUAL_MOTOGP = "carta_manual";
+
 let cartaPengunjungPentadbir = null;
 let cartaKenderaanPentadbir = null;
 let kategoriKenderaanDipilihPentadbir = "BAS";
@@ -3845,6 +3849,8 @@ async function muatDataCartaPentadbir() {
           tarikhMalaysiaDaripadaMasa(item.tarikh_masa) === tarikh
         );
 
+    await muatDataManualCartaPentadbir(tarikh);
+
     await Promise.all([
       muatJawatankuasaOperasiPentadbir(tarikh, false),
       muatAgensiLuarOperasiPentadbir(tarikh, false),
@@ -3878,6 +3884,957 @@ async function muatDataCartaPentadbir() {
     paparMesej(
       "statusCartaPentadbir",
       `Ralat memuatkan carta: ${escapeHtml(error.message || "Ralat tidak diketahui.")}`,
+      "error"
+    );
+  }
+}
+
+
+
+async function muatDataManualCartaPentadbir(tarikhInput) {
+  const tarikh =
+    teks(tarikhInput) ||
+    el("tarikhCartaPentadbir")?.value ||
+    el("tarikh")?.value ||
+    hariIniMalaysia();
+
+  const { data, error } =
+    await denganHadMasa(
+      db.from(
+        JADUAL_CARTA_MANUAL_MOTOGP
+      )
+        .select("*")
+        .eq(
+          "tarikh",
+          tarikh
+        )
+        .in(
+          "jenis",
+          [
+            "PENGUNJUNG",
+            "KENDERAAN"
+          ]
+        )
+        .order(
+          "masa",
+          {
+            ascending: true
+          }
+        )
+        .order(
+          "created_at",
+          {
+            ascending: true
+          }
+        )
+    );
+
+  if (error) {
+    if (
+      error.code === "42P01" ||
+      /carta_manual/i.test(
+        error.message || ""
+      )
+    ) {
+      throw new Error(
+        "Jadual Supabase carta_manual belum diwujudkan. Jalankan fail SQL yang disertakan terlebih dahulu."
+      );
+    }
+
+    throw error;
+  }
+
+  const senarai =
+    data ||
+    [];
+
+  dataPengunjungManualPentadbir =
+    senarai.filter(
+      item =>
+        atas(
+          item.jenis
+        ) ===
+        "PENGUNJUNG"
+    );
+
+  dataKenderaanManualPentadbir =
+    senarai.filter(
+      item =>
+        atas(
+          item.jenis
+        ) ===
+        "KENDERAAN"
+    );
+}
+
+
+function masaDaripadaSupabasePentadbir(nilai) {
+  const masa =
+    teks(nilai);
+
+  if (!masa) return "00:00";
+
+  return masa.slice(0, 5);
+}
+
+
+function masaManualCartaPentadbir(item) {
+  const tarikh =
+    teks(
+      item?.tarikh
+    ) ||
+    hariIniMalaysia();
+
+  const masa =
+    masaDaripadaSupabasePentadbir(
+      item?.masa
+    ) ||
+    "00:00";
+
+  return `${tarikh}T${masa}:00+08:00`;
+}
+
+
+function rekodPengunjungManualSintetikPentadbir(item) {
+  return {
+    id:
+      `MANUAL-PENGUNJUNG-${item.id}`,
+
+    tarikh_masa:
+      masaManualCartaPentadbir(
+        item
+      ),
+
+    jenis_tugas:
+      "KAWALAN KESELAMATAN",
+
+    jumlah_pengunjung:
+      nomborCarta(
+        item.jumlah_pengunjung,
+        0
+      ),
+
+    jumlah_kenderaan:
+      0,
+
+    nama_petugas:
+      "PENTADBIR (MANUAL)",
+
+    no_badan:
+      item.created_by_no_badan ||
+      adminLogin?.noBadan ||
+      "-",
+
+    call_sign:
+      "MANUAL",
+
+    data_laporan: {
+      jumlah_pengunjung:
+        nomborCarta(
+          item.jumlah_pengunjung,
+          0
+        ),
+
+      lokasi:
+        item.lokasi ||
+        "-",
+
+      catatan:
+        item.catatan ||
+        "",
+
+      sumber_manual:
+        true
+    },
+
+    _manual:
+      true,
+
+    _manualJenis:
+      "PENGUNJUNG",
+
+    _manualId:
+      item.id
+  };
+}
+
+
+function rekodKenderaanManualSintetikPentadbir(item) {
+  const bas =
+    nomborCarta(
+      item.bas,
+      0
+    );
+
+  const motosikal =
+    nomborCarta(
+      item.motosikal,
+      0
+    );
+
+  const motokar =
+    nomborCarta(
+      item.motokar,
+      0
+    );
+
+  return {
+    id:
+      `MANUAL-KENDERAAN-${item.id}`,
+
+    tarikh_masa:
+      masaManualCartaPentadbir(
+        item
+      ),
+
+    jenis_tugas:
+      "KAWALAN KESELAMATAN",
+
+    jumlah_pengunjung:
+      0,
+
+    jumlah_kenderaan:
+      bas +
+      motosikal +
+      motokar,
+
+    nama_petugas:
+      "PENTADBIR (MANUAL)",
+
+    no_badan:
+      item.created_by_no_badan ||
+      adminLogin?.noBadan ||
+      "-",
+
+    call_sign:
+      "MANUAL",
+
+    data_laporan: {
+      lokasi:
+        item.lokasi ||
+        "-",
+
+      kenderaan: {
+        bas,
+        motosikal,
+        motokar,
+        jumlah:
+          bas +
+          motosikal +
+          motokar
+      },
+
+      catatan:
+        item.catatan ||
+        "",
+
+      sumber_manual:
+        true
+    },
+
+    _manual:
+      true,
+
+    _manualJenis:
+      "KENDERAAN",
+
+    _manualId:
+      item.id
+  };
+}
+
+
+function senaraiPengunjungCartaPentadbir() {
+  const laporan =
+    laporanKeselamatanCarta();
+
+  const manual =
+    dataPengunjungManualPentadbir
+      .map(
+        rekodPengunjungManualSintetikPentadbir
+      );
+
+  return [
+    ...laporan,
+    ...manual
+  ].sort(
+    (a, b) =>
+      new Date(
+        a.tarikh_masa
+      ) -
+      new Date(
+        b.tarikh_masa
+      )
+  );
+}
+
+
+function senaraiKenderaanCartaPentadbir() {
+  const laporan =
+    laporanKeselamatanCarta();
+
+  const manual =
+    dataKenderaanManualPentadbir
+      .map(
+        rekodKenderaanManualSintetikPentadbir
+      );
+
+  return [
+    ...laporan,
+    ...manual
+  ].sort(
+    (a, b) =>
+      new Date(
+        a.tarikh_masa
+      ) -
+      new Date(
+        b.tarikh_masa
+      )
+  );
+}
+
+
+function masaSekarangInputPentadbir() {
+  return new Intl.DateTimeFormat(
+    "en-GB",
+    {
+      timeZone:
+        ZON_MASA,
+      hour:
+        "2-digit",
+      minute:
+        "2-digit",
+      hour12:
+        false
+    }
+  ).format(
+    new Date()
+  );
+}
+
+
+function bukaTambahPengunjungManualPentadbir() {
+  const modal =
+    el(
+      "modalPengunjungManualPentadbir"
+    );
+
+  if (!modal) return;
+
+  el(
+    "tarikhPengunjungManualPentadbir"
+  ).value =
+    el(
+      "tarikhCartaPentadbir"
+    )?.value ||
+    el("tarikh")?.value ||
+    hariIniMalaysia();
+
+  el(
+    "masaPengunjungManualPentadbir"
+  ).value =
+    masaSekarangInputPentadbir();
+
+  el(
+    "lokasiPengunjungManualPentadbir"
+  ).value =
+    "";
+
+  el(
+    "jumlahPengunjungManualPentadbir"
+  ).value =
+    "0";
+
+  el(
+    "catatanPengunjungManualPentadbir"
+  ).value =
+    "";
+
+  paparMesej(
+    "statusPengunjungManualPentadbir",
+    "",
+    "warning"
+  );
+
+  modal.classList.add(
+    "open"
+  );
+
+  modal.setAttribute(
+    "aria-hidden",
+    "false"
+  );
+}
+
+
+function tutupModalPengunjungManualPentadbir() {
+  const modal =
+    el(
+      "modalPengunjungManualPentadbir"
+    );
+
+  if (!modal) return;
+
+  modal.classList.remove(
+    "open"
+  );
+
+  modal.setAttribute(
+    "aria-hidden",
+    "true"
+  );
+}
+
+
+async function simpanPengunjungManualPentadbir() {
+  const tarikh =
+    teks(
+      el(
+        "tarikhPengunjungManualPentadbir"
+      )?.value
+    );
+
+  const masa =
+    teks(
+      el(
+        "masaPengunjungManualPentadbir"
+      )?.value
+    );
+
+  const jumlah =
+    Math.max(
+      0,
+      Math.trunc(
+        Number(
+          el(
+            "jumlahPengunjungManualPentadbir"
+          )?.value
+        ) ||
+        0
+      )
+    );
+
+  if (
+    !tarikh ||
+    !masa
+  ) {
+    return paparMesej(
+      "statusPengunjungManualPentadbir",
+      "Tarikh dan Masa wajib diisi.",
+      "error"
+    );
+  }
+
+  const butang =
+    el(
+      "btnSimpanPengunjungManualPentadbir"
+    );
+
+  if (butang) {
+    butang.disabled = true;
+    butang.textContent =
+      "MENYIMPAN...";
+  }
+
+  try {
+    const payload = {
+      jenis:
+        "PENGUNJUNG",
+
+      tarikh,
+      masa,
+
+      lokasi:
+        atas(
+          el(
+            "lokasiPengunjungManualPentadbir"
+          )?.value
+        ) ||
+        "-",
+
+      jumlah_pengunjung:
+        jumlah,
+
+      bas: 0,
+      motosikal: 0,
+      motokar: 0,
+
+      catatan:
+        atas(
+          el(
+            "catatanPengunjungManualPentadbir"
+          )?.value
+        ) ||
+        "",
+
+      created_by_profile_id:
+        adminLogin?.id ||
+        null,
+
+      created_by_auth_user_id:
+        adminLogin?.authUserId ||
+        null,
+
+      created_by_no_badan:
+        adminLogin?.noBadan ||
+        null
+    };
+
+    const {
+      data,
+      error
+    } =
+      await denganHadMasa(
+        db.from(
+          JADUAL_CARTA_MANUAL_MOTOGP
+        )
+          .insert(
+            payload
+          )
+          .select("*")
+          .single()
+      );
+
+    if (error) {
+      throw error;
+    }
+
+    dataPengunjungManualPentadbir.push(
+      data
+    );
+
+    if (
+      el(
+        "tarikhCartaPentadbir"
+      )
+    ) {
+      el(
+        "tarikhCartaPentadbir"
+      ).value =
+        tarikh;
+    }
+
+    tutupModalPengunjungManualPentadbir();
+
+    paparRingkasanCartaPentadbir();
+    paparCartaPengunjungPentadbir();
+
+    paparMesej(
+      "statusCartaPentadbir",
+      "Rekod pengunjung manual berjaya disimpan ke Supabase.",
+      "success"
+    );
+
+  } catch (error) {
+    console.error(
+      "Simpan pengunjung manual gagal:",
+      error
+    );
+
+    paparMesej(
+      "statusPengunjungManualPentadbir",
+      `Gagal menyimpan ke Supabase: ${escapeHtml(error.message || "Ralat tidak diketahui.")}`,
+      "error"
+    );
+
+  } finally {
+    if (butang) {
+      butang.disabled = false;
+      butang.textContent =
+        "SIMPAN PENGUNJUNG";
+    }
+  }
+}
+
+
+async function padamPengunjungManualPentadbir(id) {
+  if (
+    !confirm(
+      "Padam rekod pengunjung manual ini daripada Supabase?"
+    )
+  ) {
+    return;
+  }
+
+  try {
+    const {
+      error
+    } =
+      await denganHadMasa(
+        db.from(
+          JADUAL_CARTA_MANUAL_MOTOGP
+        )
+          .delete()
+          .eq(
+            "id",
+            id
+          )
+      );
+
+    if (error) {
+      throw error;
+    }
+
+    dataPengunjungManualPentadbir =
+      dataPengunjungManualPentadbir.filter(
+        item =>
+          teks(
+            item.id
+          ) !==
+          teks(
+            id
+          )
+      );
+
+    paparRingkasanCartaPentadbir();
+    paparCartaPengunjungPentadbir();
+
+    paparMesej(
+      "statusCartaPentadbir",
+      "Rekod pengunjung manual telah dipadam daripada Supabase.",
+      "success"
+    );
+
+  } catch (error) {
+    console.error(
+      "Padam pengunjung manual gagal:",
+      error
+    );
+
+    paparMesej(
+      "statusCartaPentadbir",
+      `Gagal memadam rekod: ${escapeHtml(error.message || "Ralat tidak diketahui.")}`,
+      "error"
+    );
+  }
+}
+
+
+function bukaTambahKenderaanManualPentadbir() {
+  const modal =
+    el(
+      "modalKenderaanManualPentadbir"
+    );
+
+  if (!modal) return;
+
+  el(
+    "tarikhKenderaanManualPentadbir"
+  ).value =
+    el(
+      "tarikhCartaPentadbir"
+    )?.value ||
+    el("tarikh")?.value ||
+    hariIniMalaysia();
+
+  el(
+    "masaKenderaanManualPentadbir"
+  ).value =
+    masaSekarangInputPentadbir();
+
+  el(
+    "lokasiKenderaanManualPentadbir"
+  ).value =
+    "";
+
+  [
+    "basKenderaanManualPentadbir",
+    "motosikalKenderaanManualPentadbir",
+    "motokarKenderaanManualPentadbir"
+  ].forEach(
+    id => {
+      if (el(id)) {
+        el(id).value =
+          "0";
+      }
+    }
+  );
+
+  el(
+    "catatanKenderaanManualPentadbir"
+  ).value =
+    "";
+
+  paparMesej(
+    "statusKenderaanManualPentadbir",
+    "",
+    "warning"
+  );
+
+  modal.classList.add(
+    "open"
+  );
+
+  modal.setAttribute(
+    "aria-hidden",
+    "false"
+  );
+}
+
+
+function tutupModalKenderaanManualPentadbir() {
+  const modal =
+    el(
+      "modalKenderaanManualPentadbir"
+    );
+
+  if (!modal) return;
+
+  modal.classList.remove(
+    "open"
+  );
+
+  modal.setAttribute(
+    "aria-hidden",
+    "true"
+  );
+}
+
+
+async function simpanKenderaanManualPentadbir() {
+  const tarikh =
+    teks(
+      el(
+        "tarikhKenderaanManualPentadbir"
+      )?.value
+    );
+
+  const masa =
+    teks(
+      el(
+        "masaKenderaanManualPentadbir"
+      )?.value
+    );
+
+  const bas =
+    Math.max(
+      0,
+      Math.trunc(
+        Number(
+          el(
+            "basKenderaanManualPentadbir"
+          )?.value
+        ) ||
+        0
+      )
+    );
+
+  const motosikal =
+    Math.max(
+      0,
+      Math.trunc(
+        Number(
+          el(
+            "motosikalKenderaanManualPentadbir"
+          )?.value
+        ) ||
+        0
+      )
+    );
+
+  const motokar =
+    Math.max(
+      0,
+      Math.trunc(
+        Number(
+          el(
+            "motokarKenderaanManualPentadbir"
+          )?.value
+        ) ||
+        0
+      )
+    );
+
+  if (
+    !tarikh ||
+    !masa
+  ) {
+    return paparMesej(
+      "statusKenderaanManualPentadbir",
+      "Tarikh dan Masa wajib diisi.",
+      "error"
+    );
+  }
+
+  const butang =
+    el(
+      "btnSimpanKenderaanManualPentadbir"
+    );
+
+  if (butang) {
+    butang.disabled = true;
+    butang.textContent =
+      "MENYIMPAN...";
+  }
+
+  try {
+    const payload = {
+      jenis:
+        "KENDERAAN",
+
+      tarikh,
+      masa,
+
+      lokasi:
+        atas(
+          el(
+            "lokasiKenderaanManualPentadbir"
+          )?.value
+        ) ||
+        "-",
+
+      jumlah_pengunjung:
+        0,
+
+      bas,
+      motosikal,
+      motokar,
+
+      catatan:
+        atas(
+          el(
+            "catatanKenderaanManualPentadbir"
+          )?.value
+        ) ||
+        "",
+
+      created_by_profile_id:
+        adminLogin?.id ||
+        null,
+
+      created_by_auth_user_id:
+        adminLogin?.authUserId ||
+        null,
+
+      created_by_no_badan:
+        adminLogin?.noBadan ||
+        null
+    };
+
+    const {
+      data,
+      error
+    } =
+      await denganHadMasa(
+        db.from(
+          JADUAL_CARTA_MANUAL_MOTOGP
+        )
+          .insert(
+            payload
+          )
+          .select("*")
+          .single()
+      );
+
+    if (error) {
+      throw error;
+    }
+
+    dataKenderaanManualPentadbir.push(
+      data
+    );
+
+    if (
+      el(
+        "tarikhCartaPentadbir"
+      )
+    ) {
+      el(
+        "tarikhCartaPentadbir"
+      ).value =
+        tarikh;
+    }
+
+    tutupModalKenderaanManualPentadbir();
+
+    paparRingkasanCartaPentadbir();
+    paparCartaKenderaanPentadbir();
+
+    paparMesej(
+      "statusCartaPentadbir",
+      "Rekod kenderaan manual berjaya disimpan ke Supabase.",
+      "success"
+    );
+
+  } catch (error) {
+    console.error(
+      "Simpan kenderaan manual gagal:",
+      error
+    );
+
+    paparMesej(
+      "statusKenderaanManualPentadbir",
+      `Gagal menyimpan ke Supabase: ${escapeHtml(error.message || "Ralat tidak diketahui.")}`,
+      "error"
+    );
+
+  } finally {
+    if (butang) {
+      butang.disabled = false;
+      butang.textContent =
+        "SIMPAN KENDERAAN";
+    }
+  }
+}
+
+
+async function padamKenderaanManualPentadbir(id) {
+  if (
+    !confirm(
+      "Padam rekod kenderaan manual ini daripada Supabase?"
+    )
+  ) {
+    return;
+  }
+
+  try {
+    const {
+      error
+    } =
+      await denganHadMasa(
+        db.from(
+          JADUAL_CARTA_MANUAL_MOTOGP
+        )
+          .delete()
+          .eq(
+            "id",
+            id
+          )
+      );
+
+    if (error) {
+      throw error;
+    }
+
+    dataKenderaanManualPentadbir =
+      dataKenderaanManualPentadbir.filter(
+        item =>
+          teks(
+            item.id
+          ) !==
+          teks(
+            id
+          )
+      );
+
+    paparRingkasanCartaPentadbir();
+    paparCartaKenderaanPentadbir();
+
+    paparMesej(
+      "statusCartaPentadbir",
+      "Rekod kenderaan manual telah dipadam daripada Supabase.",
+      "success"
+    );
+
+  } catch (error) {
+    console.error(
+      "Padam kenderaan manual gagal:",
+      error
+    );
+
+    paparMesej(
+      "statusCartaPentadbir",
+      `Gagal memadam rekod: ${escapeHtml(error.message || "Ralat tidak diketahui.")}`,
       "error"
     );
   }
