@@ -1294,11 +1294,29 @@ async function muatData(kemasKiniPenapis = false) {
       const checkout = checkoutMap.get(item.id) || null;
       const ikatanDevice = deviceMap.get(petugasId) || null;
       const statusTugas = atas(item.status);
-      const statusKehadiran = statusTugas === "DIGANTI"
-        ? "DIGANTI"
-        : checkin
-          ? atas(checkin.status) || "MENUNGGU"
-          : "BELUM HADIR";
+
+      /*
+        Paparan Pentadbir MotoGP:
+        DITOLAK, CUTI SAKIT dan KECEMASAN
+        digabungkan sebagai TIDAK HADIR.
+        Nilai sebenar dalam Supabase kekal.
+      */
+      const statusKehadiran =
+        statusTugas === "DIGANTI"
+          ? "DIGANTI"
+          : (
+              statusTugas === "DITOLAK" ||
+              statusTugas === "CUTI SAKIT" ||
+              statusTugas === "KECEMASAN"
+            )
+            ? "TIDAK HADIR"
+            : checkin
+              ? (
+                  atas(checkin.status) === "DITOLAK"
+                    ? "TIDAK HADIR"
+                    : atas(checkin.status) || "MENUNGGU"
+                )
+              : "BELUM HADIR";
 
       return {
         idPenugasan: item.id,
@@ -1323,6 +1341,15 @@ async function muatData(kemasKiniPenapis = false) {
         pemegangSet: nilaiBoolean(item.pemegang_set),
         penyelia: nilaiBoolean(item.penyelia),
         statusKehadiran,
+        statusPenugasanAsal: statusTugas,
+        jenisKetidakhadiran:
+          (
+            statusTugas === "DITOLAK" ||
+            statusTugas === "CUTI SAKIT" ||
+            statusTugas === "KECEMASAN"
+          )
+            ? statusTugas
+            : "",
         masaCheckin: checkin?.masa_checkin || null,
         masaCheckout: checkout?.masa_checkout || null,
         tempohMinit: checkout?.tempoh_minit,
@@ -1436,11 +1463,23 @@ function paparJadual() {
 
   tbody.innerHTML = dataPaparan.map((item, index) => {
     const kelas = kelasBadge(item.statusKehadiran);
-    const keadaan = item.checkout
-      ? "SELESAI TUGAS"
-      : item.statusKehadiran === "HADIR"
-        ? "MASIH BERTUGAS"
-        : "-";
+    /*
+      Kolum KEADAAN:
+      - CUTI SAKIT -> CUTI SAKIT
+      - KECEMASAN  -> KECEMASAN
+      - Check-Out  -> SELESAI TUGAS
+      - Hadir      -> MASIH BERTUGAS
+    */
+    const keadaan =
+      item.statusPenugasanAsal === "CUTI SAKIT"
+        ? "CUTI SAKIT"
+        : item.statusPenugasanAsal === "KECEMASAN"
+          ? "KECEMASAN"
+          : item.checkout
+            ? "SELESAI TUGAS"
+            : item.statusKehadiran === "HADIR"
+              ? "MASIH BERTUGAS"
+              : "-";
 
     return `
       <tr>
@@ -1486,7 +1525,15 @@ function paparJadual() {
 function kelasBadge(status) {
   if (status === "HADIR") return "badge-green";
   if (status === "MENUNGGU") return "badge-yellow";
-  if (status === "DITOLAK" || status === "DIGANTI") return "badge-red";
+
+  if (
+    status === "DITOLAK" ||
+    status === "DIGANTI" ||
+    status === "TIDAK HADIR"
+  ) {
+    return "badge-red";
+  }
+
   return "badge-gray";
 }
 
@@ -1494,7 +1541,7 @@ function paparStatistik() {
   const jumlah = dataPaparan.length;
   const hadir = dataPaparan.filter(item => item.statusKehadiran === "HADIR").length;
   const menunggu = dataPaparan.filter(item => item.statusKehadiran === "MENUNGGU").length;
-  const ditolak = dataPaparan.filter(item => item.statusKehadiran === "DITOLAK").length;
+  const ditolak = dataPaparan.filter(item => item.statusKehadiran === "TIDAK HADIR").length;
   const checkout = dataPaparan.filter(item => Boolean(item.checkout)).length;
   const bertugas = dataPaparan.filter(item => item.statusKehadiran === "HADIR" && !item.checkout).length;
   const belumHadir = dataPaparan.filter(item => item.statusKehadiran === "BELUM HADIR").length;
@@ -1532,7 +1579,7 @@ function exportExcel() {
   const tajuk = [
     "BIL", "NO BADAN", "PANGKAT", "NAMA", "NO TELEFON", "CALL SIGN",
     "JENIS TUGAS", "TEMPAT TUGAS", "PEMEGANG SET",
-    "CHECK-IN", "STATUS", "CHECK-OUT", "TEMPOH"
+    "CHECK-IN", "STATUS", "SELESAI TUGAS", "TEMPOH"
   ];
 
   const baris = dataPaparan.map((item, index) => [
@@ -6475,7 +6522,7 @@ function labelKategoriKehadiranPentadbir(kategori) {
   const peta = {
     HADIR: "HADIR",
     TIDAK_HADIR: "TIDAK HADIR",
-    SELESAI: "SELESAI",
+    SELESAI: "SELESAI TUGAS",
     MENUNGGU: "MENUNGGU"
   };
 
@@ -6641,7 +6688,7 @@ function paparSenaraiKehadiranPentadbir(kategori) {
               <small>
                 ${
                   kategori === "SELESAI"
-                    ? "Check-Out"
+                    ? "Selesai Tugas"
                     : kategori === "HADIR"
                       ? "Check-In"
                       : "Masa"

@@ -12,6 +12,9 @@ const JADUAL_LAPORAN = "pelaporan";
 const JADUAL_SITREP = "sitrep";
 const BUCKET_SITREP = "sitrep-lampiran";
 
+const JADUAL_CUTI_KECEMASAN = "cuti_kecemasan";
+const BUCKET_CUTI_KECEMASAN = "cuti-kecemasan-lampiran";
+
 /* Kunci sesi tempatan khusus Urusetia MotoGP. */
 const KUNCI_PENYELIA_F1 = "skpoMotoGPPenyelia";
 const NO_BADAN_ADMIN_UTAMA_F1 = "ADMINF1";
@@ -23,6 +26,7 @@ let dataLaporanPenyelia = [];
 let dataSitrepPenyelia = [];
 let laporanAktif = null;
 let penugasanDipilih = null;
+let penugasanCutiDipilih = null;
 
 
 /* ================================================================
@@ -580,6 +584,32 @@ async function muatDataPenyelia() {
       throw checkinRes.error;
     }
 
+    let rekodCutiKecemasan = [];
+
+    const cutiRes =
+      await dbPenyelia
+        .from(JADUAL_CUTI_KECEMASAN)
+        .select("*")
+        .eq("tarikh_penugasan", tarikh);
+
+    if (cutiRes.error) {
+      /*
+        Jika jadual belum diwujudkan, dashboard kehadiran
+        masih boleh digunakan seperti biasa.
+      */
+      if (
+        cutiRes.error.code !== "42P01" &&
+        !/cuti_kecemasan/i.test(
+          cutiRes.error.message || ""
+        )
+      ) {
+        throw cutiRes.error;
+      }
+    } else {
+      rekodCutiKecemasan =
+        cutiRes.data || [];
+    }
+
     const profilMap = new Map(
       profil.map(item => [
         item.id,
@@ -594,6 +624,16 @@ async function muatDataPenyelia() {
           item
         ])
     );
+
+    const cutiKecemasanMap =
+      new Map(
+        rekodCutiKecemasan.map(
+          item => [
+            String(item.penugasan_id),
+            item
+          ]
+        )
+      );
 
     dataPenyelia =
       tugasan.map(item => {
@@ -617,11 +657,26 @@ async function muatDataPenyelia() {
         let status =
           "BELUM HADIR";
 
+        const statusPenugasan =
+          atasPenyelia(item.status);
+
         if (
-          atasPenyelia(item.status) ===
+          statusPenugasan ===
           "DIGANTI"
         ) {
           status = "DIGANTI";
+
+        } else if (
+          statusPenugasan ===
+          "CUTI SAKIT"
+        ) {
+          status = "CUTI SAKIT";
+
+        } else if (
+          statusPenugasan ===
+          "KECEMASAN"
+        ) {
+          status = "KECEMASAN";
 
         } else if (checkin) {
           if (
@@ -643,6 +698,10 @@ async function muatDataPenyelia() {
           profil: petugas,
           tugas: item,
           checkin,
+          cutiKecemasan:
+            cutiKecemasanMap.get(
+              String(item.id)
+            ) || null,
           status
         };
       });
@@ -814,7 +873,10 @@ function paparSenarai() {
           "MENUNGGU";
        
        const bolehGanti =
-     item.status === "BELUM HADIR";
+         item.status === "BELUM HADIR";
+
+       const bolehCutiKecemasan =
+         item.status === "BELUM HADIR";
 
       const statusPaparan =
         item.status === "MENUNGGU"
@@ -926,10 +988,55 @@ function paparSenarai() {
               </strong>
             </div>
 
+            ${
+              item.cutiKecemasan
+                ? `
+                  <div class="label">
+                    Sebab / Keterangan
+                  </div>
+
+                  <div>
+                    ${htmlPenyelia(
+                      item.cutiKecemasan.sebab ||
+                      "-"
+                    )}
+                  </div>
+
+                  <div class="label">
+                    Lampiran
+                  </div>
+
+                  <div>
+                    ${
+                      item.cutiKecemasan.lampiran_path
+                        ? `
+                          <button
+                            class="btn-attachment-inline"
+                            type="button"
+                            onclick="bukaLampiranCutiKecemasan(
+                              '${htmlPenyelia(
+                                item.cutiKecemasan.lampiran_path
+                              )}',
+                              '${htmlPenyelia(
+                                item.cutiKecemasan.lampiran_nama ||
+                                "lampiran"
+                              )}'
+                            )"
+                          >
+                            📎 LIHAT LAMPIRAN
+                          </button>
+                        `
+                        : "TIADA"
+                    }
+                  </div>
+                `
+                : ""
+            }
+
           </div>
 
 ${
-  bolehTindak || bolehGanti
+  bolehTindak || bolehGanti || bolehCutiKecemasan
     ? `
       <div class="actions">
 
@@ -970,6 +1077,22 @@ ${
                 )}')"
               >
                 GANTI PETUGAS
+              </button>
+            `
+            : ""
+        }
+
+        ${
+          bolehCutiKecemasan
+            ? `
+              <button
+                class="btn-cuti-kecemasan"
+                type="button"
+                onclick="bukaModalCutiKecemasan('${htmlPenyelia(
+                  item.idPenugasan
+                )}')"
+              >
+                CUTI SAKIT / KECEMASAN
               </button>
             `
             : ""
@@ -3822,6 +3945,839 @@ document.addEventListener(
 /* ================================================================
    SISTEM DIMULAKAN
 ================================================================ */
+
+function denganHadMasaCutiKecemasan(
+  janji,
+  milisaat = 20000,
+  mesej = "Operasi mengambil masa terlalu lama."
+) {
+  return Promise.race([
+    Promise.resolve(janji),
+
+    new Promise(
+      (_, reject) => {
+        setTimeout(
+          () => {
+            reject(
+              new Error(mesej)
+            );
+          },
+          milisaat
+        );
+      }
+    )
+  ]);
+}
+
+
+/* ================================================================
+   CUTI SAKIT / KECEMASAN
+================================================================ */
+
+function namaFailSelamatCutiKecemasan(nama) {
+  const bersih =
+    teksPenyelia(nama)
+      .normalize("NFKD")
+      .replace(/[^\w.-]+/g, "-")
+      .replace(/-+/g, "-");
+
+  return bersih || "lampiran";
+}
+
+
+function bukaModalCutiKecemasan(idPenugasan) {
+  penugasanCutiDipilih =
+    dataPenyelia.find(
+      item =>
+        String(item.idPenugasan) ===
+        String(idPenugasan)
+    ) || null;
+
+  if (!penugasanCutiDipilih) {
+    alert(
+      "Maklumat penugasan tidak ditemui."
+    );
+    return;
+  }
+
+  if (
+    penugasanCutiDipilih.status !==
+    "BELUM HADIR"
+  ) {
+    alert(
+      "Hanya petugas berstatus BELUM HADIR boleh direkodkan sebagai Cuti Sakit / Kecemasan."
+    );
+    return;
+  }
+
+  const preview =
+    elemenPenyelia(
+      "petugasCutiKecemasan"
+    );
+
+  if (preview) {
+    preview.innerHTML = `
+      <strong>Maklumat Petugas</strong>
+
+      <br><br>
+
+      <div class="grid">
+        <div class="label">Nama</div>
+        <div>
+          ${htmlPenyelia(
+            penugasanCutiDipilih.profil?.pangkat ||
+            ""
+          )}
+          ${htmlPenyelia(
+            penugasanCutiDipilih.profil?.nama ||
+            "-"
+          )}
+        </div>
+
+        <div class="label">No Badan</div>
+        <div>
+          ${htmlPenyelia(
+            penugasanCutiDipilih.profil?.no_badan ||
+            "-"
+          )}
+        </div>
+
+        <div class="label">Call Sign</div>
+        <div>
+          ${htmlPenyelia(
+            penugasanCutiDipilih.tugas?.call_sign ||
+            "-"
+          )}
+        </div>
+
+        <div class="label">Tugas</div>
+        <div>
+          ${htmlPenyelia(
+            penugasanCutiDipilih.tugas?.jenis_tugas ||
+            "-"
+          )}
+        </div>
+
+        <div class="label">Lokasi</div>
+        <div>
+          ${htmlPenyelia(
+            penugasanCutiDipilih.tugas?.tempat_tugas ||
+            penugasanCutiDipilih.tugas?.lokasi ||
+            "-"
+          )}
+        </div>
+      </div>
+    `;
+  }
+
+  const tarikhTugas =
+    penugasanCutiDipilih.tugas?.tarikh ||
+    elemenPenyelia("tarikh")?.value ||
+    hariIniPenyelia();
+
+  if (elemenPenyelia("jenisCutiKecemasan")) {
+    elemenPenyelia("jenisCutiKecemasan").value =
+      "CUTI SAKIT";
+  }
+
+  if (elemenPenyelia("tarikhMulaCutiKecemasan")) {
+    elemenPenyelia("tarikhMulaCutiKecemasan").value =
+      tarikhTugas;
+  }
+
+  if (elemenPenyelia("tarikhTamatCutiKecemasan")) {
+    elemenPenyelia("tarikhTamatCutiKecemasan").value =
+      tarikhTugas;
+  }
+
+  if (elemenPenyelia("sebabCutiKecemasan")) {
+    elemenPenyelia("sebabCutiKecemasan").value = "";
+  }
+
+  if (elemenPenyelia("catatanCutiKecemasan")) {
+    elemenPenyelia("catatanCutiKecemasan").value = "";
+  }
+
+  if (elemenPenyelia("lampiranCutiKecemasan")) {
+    elemenPenyelia("lampiranCutiKecemasan").value = "";
+  }
+
+  const status =
+    elemenPenyelia(
+      "statusCutiKecemasan"
+    );
+
+  if (status) {
+    status.innerHTML = "";
+    status.className =
+      "status hidden";
+  }
+
+  elemenPenyelia(
+    "modalCutiKecemasan"
+  )?.classList.remove("hidden");
+
+  document.body.classList.add(
+    "modal-open"
+  );
+}
+
+
+function tutupModalCutiKecemasan() {
+  elemenPenyelia(
+    "modalCutiKecemasan"
+  )?.classList.add("hidden");
+
+  document.body.classList.remove(
+    "modal-open"
+  );
+
+  penugasanCutiDipilih = null;
+}
+
+
+async function simpanCutiKecemasan() {
+  if (
+    !penggunaPenyelia ||
+    !penugasanCutiDipilih
+  ) {
+    alert(
+      "Sesi atau maklumat penugasan tidak ditemui."
+    );
+    return;
+  }
+
+  if (
+    penugasanCutiDipilih.status !==
+    "BELUM HADIR"
+  ) {
+    statusPenyelia(
+      "statusCutiKecemasan",
+      "Penugasan ini tidak lagi berstatus BELUM HADIR.",
+      "error"
+    );
+    return;
+  }
+
+  const jenis =
+    atasPenyelia(
+      elemenPenyelia(
+        "jenisCutiKecemasan"
+      )?.value
+    );
+
+  const tarikhMula =
+    teksPenyelia(
+      elemenPenyelia(
+        "tarikhMulaCutiKecemasan"
+      )?.value
+    );
+
+  const tarikhTamat =
+    teksPenyelia(
+      elemenPenyelia(
+        "tarikhTamatCutiKecemasan"
+      )?.value
+    );
+
+  const sebab =
+    teksPenyelia(
+      elemenPenyelia(
+        "sebabCutiKecemasan"
+      )?.value
+    );
+
+  const catatan =
+    teksPenyelia(
+      elemenPenyelia(
+        "catatanCutiKecemasan"
+      )?.value
+    );
+
+  const fail =
+    elemenPenyelia(
+      "lampiranCutiKecemasan"
+    )?.files?.[0] || null;
+
+  if (
+    ![
+      "CUTI SAKIT",
+      "KECEMASAN"
+    ].includes(jenis)
+  ) {
+    statusPenyelia(
+      "statusCutiKecemasan",
+      "Sila pilih CUTI SAKIT atau KECEMASAN.",
+      "error"
+    );
+    return;
+  }
+
+  if (
+    !tarikhMula ||
+    !tarikhTamat
+  ) {
+    statusPenyelia(
+      "statusCutiKecemasan",
+      "Tarikh mula dan tarikh tamat wajib diisi.",
+      "error"
+    );
+    return;
+  }
+
+  if (
+    tarikhTamat <
+    tarikhMula
+  ) {
+    statusPenyelia(
+      "statusCutiKecemasan",
+      "Tarikh tamat tidak boleh lebih awal daripada tarikh mula.",
+      "error"
+    );
+    return;
+  }
+
+  if (!sebab) {
+    statusPenyelia(
+      "statusCutiKecemasan",
+      "Sebab / keterangan wajib diisi.",
+      "error"
+    );
+    return;
+  }
+
+  const jenisFailDibenarkan = [
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "application/pdf"
+  ];
+
+  if (
+    fail &&
+    (
+      !jenisFailDibenarkan.includes(
+        fail.type
+      ) ||
+      fail.size >
+        10 * 1024 * 1024
+    )
+  ) {
+    statusPenyelia(
+      "statusCutiKecemasan",
+      "Lampiran mesti JPG, PNG, WEBP atau PDF dan tidak melebihi 10 MB.",
+      "error"
+    );
+    return;
+  }
+
+  const butang =
+    elemenPenyelia(
+      "btnSimpanCutiKecemasan"
+    );
+
+  if (butang) {
+    butang.disabled = true;
+    butang.textContent =
+      "SEDANG MENYIMPAN...";
+  }
+
+  statusPenyelia(
+    "statusCutiKecemasan",
+    "Sedang menyimpan rekod...",
+    "warning"
+  );
+
+  let laluanLampiran = "";
+  let rekodBaruId = null;
+  let rekodSediaAda = null;
+
+  try {
+    const authId =
+      penggunaPenyelia.authUserId ||
+      penggunaPenyelia.id;
+
+    if (fail) {
+      laluanLampiran =
+        `${authId}/${penugasanCutiDipilih.idPenugasan}/${Date.now()}-${namaFailSelamatCutiKecemasan(
+          fail.name
+        )}`;
+
+      statusPenyelia(
+        "statusCutiKecemasan",
+        `Memuat naik lampiran (${Math.max(
+          1,
+          Math.round(
+            fail.size / 1024 / 1024
+          )
+        )} MB)...`,
+        "warning"
+      );
+
+      const muatNaik =
+        await denganHadMasaCutiKecemasan(
+          dbPenyelia.storage
+            .from(
+              BUCKET_CUTI_KECEMASAN
+            )
+            .upload(
+              laluanLampiran,
+              fail,
+              {
+                cacheControl: "3600",
+                upsert: false,
+                contentType: fail.type
+              }
+            ),
+          30000,
+          "Muat naik lampiran mengambil masa terlalu lama. Semak sambungan internet dan cuba lagi."
+        );
+
+      if (muatNaik.error) {
+        throw muatNaik.error;
+      }
+    }
+
+    const payload = {
+      penugasan_id:
+        penugasanCutiDipilih.idPenugasan,
+
+      petugas_id:
+        penugasanCutiDipilih.profil?.id ||
+        penugasanCutiDipilih.tugas?.petugas_id ||
+        penugasanCutiDipilih.tugas?.profile_id ||
+        null,
+
+      tarikh_penugasan:
+        penugasanCutiDipilih.tugas?.tarikh ||
+        elemenPenyelia("tarikh")?.value ||
+        hariIniPenyelia(),
+
+      jenis,
+
+      tarikh_mula:
+        tarikhMula,
+
+      tarikh_tamat:
+        tarikhTamat,
+
+      sebab,
+
+      catatan_penyelia:
+        catatan || null,
+
+      lampiran_path:
+        laluanLampiran || null,
+
+      lampiran_nama:
+        fail?.name || null,
+
+      lampiran_jenis:
+        fail?.type || null,
+
+      lampiran_saiz:
+        fail?.size || null,
+
+      dicipta_oleh:
+        authId,
+
+      no_badan_penyelia:
+        penggunaPenyelia.no_badan ||
+        null,
+
+      nama_penyelia:
+        [
+          penggunaPenyelia.pangkat,
+          penggunaPenyelia.nama
+        ]
+          .filter(Boolean)
+          .join(" ") ||
+        null
+    };
+
+    statusPenyelia(
+      "statusCutiKecemasan",
+      "Menyemak rekod sedia ada...",
+      "warning"
+    );
+
+    const semakanRekodSediaAda =
+      await denganHadMasaCutiKecemasan(
+        dbPenyelia
+          .from(
+            JADUAL_CUTI_KECEMASAN
+          )
+          .select("id, lampiran_path")
+          .eq(
+            "penugasan_id",
+            penugasanCutiDipilih.idPenugasan
+          )
+          .maybeSingle(),
+        15000,
+        "Semakan rekod mengambil masa terlalu lama."
+      );
+
+    if (
+      semakanRekodSediaAda.error &&
+      semakanRekodSediaAda.error.code !== "PGRST116"
+    ) {
+      throw semakanRekodSediaAda.error;
+    }
+
+    rekodSediaAda =
+      semakanRekodSediaAda.data || null;
+
+    statusPenyelia(
+      "statusCutiKecemasan",
+      "Menyimpan rekod Cuti Sakit / Kecemasan...",
+      "warning"
+    );
+
+    let rekodBaru = null;
+    let insertError = null;
+
+    if (rekodSediaAda?.id) {
+      const hasilUpdateRekod =
+        await denganHadMasaCutiKecemasan(
+          dbPenyelia
+            .from(
+              JADUAL_CUTI_KECEMASAN
+            )
+            .update(payload)
+            .eq(
+              "id",
+              rekodSediaAda.id
+            )
+            .select("id")
+            .single(),
+          15000,
+          "Kemas kini rekod mengambil masa terlalu lama."
+        );
+
+      rekodBaru = hasilUpdateRekod.data;
+      insertError = hasilUpdateRekod.error;
+    } else {
+      const hasilInsertRekod =
+        await denganHadMasaCutiKecemasan(
+          dbPenyelia
+            .from(
+              JADUAL_CUTI_KECEMASAN
+            )
+            .insert(payload)
+            .select("id")
+            .single(),
+          15000,
+          "Simpan rekod mengambil masa terlalu lama."
+        );
+
+      rekodBaru = hasilInsertRekod.data;
+      insertError = hasilInsertRekod.error;
+
+      /*
+       * Jika ada rekod lama yang tidak dapat dilihat semasa SELECT
+       * tetapi unique constraint mengesannya, cuba UPDATE terus
+       * berdasarkan penugasan_id.
+       */
+      if (
+        insertError?.code === "23505" ||
+        /duplicate key value|cuti_kecemasan_penugasan_unique/i.test(
+          insertError?.message || ""
+        )
+      ) {
+        const hasilPulihDuplicate =
+          await denganHadMasaCutiKecemasan(
+            dbPenyelia
+              .from(
+                JADUAL_CUTI_KECEMASAN
+              )
+              .update(payload)
+              .eq(
+                "penugasan_id",
+                penugasanCutiDipilih.idPenugasan
+              )
+              .select("id")
+              .maybeSingle(),
+            15000,
+            "Rekod lama ditemui tetapi kemas kini mengambil masa terlalu lama."
+          );
+
+        if (!hasilPulihDuplicate.error && hasilPulihDuplicate.data?.id) {
+          rekodBaru = hasilPulihDuplicate.data;
+          insertError = null;
+          rekodSediaAda = hasilPulihDuplicate.data;
+        }
+      }
+    }
+
+    if (insertError) {
+      throw insertError;
+    }
+
+    rekodBaruId =
+      rekodBaru?.id || null;
+
+    statusPenyelia(
+      "statusCutiKecemasan",
+      "Mengemas kini status petugas...",
+      "warning"
+    );
+
+    const {
+      data: tugasanDikemasKini,
+      error: updateError
+    } =
+      await denganHadMasaCutiKecemasan(
+        dbPenyelia
+          .from("penugasan")
+          .update({
+            status: jenis
+          })
+          .eq(
+            "id",
+            penugasanCutiDipilih.idPenugasan
+          )
+          .eq(
+            "status",
+            penugasanCutiDipilih.tugas?.status ||
+            "BELUM HADIR"
+          )
+          .select("id")
+          .maybeSingle(),
+        15000,
+        "Kemas kini status petugas mengambil masa terlalu lama."
+      );
+
+    if (
+      updateError ||
+      !tugasanDikemasKini
+    ) {
+      /*
+        Sesetengah rekod lama mungkin status NULL.
+        Cuba sekali lagi dengan syarat hanya id.
+      */
+      const cubaanKedua =
+        await denganHadMasaCutiKecemasan(
+          dbPenyelia
+            .from("penugasan")
+            .update({
+              status: jenis
+            })
+            .eq(
+              "id",
+              penugasanCutiDipilih.idPenugasan
+            )
+            .select("id")
+            .maybeSingle(),
+          15000,
+          "Cubaan kedua kemas kini status mengambil masa terlalu lama."
+        );
+
+      if (
+        cubaanKedua.error ||
+        !cubaanKedua.data
+      ) {
+        throw (
+          cubaanKedua.error ||
+          updateError ||
+          new Error(
+            "Status penugasan gagal dikemas kini."
+          )
+        );
+      }
+    }
+
+    if (
+      rekodSediaAda?.lampiran_path &&
+      laluanLampiran &&
+      rekodSediaAda.lampiran_path !== laluanLampiran
+    ) {
+      dbPenyelia.storage
+        .from(
+          BUCKET_CUTI_KECEMASAN
+        )
+        .remove([
+          rekodSediaAda.lampiran_path
+        ])
+        .catch(() => {});
+    }
+
+    statusPenyelia(
+      "statusData",
+      `${htmlPenyelia(
+        penugasanCutiDipilih.profil?.pangkat ||
+        ""
+      )} ${htmlPenyelia(
+        penugasanCutiDipilih.profil?.nama ||
+        "-"
+      )} telah direkodkan sebagai ${htmlPenyelia(
+        jenis
+      )}.`,
+      "success"
+    );
+
+    tutupModalCutiKecemasan();
+
+    statusPenyelia(
+      "statusData",
+      "Rekod berjaya disimpan. Memuat semula paparan...",
+      "success"
+    );
+
+    denganHadMasaCutiKecemasan(
+      muatSemuaDataPenyelia(),
+      15000,
+      "Rekod telah disimpan, tetapi paparan mengambil masa untuk dimuat semula."
+    ).catch(error => {
+      console.warn(
+        "Refresh selepas simpan lambat:",
+        error
+      );
+    });
+
+  } catch (error) {
+    console.error(
+      "Ralat simpan Cuti Sakit / Kecemasan:",
+      error
+    );
+
+    /*
+      Rollback rekod dan fail jika status penugasan gagal.
+    */
+    if (
+      rekodBaruId &&
+      !rekodSediaAda?.id
+    ) {
+      await dbPenyelia
+        .from(
+          JADUAL_CUTI_KECEMASAN
+        )
+        .delete()
+        .eq(
+          "id",
+          rekodBaruId
+        )
+        .catch(() => {});
+    }
+
+    if (laluanLampiran) {
+      await dbPenyelia.storage
+        .from(
+          BUCKET_CUTI_KECEMASAN
+        )
+        .remove(
+          [laluanLampiran]
+        )
+        .catch(() => {});
+    }
+
+    statusPenyelia(
+      "statusCutiKecemasan",
+      `Gagal menyimpan: ${htmlPenyelia(
+        error.message ||
+        "Ralat tidak diketahui."
+      )}`,
+      "error"
+    );
+
+  } finally {
+    if (butang) {
+      butang.disabled = false;
+      butang.textContent =
+        "SIMPAN REKOD";
+    }
+  }
+}
+
+
+async function bukaLampiranCutiKecemasan(
+  laluan,
+  namaFail = "lampiran"
+) {
+  if (!laluan) {
+    alert(
+      "Lampiran tidak ditemui."
+    );
+    return;
+  }
+
+  try {
+    const {
+      data,
+      error
+    } =
+      await dbPenyelia.storage
+        .from(
+          BUCKET_CUTI_KECEMASAN
+        )
+        .download(laluan);
+
+    if (error) {
+      throw error;
+    }
+
+    if (!data) {
+      throw new Error(
+        "Fail tidak ditemui."
+      );
+    }
+
+    const url =
+      URL.createObjectURL(data);
+
+    const jenis =
+      data.type || "";
+
+    if (
+      jenis.startsWith("image/") ||
+      jenis === "application/pdf"
+    ) {
+      window.open(
+        url,
+        "_blank",
+        "noopener,noreferrer"
+      );
+
+      setTimeout(
+        () => URL.revokeObjectURL(url),
+        60000
+      );
+      return;
+    }
+
+    const pautan =
+      document.createElement("a");
+
+    pautan.href = url;
+    pautan.download =
+      namaFail || "lampiran";
+
+    document.body.appendChild(
+      pautan
+    );
+
+    pautan.click();
+    pautan.remove();
+
+    setTimeout(
+      () => URL.revokeObjectURL(url),
+      1000
+    );
+
+  } catch (error) {
+    console.error(
+      "Ralat buka lampiran Cuti/Kecemasan:",
+      error
+    );
+
+    alert(
+      `Lampiran gagal dibuka: ${
+        error.message ||
+        "Ralat tidak diketahui."
+      }`
+    );
+  }
+}
+
 
 /* ================================================================
    MODAL PENGGANTIAN
