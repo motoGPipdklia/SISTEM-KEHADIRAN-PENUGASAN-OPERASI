@@ -3692,3 +3692,12 @@ body.marker-dragging *{
 #modalKenderaanManualPentadbir .modal-card{
   width:min(100%,720px);
 }
+
+/* ================================================================
+   STATUS TIDAK HADIR — MOTOGP
+   DITOLAK / CUTI SAKIT / KECEMASAN
+================================================================ */
+.badge-tidak-hadir{
+  background:#4a1d1d;
+  color:#ffaaaa;
+}

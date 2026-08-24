@@ -1569,3 +1569,77 @@ body #loginSection .btn-secondary.link:hover{
     margin:0 !important;
   }
 }
+
+/* ================================================================
+   CUTI SAKIT / KECEMASAN
+================================================================ */
+
+.btn-cuti-kecemasan{
+  background:var(--orange);
+  color:#fff;
+}
+
+.status-cuti-sakit{
+  border-color:#5b78a8;
+  background:#20334f;
+  color:#cfe2ff;
+}
+
+.status-kecemasan{
+  border-color:#9a5f20;
+  background:#4a2d13;
+  color:#ffd7a3;
+}
+
+.cuti-kecemasan-modal{
+  width:min(100%,720px);
+}
+
+.cuti-kecemasan-form{
+  margin-top:14px;
+}
+
+.cuti-kecemasan-form label{
+  margin:0;
+}
+
+.cuti-kecemasan-form label span{
+  display:block;
+  margin-bottom:4px;
+  color:#eee;
+  font-weight:700;
+}
+
+.cuti-kecemasan-form small{
+  display:block;
+  margin-top:4px;
+  color:var(--muted);
+  line-height:1.5;
+}
+
+.btn-attachment-inline{
+  padding:7px 10px;
+  border:1px solid #5b78a8;
+  border-radius:7px;
+  background:#20334f;
+  color:#cfe2ff;
+  font-size:12px;
+}
+
+@media(max-width:650px){
+  .actions{
+    flex-direction:column;
+  }
+
+  .actions button{
+    width:100%;
+  }
+
+  .cuti-kecemasan-form{
+    grid-template-columns:1fr;
+  }
+
+  .cuti-kecemasan-form .full{
+    grid-column:auto;
+  }
+}
