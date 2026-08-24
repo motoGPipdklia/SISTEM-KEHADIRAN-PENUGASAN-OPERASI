@@ -1023,7 +1023,7 @@ function paparSenarai() {
                               )}'
                             )"
                           >
-                            📎 LIHAT LAMPIRAN
+                            LIHAT LAMPIRAN
                           </button>
                         `
                         : "TIADA"
