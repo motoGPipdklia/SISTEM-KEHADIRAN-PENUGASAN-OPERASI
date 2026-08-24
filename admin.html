@@ -7,7 +7,7 @@
   <title>OP LITAR motoGP | Pentadbir</title>
 
   <link rel="stylesheet" href="css/style.css?v=20260722-0045">
-  <link rel="stylesheet" href="css/admin.css?v=20260821-motogp-marker-size-f1-004">
+  <link rel="stylesheet" href="css/admin.css?v=20260824-motogp-manual-supabase-001">
 </head>
 
 <body>
@@ -910,6 +910,13 @@
               >
                 CETAK
               </button>
+                <button
+                  class="green-button admin-chart-manual-button"
+                  type="button"
+                  onclick="bukaTambahPengunjungManualPentadbir()"
+                >
+                  + TAMBAH PENGUNJUNG
+                </button>
             </div>
             <div class="admin-chart-canvas-wrap"><canvas id="canvasCartaPengunjung"></canvas></div>
           </section>
@@ -932,6 +939,13 @@
               >
                 CETAK
               </button>
+                <button
+                  class="green-button admin-chart-manual-button"
+                  type="button"
+                  onclick="bukaTambahKenderaanManualPentadbir()"
+                >
+                  + TAMBAH KENDERAAN
+                </button>
             </div>
 
             <div class="admin-vehicle-layout">
@@ -2171,11 +2185,211 @@
   <!-- =====================================================
        SUPABASE DAN JAVASCRIPT
   ====================================================== -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <!-- =====================================================
+       TAMBAH PENGUNJUNG MANUAL
+  ====================================================== -->
+  <section
+    class="modal"
+    id="modalPengunjungManualPentadbir"
+    role="dialog"
+    aria-modal="true"
+    aria-hidden="true"
+    onclick="if(event.target===this)tutupModalPengunjungManualPentadbir()"
+  >
+    <div class="modal-card">
+      <div class="section-heading">
+        <div>
+          <h2>Tambah Pengunjung</h2>
+          <p class="muted">
+            Rekod ini disimpan ke Supabase dan digabungkan dengan laporan petugas untuk carta.
+          </p>
+        </div>
+
+        <button
+          class="gray compact-button"
+          type="button"
+          onclick="tutupModalPengunjungManualPentadbir()"
+        >
+          TUTUP
+        </button>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="tarikhPengunjungManualPentadbir">Tarikh *</label>
+          <input id="tarikhPengunjungManualPentadbir" type="date">
+        </div>
+
+        <div class="form-group">
+          <label for="masaPengunjungManualPentadbir">Masa *</label>
+          <input id="masaPengunjungManualPentadbir" type="time">
+        </div>
+
+        <div class="form-group form-group-wide">
+          <label for="lokasiPengunjungManualPentadbir">Lokasi</label>
+          <input
+            id="lokasiPengunjungManualPentadbir"
+            type="text"
+            placeholder="Contoh: MAIN GRANDSTAND"
+          >
+        </div>
+
+        <div class="form-group form-group-wide">
+          <label for="jumlahPengunjungManualPentadbir">Jumlah Pengunjung *</label>
+          <input
+            id="jumlahPengunjungManualPentadbir"
+            type="number"
+            min="0"
+            step="1"
+            value="0"
+          >
+        </div>
+
+        <div class="form-group form-group-wide">
+          <label for="catatanPengunjungManualPentadbir">Catatan</label>
+          <textarea
+            id="catatanPengunjungManualPentadbir"
+            placeholder="Catatan tambahan jika ada..."
+          ></textarea>
+        </div>
+      </div>
+
+      <div
+        class="status-box"
+        id="statusPengunjungManualPentadbir"
+        role="status"
+        aria-live="polite"
+      ></div>
+
+      <div class="modal-actions">
+        <button
+          class="green-button"
+          id="btnSimpanPengunjungManualPentadbir"
+          type="button"
+          onclick="simpanPengunjungManualPentadbir()"
+        >
+          SIMPAN PENGUNJUNG
+        </button>
+
+        <button
+          class="gray"
+          type="button"
+          onclick="tutupModalPengunjungManualPentadbir()"
+        >
+          BATAL
+        </button>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- =====================================================
+       TAMBAH KENDERAAN PENGUNJUNG MANUAL
+  ====================================================== -->
+  <section
+    class="modal"
+    id="modalKenderaanManualPentadbir"
+    role="dialog"
+    aria-modal="true"
+    aria-hidden="true"
+    onclick="if(event.target===this)tutupModalKenderaanManualPentadbir()"
+  >
+    <div class="modal-card">
+      <div class="section-heading">
+        <div>
+          <h2>Tambah Kenderaan Pengunjung</h2>
+          <p class="muted">
+            Rekod ini disimpan ke Supabase dan digabungkan dengan laporan petugas untuk carta.
+          </p>
+        </div>
+
+        <button
+          class="gray compact-button"
+          type="button"
+          onclick="tutupModalKenderaanManualPentadbir()"
+        >
+          TUTUP
+        </button>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="tarikhKenderaanManualPentadbir">Tarikh *</label>
+          <input id="tarikhKenderaanManualPentadbir" type="date">
+        </div>
+
+        <div class="form-group">
+          <label for="masaKenderaanManualPentadbir">Masa *</label>
+          <input id="masaKenderaanManualPentadbir" type="time">
+        </div>
+
+        <div class="form-group form-group-wide">
+          <label for="lokasiKenderaanManualPentadbir">Lokasi</label>
+          <input
+            id="lokasiKenderaanManualPentadbir"
+            type="text"
+            placeholder="Contoh: PARKIR / MAIN GRANDSTAND"
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="basKenderaanManualPentadbir">Bas</label>
+          <input id="basKenderaanManualPentadbir" type="number" min="0" step="1" value="0">
+        </div>
+
+        <div class="form-group">
+          <label for="motosikalKenderaanManualPentadbir">Motosikal</label>
+          <input id="motosikalKenderaanManualPentadbir" type="number" min="0" step="1" value="0">
+        </div>
+
+        <div class="form-group">
+          <label for="motokarKenderaanManualPentadbir">Motokar</label>
+          <input id="motokarKenderaanManualPentadbir" type="number" min="0" step="1" value="0">
+        </div>
+
+        <div class="form-group form-group-wide">
+          <label for="catatanKenderaanManualPentadbir">Catatan</label>
+          <textarea
+            id="catatanKenderaanManualPentadbir"
+            placeholder="Catatan tambahan jika ada..."
+          ></textarea>
+        </div>
+      </div>
+
+      <div
+        class="status-box"
+        id="statusKenderaanManualPentadbir"
+        role="status"
+        aria-live="polite"
+      ></div>
+
+      <div class="modal-actions">
+        <button
+          class="green-button"
+          id="btnSimpanKenderaanManualPentadbir"
+          type="button"
+          onclick="simpanKenderaanManualPentadbir()"
+        >
+          SIMPAN KENDERAAN
+        </button>
+
+        <button
+          class="gray"
+          type="button"
+          onclick="tutupModalKenderaanManualPentadbir()"
+        >
+          BATAL
+        </button>
+      </div>
+    </div>
+  </section>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/api-config.js?v=20260722-0215"></script>
 <script src="js/supabase-client.js?v=20260722-0215"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-<script src="js/admin.js?v=20260821-motogp-marker-panel-task-001"></script>
+<script src="js/admin.js?v=20260824-motogp-manual-supabase-001"></script>
 
 </body>
 </html>
