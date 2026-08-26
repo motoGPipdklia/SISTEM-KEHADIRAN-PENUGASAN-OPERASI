@@ -5204,12 +5204,6 @@ function paparRingkasanCartaPentadbir() {
   const insiden =
     kiraInsidenCarta();
 
-  const sedangBertugas =
-    dataDashboard.filter(item =>
-      item.statusKehadiran === "HADIR" &&
-      !item.checkout
-    ).length;
-
   if (el("cartaJumlahPengunjung")) {
     el("cartaJumlahPengunjung").textContent =
       jumlahPengunjungSemasaCarta().toLocaleString("ms-MY");
@@ -5225,19 +5219,23 @@ function paparRingkasanCartaPentadbir() {
       vvipVip.length.toLocaleString("ms-MY");
   }
 
-  if (el("cartaJumlahBertugas")) {
-    el("cartaJumlahBertugas").textContent =
-      sedangBertugas.toLocaleString("ms-MY");
-  }
-
-  if (el("cartaJumlahInsiden")) {
-    el("cartaJumlahInsiden").textContent =
-      insiden.jumlah.toLocaleString("ms-MY");
-  }
-
+  /*
+    Ringkasan Insiden Operasi MotoGP:
+    TANGKAPAN, RAMPASAN dan KEMALANGAN.
+  */
   if (el("cartaJumlahTangkapan")) {
     el("cartaJumlahTangkapan").textContent =
       insiden.tangkapan.toLocaleString("ms-MY");
+  }
+
+  if (el("cartaJumlahRampasan")) {
+    el("cartaJumlahRampasan").textContent =
+      insiden.rampasan.toLocaleString("ms-MY");
+  }
+
+  if (el("cartaJumlahKemalangan")) {
+    el("cartaJumlahKemalangan").textContent =
+      insiden.kemalangan.toLocaleString("ms-MY");
   }
 }
 
