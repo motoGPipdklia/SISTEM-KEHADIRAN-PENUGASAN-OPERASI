@@ -7,7 +7,7 @@
   <title>OP LITAR motoGP | Pentadbir</title>
 
   <link rel="stylesheet" href="css/style.css?v=20260722-0045">
-  <link rel="stylesheet" href="css/admin.css?v=20260826-motogp-carta-lokasi-kenderaan-001">
+  <link rel="stylesheet" href="css/admin.css?v=20260909-motogp-jana-penugasan-001">
 </head>
 
 <body>
@@ -88,6 +88,17 @@
     IMPORT PENGGUNA CSV
   </button>
 
+
+  <button
+    class="header-action-button header-auto-assignment"
+    id="btnBukaJanaPenugasan"
+    type="button"
+    onclick="bukaJanaPenugasan()"
+    aria-controls="modulJanaPenugasan"
+    aria-expanded="false"
+  >
+    JANA PENUGASAN
+  </button>
 
   <button
     class="header-action-button header-import-assignment"
@@ -1638,6 +1649,262 @@
       </section>
       
       <!-- ===============================================
+           JANA PENUGASAN AUTOMATIK 3–5 HARI
+      ================================================ -->
+      <section
+        class="card auto-assignment-module"
+        id="modulJanaPenugasan"
+        hidden
+      >
+        <div class="section-heading">
+          <div>
+            <h2>Jana Penugasan Automatik 3–5 Hari</h2>
+            <p class="muted">
+              Pilih petugas sekali sahaja, tetapkan Penyelia / Pemegang Set dan
+              masukkan lokasi penugasan. Sistem akan membuat rotation automatik
+              mengikut hari dan menyimpan terus ke jadual penugasan Supabase.
+            </p>
+          </div>
+
+          <button
+            class="gray compact-button"
+            type="button"
+            onclick="tutupJanaPenugasan()"
+          >
+            TUTUP
+          </button>
+        </div>
+
+        <div class="auto-assignment-info">
+          <strong>ACARA:</strong> MOTOGP
+          <span>•</span>
+          <span>Kaedah: Rotation Terkawal</span>
+          <span>•</span>
+          <span>Tempoh: 3 hingga 5 hari</span>
+        </div>
+
+        <div class="auto-assignment-grid">
+          <div class="form-group">
+            <label for="autoTarikhMula">Tarikh Mula *</label>
+            <input id="autoTarikhMula" type="date">
+          </div>
+
+          <div class="form-group">
+            <label for="autoBilHari">Bilangan Hari *</label>
+            <select id="autoBilHari">
+              <option value="3">3 HARI</option>
+              <option value="4">4 HARI</option>
+              <option value="5" selected>5 HARI</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Acara</label>
+            <input type="text" value="MOTOGP" readonly>
+          </div>
+
+          <div class="form-group">
+            <label>Kaedah Susunan</label>
+            <input type="text" value="ROTATION TERKAWAL" readonly>
+          </div>
+        </div>
+
+        <div class="auto-assignment-job-type">
+          <div class="form-group">
+            <label for="autoJenisPenugasan">Jenis Penugasan *</label>
+            <select id="autoJenisPenugasan" onchange="tukarJenisPenugasanAuto()">
+              <option value="">-- PILIH JENIS PENUGASAN --</option>
+              <option value="KAWALAN KESELAMATAN">KAWALAN KESELAMATAN</option>
+              <option value="KAWALAN LALU LINTAS">KAWALAN LALU LINTAS</option>
+              <option value="RONDAAN PENCEGAHAN JENAYAH">RONDAAN PENCEGAHAN JENAYAH</option>
+              <option value="RONDAAN PENCEGAHAN JENAYAH NARKOTIK">RONDAAN PENCEGAHAN JENAYAH NARKOTIK</option>
+              <option value="RONDAAN PENCEGAHAN JENAYAH KOMERSIL">RONDAAN PENCEGAHAN JENAYAH KOMERSIL</option>
+              <option value="LITUPAN KESELAMATAN">LITUPAN KESELAMATAN</option>
+              <option value="UNIT PEMUSNAH BOM">UNIT PEMUSNAH BOM</option>
+              <option value="SUBTEK">SUBTEK</option>
+            </select>
+          </div>
+
+          <div class="auto-assignment-job-type-info">
+            <span>
+              <strong>1 PETUGAS = 1 JENIS PENUGASAN.</strong><br>
+              Petugas yang telah ditetapkan pada satu kategori tidak boleh dipilih dalam kategori lain.
+            </span>
+          </div>
+        </div>
+
+        <div class="auto-assignment-heading">
+          <div>
+            <h3>1. Senarai Petugas</h3>
+            <p class="muted">
+              Pilih Jenis Penugasan dahulu. Kemudian muat senarai petugas dan tandakan anggota untuk kategori tersebut. Pilihan nama disimpan berasingan bagi setiap jenis penugasan.
+            </p>
+          </div>
+
+          <div class="auto-assignment-heading-actions">
+            <button class="gold compact-button" type="button" onclick="muatPetugasAuto()">
+              MUAT SENARAI PETUGAS
+            </button>
+            <button class="gray compact-button" type="button" onclick="pilihSemuaPetugasAuto(true)">
+              PILIH SEMUA
+            </button>
+            <button class="gray compact-button" type="button" onclick="pilihSemuaPetugasAuto(false)">
+              BUANG PILIHAN
+            </button>
+
+            <button class="gray compact-button" type="button" onclick="kemasKiniPilihanLokasiKekalAuto(true)">
+              KEMAS KINI LOKASI KEKAL
+            </button>
+          </div>
+        </div>
+
+        <div
+          class="status-box"
+          id="statusPetugasAuto"
+          role="status"
+          aria-live="polite"
+        ></div>
+
+        <div class="auto-assignment-table-wrap">
+          <table class="auto-assignment-table auto-staff-table">
+            <thead>
+              <tr>
+                <th>Pilih</th>
+                <th>No Badan</th>
+                <th>Pangkat</th>
+                <th>Nama</th>
+                <th>Jenis Tetap</th>
+                <th>Corak Tugas</th>
+                <th>Lokasi Kekal</th>
+                <th>Penyelia</th>
+                <th>Pemegang Set</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyPetugasAuto">
+              <tr>
+                <td colspan="9" class="empty-row">
+                  Tekan MUAT SENARAI PETUGAS.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="auto-assignment-heading">
+          <div>
+            <h3>2. Lokasi & Penugasan</h3>
+            <p class="muted">
+              Tetapkan jumlah petugas bagi setiap tempat tugas mengikut hari. Contohnya Paddock boleh mempunyai 5 petugas pada Hari 1, 3 petugas pada Hari 2 dan 6 petugas pada Hari 3.
+            </p>
+          </div>
+
+          <button
+            class="green-button compact-button"
+            type="button"
+            onclick="tambahLokasiAuto()"
+          >
+            + TAMBAH LOKASI
+          </button>
+        </div>
+
+        <div class="auto-assignment-table-wrap">
+          <table class="auto-assignment-table auto-location-table">
+            <thead>
+              <tr>
+                <th>Call Sign</th>
+                <th>Jenis Tugas</th>
+                <th>Tempat Tugas</th>
+                <th>Latitude</th>
+                <th>Longitude</th>
+                <th>Radius (m)</th>
+                <th>Hari 1</th>
+                <th>Hari 2</th>
+                <th>Hari 3</th>
+                <th>Hari 4</th>
+                <th>Hari 5</th>
+                <th>Tindakan</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyLokasiAuto"></tbody>
+          </table>
+        </div>
+
+        <div class="auto-assignment-actions">
+          <button
+            class="gold"
+            id="btnJanaPreviewAuto"
+            type="button"
+            onclick="janaPreviewPenugasanAuto()"
+          >
+            JANA PRATONTON
+          </button>
+
+          <button
+            class="green-button"
+            id="btnSimpanAuto"
+            type="button"
+            onclick="simpanPenugasanAuto()"
+            disabled
+          >
+            SIMPAN KE SUPABASE
+          </button>
+
+          <button
+            class="gray"
+            type="button"
+            onclick="resetJanaPenugasanAuto()"
+          >
+            RESET
+          </button>
+        </div>
+
+        <div
+          class="status-box"
+          id="statusJanaAuto"
+          role="status"
+          aria-live="polite"
+        ></div>
+
+        <div class="auto-assignment-heading auto-preview-heading">
+          <div>
+            <h3>3. Pratonton Jadual</h3>
+            <p class="muted">
+              Semak keseluruhan Hari 1 hingga Hari 5 sebelum disimpan.
+            </p>
+          </div>
+        </div>
+
+        <div class="auto-assignment-summary" id="ringkasanAuto">
+          Belum ada jadual dijana.
+        </div>
+
+        <div class="auto-assignment-table-wrap auto-preview-wrap">
+          <table class="auto-assignment-table auto-preview-table">
+            <thead>
+              <tr>
+                <th>Hari</th>
+                <th>Tarikh</th>
+                <th>No Badan</th>
+                <th>Pangkat / Nama</th>
+                <th>Corak Tugas</th>
+                <th>Call Sign</th>
+                <th>Jenis Tugas</th>
+                <th>Tempat Tugas</th>
+                <th>Penyelia</th>
+                <th>Pemegang Set</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyPreviewAuto">
+              <tr>
+                <td colspan="10" class="empty-row">Belum ada pratonton.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </section>
+
+      <!-- ===============================================
            IMPORT PENUGASAN CSV
       ================================================ -->
       <section
@@ -2552,7 +2819,7 @@
 <script src="js/api-config.js?v=20260722-0215"></script>
 <script src="js/supabase-client.js?v=20260722-0215"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-<script src="js/admin.js?v=20260826-motogp-ringkasan-insiden-001"></script>
+<script src="js/admin.js?v=20260909-motogp-jana-penugasan-001"></script>
 
 </body>
 </html>
