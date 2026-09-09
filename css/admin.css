@@ -4537,3 +4537,300 @@ body.marker-dragging *{
     min-height:380px !important;
   }
 }
+
+/* ================================================================
+   JANA PENUGASAN AUTOMATIK 3–5 HARI — MOTOGP
+================================================================ */
+
+.header-auto-assignment{
+  background:#725b18;
+  border-color:rgba(212,175,55,.32);
+}
+
+.auto-assignment-module{
+  margin-top:20px;
+}
+
+.auto-assignment-info{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  flex-wrap:wrap;
+  margin:0 0 16px;
+  padding:12px 14px;
+  border:1px solid #5f5022;
+  border-radius:10px;
+  background:#2c2511;
+  color:#ffe29a;
+  font-size:13px;
+}
+
+.auto-assignment-grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(160px,1fr));
+  gap:12px;
+  margin-bottom:22px;
+}
+
+.auto-assignment-heading{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+  margin:18px 0 10px;
+}
+
+.auto-assignment-heading h3{
+  margin:0 0 6px;
+  color:var(--gold);
+  font-size:17px;
+}
+
+.auto-assignment-heading-actions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.auto-assignment-table-wrap{
+  width:100%;
+  max-height:52vh;
+  overflow:auto;
+  border:1px solid #333;
+  border-radius:10px;
+  background:#171717;
+}
+
+.auto-assignment-table{
+  width:100%;
+  min-width:1050px;
+  border-collapse:collapse;
+}
+
+.auto-staff-table{
+  min-width:760px;
+}
+
+.auto-location-table{
+  min-width:1500px;
+}
+
+.auto-preview-table{
+  min-width:1250px;
+}
+
+.auto-assignment-table th,
+.auto-assignment-table td{
+  padding:10px 9px;
+  border-bottom:1px solid #333;
+  vertical-align:middle;
+  font-size:12px;
+}
+
+.auto-assignment-table th{
+  position:sticky;
+  top:0;
+  z-index:3;
+  background:#151515;
+  color:var(--gold);
+  white-space:nowrap;
+}
+
+.auto-assignment-table input,
+.auto-assignment-table select{
+  min-width:105px;
+  padding:9px 10px;
+  font-size:12px;
+}
+
+.auto-assignment-table input[type="checkbox"]{
+  width:auto;
+  min-width:0;
+  transform:scale(1.18);
+  accent-color:var(--gold);
+}
+
+.auto-assignment-actions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:15px;
+}
+
+.auto-assignment-actions button{
+  min-height:44px;
+}
+
+.auto-assignment-summary{
+  margin:10px 0;
+  padding:13px 14px;
+  border:1px solid #3c3c3c;
+  border-radius:10px;
+  background:#151515;
+  color:#ddd;
+  line-height:1.6;
+}
+
+.auto-assignment-summary strong{
+  color:var(--gold);
+}
+
+.auto-preview-wrap{
+  max-height:62vh;
+}
+
+.auto-day-row td{
+  position:sticky;
+  top:35px;
+  z-index:2;
+  background:#302811 !important;
+  color:#ffe08a !important;
+  font-weight:700;
+  letter-spacing:.2px;
+}
+
+.auto-penyelia-select.is-yes,
+.auto-pemegang-select.is-yes{
+  border-color:#367c4c;
+  background:#173c25;
+  color:#b9f6ca;
+}
+
+.auto-location-remove{
+  padding:8px 10px;
+  background:var(--red);
+  font-size:11px;
+}
+
+@media(max-width:1100px){
+  .auto-assignment-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
+
+@media(max-width:700px){
+  .auto-assignment-grid{
+    grid-template-columns:1fr;
+  }
+
+  .auto-assignment-heading{
+    flex-direction:column;
+  }
+
+  .auto-assignment-heading-actions{
+    width:100%;
+    justify-content:flex-start;
+  }
+
+  .auto-assignment-actions{
+    display:grid;
+    grid-template-columns:1fr;
+  }
+}
+
+@media print{
+  #modulJanaPenugasan{
+    display:none !important;
+  }
+}
+
+.auto-location-table .auto-jumlah-petugas{
+  min-width:105px;
+  text-align:center;
+  font-weight:700;
+  color:#ffe08a;
+}
+
+.auto-kapasiti-hari-cell{
+  min-width:88px;
+  text-align:center;
+}
+
+.auto-kapasiti-hari-cell input{
+  min-width:76px;
+  width:76px;
+  text-align:center;
+}
+
+.auto-staff-table{
+  min-width:1080px;
+}
+
+.auto-corak-tugas{
+  min-width:115px !important;
+}
+
+.auto-lokasi-kekal{
+  min-width:220px !important;
+}
+
+.auto-lokasi-kekal:disabled{
+  opacity:.45;
+  cursor:not-allowed;
+}
+
+.auto-corak-tugas option[value="KEKAL"]{
+  font-weight:700;
+}
+
+.auto-assignment-job-type{
+  display:grid;
+  grid-template-columns:minmax(280px,480px) 1fr;
+  gap:14px;
+  align-items:end;
+  margin:18px 0 8px;
+  padding:14px;
+  border:1px solid #5d4d1d;
+  border-radius:10px;
+  background:#211c0e;
+}
+
+.auto-assignment-job-type-info{
+  min-height:46px;
+  display:flex;
+  align-items:center;
+  padding:10px 12px;
+  border-radius:8px;
+  background:#171717;
+  color:#d6d6d6;
+  font-size:12px;
+}
+
+#autoJenisPenugasan{
+  border-color:#80671f;
+  color:#ffe08a;
+  font-weight:700;
+}
+
+.auto-jenis-tugas[readonly]{
+  background:#24200f;
+  border-color:#5d4d1d;
+  color:#ffe08a;
+  cursor:not-allowed;
+}
+
+@media(max-width:800px){
+  .auto-assignment-job-type{
+    grid-template-columns:1fr;
+  }
+}
+
+.auto-jenis-tetap-cell{
+  min-width:210px;
+}
+
+.auto-pilih-petugas:disabled{
+  opacity:.35;
+  cursor:not-allowed;
+}
+
+#tbodyPetugasAuto tr:has(.auto-pilih-petugas:disabled){
+  opacity:.68;
+}
+
+.auto-staff-table{
+  min-width:1320px;
+}
+
