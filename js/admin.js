@@ -2674,12 +2674,32 @@ function bukaJanaPenugasan() {
     butangHeader.setAttribute("aria-expanded", "true");
   }
 
-  const inputTarikh = el("autoTarikhMula");
-  if (inputTarikh && !inputTarikh.value) {
+  const inputTarikh =
+    el("autoTarikhMula");
+
+  const inputTarikhTamat =
+    el("autoTarikhTamat");
+
+  if (
+    inputTarikh &&
+    !inputTarikh.value
+  ) {
     inputTarikh.value =
       el("tarikh")?.value ||
       hariIniMalaysia();
   }
+
+  if (
+    inputTarikhTamat &&
+    !inputTarikhTamat.value
+  ) {
+    inputTarikhTamat.value =
+      inputTarikh?.value ||
+      el("tarikh")?.value ||
+      hariIniMalaysia();
+  }
+
+  selaraskanKolumHariAuto();
 
   if (!el("tbodyLokasiAuto")?.children.length) {
     tambahLokasiAuto();
@@ -2687,6 +2707,8 @@ function bukaJanaPenugasan() {
     tambahLokasiAuto();
     tambahLokasiAuto();
   }
+
+  selaraskanKolumHariAuto();
 
   jenisPenugasanAutoAktif =
     atas(el("autoJenisPenugasan")?.value);
@@ -3205,6 +3227,230 @@ function pilihSemuaPetugasAuto(aktif) {
   kemasKiniRingkasanKapasitiAuto();
 }
 
+
+function kiraBilHariAutoDariKalendar() {
+  const mula = teks(el("autoTarikhMula")?.value);
+  const tamat = teks(el("autoTarikhTamat")?.value);
+
+  if (!mula || !tamat) return 0;
+
+  const m1 = mula.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const m2 = tamat.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+  if (!m1 || !m2) return 0;
+
+  const masaMula = Date.UTC(
+    Number(m1[1]),
+    Number(m1[2]) - 1,
+    Number(m1[3])
+  );
+
+  const masaTamat = Date.UTC(
+    Number(m2[1]),
+    Number(m2[2]) - 1,
+    Number(m2[3])
+  );
+
+  if (masaTamat < masaMula) return 0;
+
+  return Math.floor(
+    (masaTamat - masaMula) / 86400000
+  ) + 1;
+}
+
+
+function htmlKapasitiHariAuto(hari, nilai = 0) {
+  return `
+    <td class="auto-kapasiti-hari-cell" data-hari="${hari}">
+      <input
+        class="auto-jumlah-petugas auto-jumlah-hari-${hari}"
+        data-hari="${hari}"
+        type="number"
+        min="0"
+        max="5000"
+        step="1"
+        value="${escapeHtml(nilai ?? 0)}"
+        placeholder="0"
+        onchange="kemasKiniRingkasanKapasitiAuto()"
+        oninput="kemasKiniRingkasanKapasitiAuto()"
+      >
+    </td>
+  `;
+}
+
+
+function selaraskanKolumHariAuto() {
+  const bilHari =
+    kiraBilHariAutoDariKalendar();
+
+  const inputBilHari =
+    el("autoBilHari");
+
+  const paparanBilHari =
+    el("autoBilHariPaparan");
+
+  if (inputBilHari) {
+    inputBilHari.value =
+      String(bilHari || 0);
+  }
+
+  if (paparanBilHari) {
+    paparanBilHari.value =
+      bilHari > 0
+        ? `${bilHari} HARI`
+        : "PILIH TARIKH";
+  }
+
+  const headerTindakan =
+    el("autoHeaderTindakan");
+
+  if (headerTindakan) {
+    const trHeader =
+      headerTindakan.parentElement;
+
+    trHeader
+      ?.querySelectorAll(
+        ".auto-kapasiti-hari-header"
+      )
+      .forEach(item =>
+        item.remove()
+      );
+
+    if (bilHari > 0) {
+      for (
+        let hari = 1;
+        hari <= bilHari;
+        hari += 1
+      ) {
+        const th =
+          document.createElement("th");
+
+        th.className =
+          "auto-kapasiti-hari-header";
+
+        th.dataset.hari =
+          String(hari);
+
+        th.textContent =
+          `Hari ${hari}`;
+
+        trHeader.insertBefore(
+          th,
+          headerTindakan
+        );
+      }
+    }
+  }
+
+  document
+    .querySelectorAll(
+      "#tbodyLokasiAuto tr"
+    )
+    .forEach(tr => {
+      const nilaiLama = {};
+
+      tr
+        .querySelectorAll(
+          ".auto-kapasiti-hari-cell"
+        )
+        .forEach(td => {
+          const hari =
+            Number(
+              td.dataset.hari || 0
+            );
+
+          const input =
+            td.querySelector(
+              ".auto-jumlah-petugas"
+            );
+
+          if (hari > 0) {
+            nilaiLama[hari] =
+              input?.value ?? "0";
+          }
+        });
+
+      tr
+        .querySelectorAll(
+          ".auto-kapasiti-hari-cell"
+        )
+        .forEach(td =>
+          td.remove()
+        );
+
+      const tdTindakan =
+        tr.lastElementChild;
+
+      if (
+        tdTindakan &&
+        bilHari > 0
+      ) {
+        for (
+          let hari = 1;
+          hari <= bilHari;
+          hari += 1
+        ) {
+          tdTindakan.insertAdjacentHTML(
+            "beforebegin",
+            htmlKapasitiHariAuto(
+              hari,
+              nilaiLama[hari] ?? 0
+            )
+          );
+        }
+      }
+    });
+}
+
+
+function kemasKiniBilHariAutoDariKalendar() {
+  const mula =
+    teks(
+      el("autoTarikhMula")?.value
+    );
+
+  const tamat =
+    teks(
+      el("autoTarikhTamat")?.value
+    );
+
+  if (
+    mula &&
+    tamat &&
+    tamat < mula
+  ) {
+    if (el("autoBilHari")) {
+      el("autoBilHari").value =
+        "0";
+    }
+
+    if (el("autoBilHariPaparan")) {
+      el("autoBilHariPaparan").value =
+        "TARIKH TIDAK SAH";
+    }
+
+    paparMesej(
+      "statusJanaAuto",
+      "Tarikh Tamat tidak boleh lebih awal daripada Tarikh Mula.",
+      "error"
+    );
+
+    selaraskanKolumHariAuto();
+    return;
+  }
+
+  selaraskanKolumHariAuto();
+  kemasKiniRingkasanKapasitiAuto();
+
+  previewPenugasanAuto = [];
+  paparPreviewPenugasanAuto();
+
+  if (el("btnSimpanAuto")) {
+    el("btnSimpanAuto").disabled = true;
+  }
+}
+
+
 function tambahLokasiAuto(data = {}) {
   const tbody = el("tbodyLokasiAuto");
   if (!tbody) return;
@@ -3274,22 +3520,23 @@ function tambahLokasiAuto(data = {}) {
       >
     </td>
 
-    ${[1, 2, 3, 4, 5].map(hari => `
-      <td class="auto-kapasiti-hari-cell" data-hari="${hari}">
-        <input
-          class="auto-jumlah-petugas auto-jumlah-hari-${hari}"
-          data-hari="${hari}"
-          type="number"
-          min="0"
-          max="5000"
-          step="1"
-          value="${escapeHtml(data[`jumlah_hari_${hari}`] ?? 0)}"
-          placeholder="0"
-          onchange="kemasKiniRingkasanKapasitiAuto()"
-          oninput="kemasKiniRingkasanKapasitiAuto()"
-        >
-      </td>
-    `).join("")}
+    ${Array.from(
+      {
+        length:
+          Math.max(
+            1,
+            kiraBilHariAutoDariKalendar()
+          )
+      },
+      (_, index) => {
+        const hari = index + 1;
+
+        return htmlKapasitiHariAuto(
+          hari,
+          data[`jumlah_hari_${hari}`] ?? 0
+        );
+      }
+    ).join("")}
 
     <td>
       <button
@@ -3403,19 +3650,43 @@ function bacaLokasiAuto() {
       const radiusTeks =
         teks(tr.querySelector(".auto-radius")?.value);
 
-      const jumlahMengikutHari = [1, 2, 3, 4, 5].map(hari => {
-        const nilai = Number(
-          teks(tr.querySelector(`.auto-jumlah-hari-${hari}`)?.value) || 0
+      const bilHari =
+        kiraBilHariAutoDariKalendar();
+
+      const jumlahMengikutHari =
+        Array.from(
+          {
+            length:
+              Math.max(
+                0,
+                bilHari
+              )
+          },
+          (_, kedudukanHari) => {
+            const hari =
+              kedudukanHari + 1;
+
+            const nilai = Number(
+              teks(
+                tr.querySelector(
+                  `.auto-jumlah-hari-${hari}`
+                )?.value
+              ) || 0
+            );
+
+            if (
+              !Number.isInteger(nilai) ||
+              nilai < 0 ||
+              nilai > 5000
+            ) {
+              throw new Error(
+                `Lokasi baris ${index + 1}: Jumlah Petugas Hari ${hari} mesti nombor bulat 0 hingga 5000.`
+              );
+            }
+
+            return nilai;
+          }
         );
-
-        if (!Number.isInteger(nilai) || nilai < 0 || nilai > 5000) {
-          throw new Error(
-            `Lokasi baris ${index + 1}: Jumlah Petugas Hari ${hari} mesti nombor bulat 0 hingga 5000.`
-          );
-        }
-
-        return nilai;
-      });
 
       const barisKosong =
         !callSign &&
@@ -3494,7 +3765,7 @@ function kemasKiniRingkasanKapasitiAuto() {
       "#tbodyPetugasAuto .auto-pilih-petugas:checked"
     ).length;
 
-  const bilHari = Number(el("autoBilHari")?.value || 3);
+  const bilHari = kiraBilHariAutoDariKalendar();
   const jumlahHari = [];
 
   for (let hari = 1; hari <= bilHari; hari += 1) {
@@ -3509,21 +3780,6 @@ function kemasKiniRingkasanKapasitiAuto() {
 
     jumlahHari.push({ hari, jumlah });
   }
-
-  // Hide Hari 4/5 capacity cells when operation is only 3/4 days.
-  document.querySelectorAll(".auto-kapasiti-hari-cell").forEach(cell => {
-    const hari = Number(cell.dataset.hari || 0);
-    cell.style.display = hari <= bilHari ? "" : "none";
-  });
-
-  const headerCells = document.querySelectorAll(
-    "#modulJanaPenugasan .auto-location-table thead th"
-  );
-  // Columns: call, jenis, tempat, lat, lng, radius, H1..H5, tindakan
-  [1,2,3,4,5].forEach((hari, idx) => {
-    const th = headerCells[6 + idx];
-    if (th) th.style.display = hari <= bilHari ? "" : "none";
-  });
 
   const status = el("statusJanaAuto");
   if (!status || !petugasDipilih) return;
@@ -3708,17 +3964,28 @@ function janaPreviewPenugasanAuto() {
       el("autoTarikhMula")?.value
     );
 
-    const bilHari = Number(
-      el("autoBilHari")?.value
+    const tarikhTamat = teks(
+      el("autoTarikhTamat")?.value
     );
 
     if (!tarikhMula) {
-      throw new Error("Sila pilih Tarikh Mula.");
+      throw new Error(
+        "Sila pilih Tarikh Mula."
+      );
     }
 
-    if (![3, 4, 5].includes(bilHari)) {
+    if (!tarikhTamat) {
       throw new Error(
-        "Bilangan hari mesti 3, 4 atau 5."
+        "Sila pilih Tarikh Tamat."
+      );
+    }
+
+    const bilHari =
+      kiraBilHariAutoDariKalendar();
+
+    if (bilHari < 1) {
+      throw new Error(
+        "Julat tarikh tidak sah. Tarikh Tamat mesti sama atau selepas Tarikh Mula."
       );
     }
 
@@ -3769,7 +4036,7 @@ function janaPreviewPenugasanAuto() {
       AGIHAN MENGIKUT KAPASITI + ROTATION TERKAWAL
 
       Setiap hari, setiap lokasi menerima tepat jumlah anggota
-      yang ditetapkan pada kolum HARI 1 hingga HARI 5.
+      yang ditetapkan pada kolum HARI yang dijana daripada julat kalendar.
 
       Sistem cuba mengelakkan seseorang berada di lokasi yang sama
       dua hari berturut-turut. Jika kekangan kapasiti menjadikannya
@@ -3984,7 +4251,7 @@ function paparPreviewPenugasanAuto() {
       `<strong>${bilKekal}</strong> Kekal &nbsp;•&nbsp; ` +
       `<strong>${bilRotation}</strong> Rotation &nbsp;•&nbsp; ` +
       `<strong>${previewPenugasanAuto.length}</strong> Rekod<br>` +
-      `<span style="color:#aaa">Jumlah setiap lokasi boleh berbeza mengikut hari dan akan mengikut tetapan Hari 1–Hari 5.</span>`;
+      `<span style="color:#aaa">Jumlah setiap lokasi boleh berbeza mengikut hari dan akan mengikut julat tarikh yang dipilih.</span>`;
   }
 }
 
@@ -4238,15 +4505,21 @@ function resetJanaPenugasanAuto() {
       }
     });
 
-  if (el("autoBilHari")) {
-    el("autoBilHari").value = "5";
-  }
+  const tarikhAsas =
+    el("tarikh")?.value ||
+    hariIniMalaysia();
 
   if (el("autoTarikhMula")) {
     el("autoTarikhMula").value =
-      el("tarikh")?.value ||
-      hariIniMalaysia();
+      tarikhAsas;
   }
+
+  if (el("autoTarikhTamat")) {
+    el("autoTarikhTamat").value =
+      tarikhAsas;
+  }
+
+  selaraskanKolumHariAuto();
 
   if (el("btnSimpanAuto")) {
     el("btnSimpanAuto").disabled = true;
@@ -4263,23 +4536,50 @@ function resetJanaPenugasanAuto() {
 
 
 function sediakanJanaPenugasanAuto() {
-  const inputTarikh =
+  const inputMula =
     el("autoTarikhMula");
 
+  const inputTamat =
+    el("autoTarikhTamat");
+
+  const tarikhAsas =
+    el("tarikh")?.value ||
+    hariIniMalaysia();
+
   if (
-    inputTarikh &&
-    !inputTarikh.value
+    inputMula &&
+    !inputMula.value
   ) {
-    inputTarikh.value =
-      el("tarikh")?.value ||
-      hariIniMalaysia();
+    inputMula.value =
+      tarikhAsas;
   }
 
-  const pilihanHari = el("autoBilHari");
-  if (pilihanHari && !pilihanHari.dataset.listenerKapasiti) {
-    pilihanHari.addEventListener("change", kemasKiniRingkasanKapasitiAuto);
-    pilihanHari.dataset.listenerKapasiti = "1";
+  if (
+    inputTamat &&
+    !inputTamat.value
+  ) {
+    inputTamat.value =
+      inputMula?.value ||
+      tarikhAsas;
   }
+
+  [inputMula, inputTamat]
+    .filter(Boolean)
+    .forEach(input => {
+      if (
+        !input.dataset.listenerKalendarAuto
+      ) {
+        input.addEventListener(
+          "change",
+          kemasKiniBilHariAutoDariKalendar
+        );
+
+        input.dataset.listenerKalendarAuto =
+          "1";
+      }
+    });
+
+  selaraskanKolumHariAuto();
 
   const tbodyLokasi =
     el("tbodyLokasiAuto");
@@ -4288,10 +4588,16 @@ function sediakanJanaPenugasanAuto() {
     tbodyLokasi &&
     !tbodyLokasi.children.length
   ) {
-    for (let i = 0; i < 4; i += 1) {
+    for (
+      let i = 0;
+      i < 4;
+      i += 1
+    ) {
       tambahLokasiAuto();
     }
   }
+
+  selaraskanKolumHariAuto();
 }
 
 
