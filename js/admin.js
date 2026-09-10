@@ -1766,7 +1766,7 @@ function binaRekodImportPenggunaCsv(barisCsv) {
     PANGKAT: ["PANGKAT", "RANK"],
     NAMA: ["NAMA", "NAMA_PENUH", "NAME"],
     PERANAN: ["PERANAN", "ROLE"],
-    TELEFON: ["TELEFON", "NO_TELEFON", "PHONE"],
+    TELEFON: ["TELEFON", "NO_TELEFON", "NO_TEL", "PHONE"],
     BAHAGIAN: ["BAHAGIAN", "BALAI", "CAWANGAN", "BAHAGIAN_BALAI_CAWANGAN"],
     DAERAH: ["DAERAH", "DISTRICT"],
     KATA_LALUAN: ["KATA_LALUAN", "KATALALUAN", "PASSWORD"],
@@ -1893,8 +1893,8 @@ function paparPratontonImportPengguna() {
         <td>${escapeHtml(d.no_badan || "-")}</td>
         <td>${escapeHtml(d.pangkat || "-")}</td>
         <td>${escapeHtml(d.nama || "-")}</td>
-        <td>${escapeHtml(d.peranan || "-")}</td>
         <td>${escapeHtml(d.telefon || "-")}</td>
+        <td>${escapeHtml(d.peranan || "-")}</td>
         <td>${escapeHtml(d.bahagian || "-")}</td>
         <td>${escapeHtml(d.daerah || "-")}</td>
         <td>${d.aktif ? "YA" : "TIDAK"}</td>
@@ -1956,10 +1956,10 @@ function kosongkanImportPengguna() {
 
 function muatTurunTemplatPengguna() {
   const kandungan = [
-    "NO_BADAN,PANGKAT,NAMA,PERANAN,TELEFON,BAHAGIAN,DAERAH,KATA_LALUAN,AKTIF",
-    "197898,L/KPL,NORHISHAM BIN CHE MAT,PETUGAS,0193151615,BKDNKA,KLIA,Skpo@A7m2#1,YA",
-    "199898,SJN,AHMAD BIN ALI,PENYELIA,0123456789,IPD KLIA,SEPANG,Skpo@B9n4#2,YA",
-    "PUSATMGP,INSP,PUSAT KAWALAN MOTOGP,PUSAT_KAWALAN,0123456789,IPK,KUALA LUMPUR,Skpo@MotoGP2026#1,YA"
+    "NO_BADAN,PANGKAT,NAMA,NO_TELEFON,PERANAN,BAHAGIAN,DAERAH,KATA_LALUAN,AKTIF",
+    "197898,L/KPL,NORHISHAM BIN CHE MAT,0193151615,PETUGAS,BKDNKA,KLIA,Skpo@A7m2#1,YA",
+    "199898,SJN,AHMAD BIN ALI,0123456789,PENYELIA,IPD KLIA,SEPANG,Skpo@B9n4#2,YA",
+    "PUSATMGP,INSP,PUSAT KAWALAN MOTOGP,0123456789,PUSAT_KAWALAN,IPK,KUALA LUMPUR,Skpo@MotoGP2026#1,YA"
   ].join("\r\n");
 
   const blob = new Blob(["\uFEFF", kandungan], { type: "text/csv;charset=utf-8" });
@@ -2701,7 +2701,7 @@ function bukaJanaPenugasan() {
     const tbody = el("tbodyPetugasAuto");
     if (tbody) {
       tbody.innerHTML =
-        '<tr><td colspan="9" class="empty-row">Pilih Jenis Penugasan dahulu.</td></tr>';
+        '<tr><td colspan="11" class="empty-row">Pilih Jenis Penugasan dahulu.</td></tr>';
     }
   }
 
@@ -2935,7 +2935,7 @@ function tukarJenisPenugasanAuto() {
     const tbody = el("tbodyPetugasAuto");
     if (tbody) {
       tbody.innerHTML =
-        '<tr><td colspan="9" class="empty-row">Pilih Jenis Penugasan dahulu.</td></tr>';
+        '<tr><td colspan="11" class="empty-row">Pilih Jenis Penugasan dahulu.</td></tr>';
     }
 
     paparMesej(
@@ -2968,7 +2968,7 @@ function paparPetugasAuto() {
   if (!dataPetugasAuto.length) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="9" class="empty-row">
+        <td colspan="11" class="empty-row">
           Tiada petugas aktif ditemui.
         </td>
       </tr>
@@ -3003,6 +3003,8 @@ function paparPetugasAuto() {
           <td>${escapeHtml(item.no_badan || "-")}</td>
           <td>${escapeHtml(item.pangkat || "-")}</td>
           <td>${escapeHtml(item.nama || "-")}</td>
+          <td>${escapeHtml(item.daerah || "-")}</td>
+          <td>${escapeHtml(item.telefon || item.no_telefon || "-")}</td>
 
           <td class="auto-jenis-tetap-cell">
             ${labelJenisPetugasAuto(item.no_badan)}
