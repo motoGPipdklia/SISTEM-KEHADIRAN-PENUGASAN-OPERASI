@@ -1680,22 +1680,37 @@
           <span>•</span>
           <span>Kaedah: Rotation Terkawal</span>
           <span>•</span>
-          <span>Tempoh: 3 hingga 5 hari</span>
+          <span>Tempoh: Mengikut pilihan kalendar</span>
         </div>
 
         <div class="auto-assignment-grid">
           <div class="form-group">
             <label for="autoTarikhMula">Tarikh Mula *</label>
-            <input id="autoTarikhMula" type="date">
+            <input
+              id="autoTarikhMula"
+              type="date"
+              onchange="kemasKiniBilHariAutoDariKalendar()"
+            >
           </div>
 
           <div class="form-group">
-            <label for="autoBilHari">Bilangan Hari *</label>
-            <select id="autoBilHari">
-              <option value="3">3 HARI</option>
-              <option value="4">4 HARI</option>
-              <option value="5" selected>5 HARI</option>
-            </select>
+            <label for="autoTarikhTamat">Tarikh Tamat *</label>
+            <input
+              id="autoTarikhTamat"
+              type="date"
+              onchange="kemasKiniBilHariAutoDariKalendar()"
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="autoBilHariPaparan">Bilangan Hari</label>
+            <input
+              id="autoBilHariPaparan"
+              type="text"
+              value="1 HARI"
+              readonly
+            >
+            <input id="autoBilHari" type="hidden" value="1">
           </div>
 
           <div class="form-group">
@@ -1819,12 +1834,8 @@
                 <th>Latitude</th>
                 <th>Longitude</th>
                 <th>Radius (m)</th>
-                <th>Hari 1</th>
-                <th>Hari 2</th>
-                <th>Hari 3</th>
-                <th>Hari 4</th>
-                <th>Hari 5</th>
-                <th>Tindakan</th>
+                <!-- Kolum HARI dijana automatik mengikut julat kalendar -->
+                <th id="autoHeaderTindakan">Tindakan</th>
               </tr>
             </thead>
             <tbody id="tbodyLokasiAuto"></tbody>
@@ -1871,7 +1882,7 @@
           <div>
             <h3>3. Pratonton Jadual</h3>
             <p class="muted">
-              Semak keseluruhan Hari 1 hingga Hari 5 sebelum disimpan.
+              Semak keseluruhan jadual mengikut julat tarikh yang dipilih sebelum disimpan.
             </p>
           </div>
         </div>
