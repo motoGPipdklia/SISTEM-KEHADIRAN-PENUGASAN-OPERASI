@@ -6,10 +6,23 @@
   <meta name="theme-color" content="#0d0d0d">
   <title>OP LITAR motoGP | SKPO</title>
 
+  <!-- =========================================================
+       PWA
+  ========================================================== -->
+  <link rel="manifest" href="manifest.json">
+
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SKPO MotoGP">
+
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+
   <!-- Gaya global mesti dimuatkan dahulu. -->
   <link rel="stylesheet" href="css/style.css">
+
   <!-- Gaya khusus halaman Petugas dimuatkan selepas gaya global. -->
-  <link rel="stylesheet" href="css/index.css?v=20260824-motogp-subtek-001">
+  <link rel="stylesheet" href="css/index.css?v=20260912-motogp-pwa-001">
 </head>
 
 <body>
@@ -30,7 +43,35 @@
     <input id="password" type="password" placeholder="Kata Laluan" autocomplete="current-password">
 
     <button id="btnLogin" type="button" onclick="login()">LOGIN</button>
+
     <div id="status" role="status" aria-live="polite"></div>
+
+    <!-- =====================================================
+         BUTANG INSTALL PWA
+    ====================================================== -->
+    <button
+      id="btnInstallPwa"
+      type="button"
+      hidden
+      style="margin-top:12px;"
+    >
+      Install Aplikasi
+    </button>
+
+    <div
+      id="iosInstallHint"
+      hidden
+      style="
+        margin-top:12px;
+        text-align:center;
+        line-height:1.5;
+        font-size:0.9rem;
+      "
+    >
+      Untuk iPhone/iPad: buka menggunakan Safari,
+      tekan <strong>Share</strong> kemudian pilih
+      <strong>Add to Home Screen</strong>.
+    </div>
 
     <a class="supervisor-link" href="admin.html">LOGIN PENTADBIR</a>
     <a class="supervisor-link" href="penyelia.html">LOGIN URUSETIA</a>
@@ -65,18 +106,22 @@
           <div class="info-label">Call Sign:</div>
           <div class="info-value" id="callSignTugas">Memuatkan...</div>
         </div>
+
         <div class="info-row">
           <div class="info-label">Jenis Tugas:</div>
           <div class="info-value" id="jenisTugas">Memuatkan...</div>
         </div>
+
         <div class="info-row">
           <div class="info-label">Tempat Tugas:</div>
           <div class="info-value" id="lokasiTugas">Memuatkan...</div>
         </div>
+
         <div class="info-row">
           <div class="info-label">Penyelia:</div>
           <div class="info-value" id="penyeliaTugas">Memuatkan...</div>
         </div>
+
         <div class="info-row">
           <div class="info-label">Pemegang Set:</div>
           <div class="info-value" id="pemegangSetTugas">Memuatkan...</div>
@@ -90,6 +135,7 @@
       <button id="btnCheckin" type="button" disabled onclick="mulaCheckin()">
         CHECK-IN KEHADIRAN
       </button>
+
       <button id="btnCheckout" type="button" disabled onclick="mulaCheckout()">
         CHECK-OUT KEHADIRAN
       </button>
@@ -100,6 +146,7 @@
             <h2>Permohonan Set Walkie-Talkie</h2>
             <p>Mohon dan semak status set komunikasi untuk penugasan hari ini.</p>
           </div>
+
           <button
             class="secondary walkie-refresh-button"
             type="button"
@@ -108,9 +155,13 @@
             SEMAK STATUS SET
           </button>
         </div>
+
         <div class="hidden" id="statusWalkiePetugas"></div>
+
         <div id="kandunganWalkiePetugas">
-          <div class="walkie-loading">Sedang mendapatkan maklumat set...</div>
+          <div class="walkie-loading">
+            Sedang mendapatkan maklumat set...
+          </div>
         </div>
       </section>
 
@@ -125,15 +176,27 @@
         HANTAR PELAPORAN
       </button>
 
-      <button class="map-button" id="btnPaparPeta" type="button" onclick="bukaPeta()">
+      <button
+        class="map-button"
+        id="btnPaparPeta"
+        type="button"
+        onclick="bukaPeta()"
+      >
         PAPARAN PETA
       </button>
 
-      <button class="refresh-button" id="btnRefreshStatus" type="button" onclick="refreshDashboard()">
+      <button
+        class="refresh-button"
+        id="btnRefreshStatus"
+        type="button"
+        onclick="refreshDashboard()"
+      >
         SEMAK SEMULA STATUS
       </button>
 
-      <button class="secondary" type="button" onclick="logout()">LOG KELUAR</button>
+      <button class="secondary" type="button" onclick="logout()">
+        LOG KELUAR
+      </button>
     </section>
   </main>
 
@@ -141,14 +204,45 @@
   <main class="checkin" id="checkin">
     <section class="card">
       <h1>Pengesahan Kehadiran</h1>
-      <div class="info-box"><div id="tugasCheckin"></div></div>
-      <h2 id="gpsStatus">Tekan butang untuk mendapatkan lokasi.</h2>
+
+      <div class="info-box">
+        <div id="tugasCheckin"></div>
+      </div>
+
+      <h2 id="gpsStatus">
+        Tekan butang untuk mendapatkan lokasi.
+      </h2>
+
       <p id="koordinat"></p>
       <p id="jarakStatus"></p>
+
       <div class="status-box" id="statusHantar"></div>
-      <button id="btnDapatGPS" type="button" onclick="dapatkanGPS()">DAPATKAN LOKASI GPS</button>
-      <button id="btnHantar" type="button" disabled onclick="hantarKehadiran()">HANTAR KEHADIRAN</button>
-      <button class="secondary" id="btnKembali" type="button" onclick="kembaliDashboard()">KEMBALI</button>
+
+      <button
+        id="btnDapatGPS"
+        type="button"
+        onclick="dapatkanGPS()"
+      >
+        DAPATKAN LOKASI GPS
+      </button>
+
+      <button
+        id="btnHantar"
+        type="button"
+        disabled
+        onclick="hantarKehadiran()"
+      >
+        HANTAR KEHADIRAN
+      </button>
+
+      <button
+        class="secondary"
+        id="btnKembali"
+        type="button"
+        onclick="kembaliDashboard()"
+      >
+        KEMBALI
+      </button>
     </section>
   </main>
 
@@ -156,18 +250,43 @@
   <main class="checkout" id="checkout">
     <section class="card">
       <h1>Check-Out Kehadiran</h1>
-      <div class="info-box"><div id="tugasCheckout"></div></div>
-      <h2 id="gpsStatusCheckout">Tekan butang untuk mendapatkan lokasi.</h2>
+
+      <div class="info-box">
+        <div id="tugasCheckout"></div>
+      </div>
+
+      <h2 id="gpsStatusCheckout">
+        Tekan butang untuk mendapatkan lokasi.
+      </h2>
+
       <p id="koordinatCheckout"></p>
       <p id="jarakStatusCheckout"></p>
+
       <div class="status-box" id="statusHantarCheckout"></div>
-      <button id="btnDapatGPSCheckout" type="button" onclick="dapatkanGPSCheckout()">
+
+      <button
+        id="btnDapatGPSCheckout"
+        type="button"
+        onclick="dapatkanGPSCheckout()"
+      >
         DAPATKAN LOKASI GPS
       </button>
-      <button id="btnHantarCheckout" type="button" disabled onclick="hantarCheckout()">
+
+      <button
+        id="btnHantarCheckout"
+        type="button"
+        disabled
+        onclick="hantarCheckout()"
+      >
         HANTAR CHECK-OUT
       </button>
-      <button class="secondary" id="btnKembaliCheckout" type="button" onclick="kembaliDashboardCheckout()">
+
+      <button
+        class="secondary"
+        id="btnKembaliCheckout"
+        type="button"
+        onclick="kembaliDashboardCheckout()"
+      >
         KEMBALI
       </button>
     </section>
@@ -189,52 +308,110 @@
         </div>
       </div>
 
-      <!-- Borang akan dijana secara automatik mengikut jenis tugas. -->
       <div id="borangLaporanDinamik"></div>
 
-      <div class="status-box" id="statusLaporan" role="status" aria-live="polite"></div>
+      <div
+        class="status-box"
+        id="statusLaporan"
+        role="status"
+        aria-live="polite"
+      ></div>
 
-      <button id="btnHantarLaporan" type="button" onclick="hantarLaporan()">
+      <button
+        id="btnHantarLaporan"
+        type="button"
+        onclick="hantarLaporan()"
+      >
         HANTAR LAPORAN KEPADA URUSETIA
       </button>
 
-      <button class="secondary" id="btnKembaliLaporan" type="button" onclick="tutupLaporan()">
+      <button
+        class="secondary"
+        id="btnKembaliLaporan"
+        type="button"
+        onclick="tutupLaporan()"
+      >
         KEMBALI
       </button>
     </section>
   </main>
 
   <!-- PAPARAN PETA OPERASI -->
-  <section class="peta-modal" id="modalPeta" role="dialog" aria-modal="true"
-    aria-labelledby="tajukModalPeta" aria-hidden="true" hidden
-    onclick="if(event.target===this)tutupPeta()">
+  <section
+    class="peta-modal"
+    id="modalPeta"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="tajukModalPeta"
+    aria-hidden="true"
+    hidden
+    onclick="if(event.target===this)tutupPeta()"
+  >
     <div class="peta-dialog">
       <header class="peta-header">
         <div>
           <h2 id="tajukModalPeta">Peta Penugasan</h2>
-          <p>Gunakan kawalan zoom untuk melihat peta dengan lebih jelas.</p>
+          <p>
+            Gunakan kawalan zoom untuk melihat peta dengan lebih jelas.
+          </p>
         </div>
-        <button class="peta-close" type="button" aria-label="Tutup paparan peta" onclick="tutupPeta()">&times;</button>
+
+        <button
+          class="peta-close"
+          type="button"
+          aria-label="Tutup paparan peta"
+          onclick="tutupPeta()"
+        >
+          &times;
+        </button>
       </header>
 
       <div class="peta-controls" aria-label="Kawalan peta">
-        <button type="button" onclick="ubahZumPeta(-0.25)">ZOOM KELUAR</button>
-        <button type="button" onclick="resetZumPeta()">RESET</button>
-        <button type="button" onclick="ubahZumPeta(0.25)">ZOOM MASUK</button>
+        <button type="button" onclick="ubahZumPeta(-0.25)">
+          ZOOM KELUAR
+        </button>
+
+        <button type="button" onclick="resetZumPeta()">
+          RESET
+        </button>
+
+        <button type="button" onclick="ubahZumPeta(0.25)">
+          ZOOM MASUK
+        </button>
       </div>
 
-      <div class="peta-status" id="statusPeta" role="status" aria-live="polite">Zoom: 100%</div>
+      <div
+        class="peta-status"
+        id="statusPeta"
+        role="status"
+        aria-live="polite"
+      >
+        Zoom: 100%
+      </div>
+
       <div class="peta-viewport" id="ruangPeta">
-        <img id="imejPeta" src="images/peta.png" alt="Peta kawasan operasi"
-          onload="petaBerjayaDimuatkan()" onerror="petaGagalDimuatkan()">
+        <img
+          id="imejPeta"
+          src="images/peta.png"
+          alt="Peta kawasan operasi"
+          onload="petaBerjayaDimuatkan()"
+          onerror="petaGagalDimuatkan()"
+        >
       </div>
     </div>
   </section>
 
+  <!-- =========================================================
+       SCRIPT SISTEM
+  ========================================================== -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <script src="js/api-config.js"></script>
   <script src="js/supabase-client.js"></script>
   <script src="js/index.js?v=20260824-motogp-subtek-001"></script>
   <script src="js/walkie-petugas.js"></script>
+
+  <!-- PWA -->
+  <script src="js/pwa-install.js?v=20260912-motogp-pwa-001"></script>
 </body>
 </html>
