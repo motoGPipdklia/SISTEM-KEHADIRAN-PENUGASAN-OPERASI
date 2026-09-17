@@ -1,7 +1,6 @@
 "use strict";
 
-/* SKPO MOTOGP BUILD: 20260910-1925-KALENDAR-DINAMIK */
-
+/* SKPO MOTOGP BUILD: 20260917-SAMA-F1-007 */
 
 /* ================================================================
    SKPO MOTOGP — PENTADBIR
@@ -28,7 +27,7 @@ let importSedangBerjalan = false;
 let rekodImportPengguna = [];
 let importPenggunaSedangBerjalan = false;
 
-/* Jana Penugasan Automatik 3–5 Hari */
+/* Jana Penugasan Automatik */
 let dataPetugasAuto = [];
 let previewPenugasanAuto = [];
 let autoSedangSimpan = false;
@@ -54,6 +53,7 @@ const pilihanPetugasMengikutJenisAuto = {};
   Map: NO_BADAN -> JENIS_PENUGASAN
 */
 const jenisTetapPetugasAuto = {};
+const jenisTersimpanPetugasAuto = {};
 
 
 
@@ -467,10 +467,6 @@ function cetakCartaPentadbir(
 ================================================================ */
 
 let dataCartaLaporanPentadbir = [];
-let dataPengunjungManualPentadbir = [];
-let dataKenderaanManualPentadbir = [];
-const JADUAL_CARTA_MANUAL_MOTOGP = "carta_manual";
-
 let cartaPengunjungPentadbir = null;
 let cartaPengunjungLokasiPentadbir = null;
 let lokasiPengunjungDipilihPentadbir = "SEMUA";
@@ -478,6 +474,9 @@ let cartaKenderaanPentadbir = null;
 let cartaKenderaanLokasiPentadbir = null;
 let lokasiKenderaanDipilihPentadbir = "SEMUA";
 let kategoriKenderaanDipilihPentadbir = "BAS";
+let dataPengunjungManualPentadbir = [];
+let dataKenderaanManualPentadbir = [];
+const JADUAL_CARTA_MANUAL_MOTOGP = "carta_manual";
 let cartaJawatankuasaPentadbir = null;
 let dataJawatankuasaOperasiPentadbir = [];
 let dataPilihanPetugasJawatankuasaPentadbir = [];
@@ -508,6 +507,8 @@ let kanvasMarkerSeretPentadbir = null;
 const KUNCI_TETAPAN_PETA_CARTA_MOTOGP = "skpoTetapanPetaCarta";
 const URL_PETA_ADMIN_MOTOGP = "images/petaadmin.png?v=20260821-1640";
 const KUNCI_KRONOLOGI_CARTA_MOTOGP = "skpoKronologiCarta";
+
+
 
 
 function el(id) {
@@ -614,12 +615,21 @@ function formatTarikhMasa(nilai) {
   }).format(tarikh);
 }
 
+
+/*
+  Format masa ringkas untuk label paksi carta operasi.
+  Contoh: 13:25
+*/
 function formatMasaPendekCartaPentadbir(nilai) {
   if (!nilai) return "-";
 
   const masa = new Date(nilai);
 
-  if (Number.isNaN(masa.getTime())) {
+  if (
+    Number.isNaN(
+      masa.getTime()
+    )
+  ) {
     return teks(nilai) || "-";
   }
 
@@ -633,7 +643,6 @@ function formatMasaPendekCartaPentadbir(nilai) {
     }
   ).format(masa);
 }
-
 
 function formatTempoh(minit) {
   const jumlah = Number(minit);
@@ -808,6 +817,138 @@ async function dapatkanProfil(userId) {
 function semakPerananPentadbir(profil) {
   return ["PENTADBIR", "ADMIN"].includes(atas(profil?.peranan));
 }
+
+
+/* ================================================================
+   TUKAR PASSWORD PENTADBIR
+================================================================ */
+
+function bukaTukarPasswordAdmin() {
+  const modal = el("modalTukarPasswordAdmin");
+  if (!modal) return;
+
+  ["passwordSemasaAdmin", "passwordBaharuAdmin", "sahkanPasswordBaharuAdmin"]
+    .forEach(id => {
+      const input = el(id);
+      if (input) input.value = "";
+    });
+
+  const status = el("statusTukarPasswordAdmin");
+  if (status) {
+    status.className = "status-box";
+    status.innerHTML = "";
+    status.style.display = "none";
+  }
+
+  modal.hidden = false;
+  modal.style.display = "block";
+  modal.classList.add("open");
+
+  setTimeout(() => el("passwordSemasaAdmin")?.focus(), 50);
+}
+
+function tutupTukarPasswordAdmin() {
+  const modal = el("modalTukarPasswordAdmin");
+  if (!modal) return;
+
+  modal.classList.remove("open");
+  modal.hidden = true;
+  modal.style.display = "none";
+}
+
+async function simpanPasswordAdmin() {
+  const passwordSemasa = el("passwordSemasaAdmin")?.value || "";
+  const passwordBaharu = el("passwordBaharuAdmin")?.value || "";
+  const pengesahan = el("sahkanPasswordBaharuAdmin")?.value || "";
+  const btn = el("btnSimpanPasswordAdmin");
+
+  const mesej = (teksMesej, jenis = "warning") => {
+    const ruang = el("statusTukarPasswordAdmin");
+    if (!ruang) return;
+    ruang.style.display = "block";
+    ruang.className = jenis;
+    ruang.textContent = teksMesej;
+  };
+
+  if (!passwordSemasa || !passwordBaharu || !pengesahan) {
+    mesej("Sila lengkapkan semua ruangan password.", "warning");
+    return;
+  }
+
+  if (passwordBaharu.length < 6) {
+    mesej("Password baharu mestilah sekurang-kurangnya 6 aksara.", "warning");
+    return;
+  }
+
+  if (passwordBaharu !== pengesahan) {
+    mesej("Pengesahan password baharu tidak sepadan.", "error");
+    return;
+  }
+
+  if (passwordSemasa === passwordBaharu) {
+    mesej("Password baharu mestilah berbeza daripada password semasa.", "warning");
+    return;
+  }
+
+  try {
+    pastikanSupabase();
+    if (btn) btn.disabled = true;
+    mesej("Sedang mengesahkan password semasa...", "warning");
+
+    const { data: userData, error: userError } =
+      await denganHadMasa(db.auth.getUser());
+
+    if (userError) throw userError;
+
+    const email = teks(userData?.user?.email);
+    if (!email) {
+      throw new Error("E-mel akaun Pentadbir tidak dapat dikenal pasti.");
+    }
+
+    // Re-authentication: password semasa mesti betul sebelum perubahan dibuat.
+    const { error: loginError } =
+      await denganHadMasa(
+        db.auth.signInWithPassword({
+          email,
+          password: passwordSemasa
+        })
+      );
+
+    if (loginError) {
+      mesej("Password semasa tidak betul.", "error");
+      return;
+    }
+
+    mesej("Password disahkan. Sedang menukar password...", "warning");
+
+    const { error: updateError } =
+      await denganHadMasa(
+        db.auth.updateUser({
+          password: passwordBaharu
+        })
+      );
+
+    if (updateError) throw updateError;
+
+    mesej("Password Pentadbir berjaya ditukar.", "success");
+
+    el("passwordSemasaAdmin").value = "";
+    el("passwordBaharuAdmin").value = "";
+    el("sahkanPasswordBaharuAdmin").value = "";
+
+    setTimeout(() => tutupTukarPasswordAdmin(), 1400);
+
+  } catch (error) {
+    console.error("Tukar password Pentadbir gagal:", error);
+    mesej(
+      `Gagal menukar password: ${error?.message || "Ralat tidak diketahui."}`,
+      "error"
+    );
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
 
 /* ================================================================
    PERANTI KHAS PENTADBIR
@@ -997,7 +1138,7 @@ async function jadikanPerantiKhasAdmin() {
       device_id: deviceId,
       akses_semua_petugas: true,
       aktif: true,
-      catatan: `PERANTI KHAS ADMIN MOTOGP - ${jenis}`
+      catatan: `PERANTI KHAS ADMINF1 - ${jenis}`
     };
 
     /*
@@ -1356,10 +1497,9 @@ async function muatData(kemasKiniPenapis = false) {
       const statusTugas = atas(item.status);
 
       /*
-        Paparan Pentadbir MotoGP:
-        DITOLAK, CUTI SAKIT dan KECEMASAN
-        digabungkan sebagai TIDAK HADIR.
-        Nilai sebenar dalam Supabase kekal.
+        Paparan Pentadbir:
+        - CUTI SAKIT dan KECEMASAN dipaparkan sebagai TIDAK HADIR.
+        - Nilai sebenar dalam penugasan.status kekal dan tidak diubah.
       */
       const statusKehadiran =
         statusTugas === "DIGANTI"
@@ -1523,23 +1663,11 @@ function paparJadual() {
 
   tbody.innerHTML = dataPaparan.map((item, index) => {
     const kelas = kelasBadge(item.statusKehadiran);
-    /*
-      Kolum KEADAAN:
-      - CUTI SAKIT -> CUTI SAKIT
-      - KECEMASAN  -> KECEMASAN
-      - Check-Out  -> SELESAI TUGAS
-      - Hadir      -> MASIH BERTUGAS
-    */
-    const keadaan =
-      item.statusPenugasanAsal === "CUTI SAKIT"
-        ? "CUTI SAKIT"
-        : item.statusPenugasanAsal === "KECEMASAN"
-          ? "KECEMASAN"
-          : item.checkout
-            ? "SELESAI TUGAS"
-            : item.statusKehadiran === "HADIR"
-              ? "MASIH BERTUGAS"
-              : "-";
+    const keadaan = item.checkout
+      ? "SELESAI TUGAS"
+      : item.statusKehadiran === "HADIR"
+        ? "MASIH BERTUGAS"
+        : "-";
 
     return `
       <tr>
@@ -1639,7 +1767,7 @@ function exportExcel() {
   const tajuk = [
     "BIL", "NO BADAN", "PANGKAT", "NAMA", "NO TELEFON", "CALL SIGN",
     "JENIS TUGAS", "TEMPAT TUGAS", "PEMEGANG SET",
-    "CHECK-IN", "STATUS", "SELESAI TUGAS", "TEMPOH"
+    "CHECK-IN", "STATUS", "CHECK-OUT", "TEMPOH"
   ];
 
   const baris = dataPaparan.map((item, index) => [
@@ -1668,7 +1796,7 @@ function exportExcel() {
 
   const pautan = document.createElement("a");
   pautan.href = URL.createObjectURL(fail);
-  pautan.download = `SKPO_MOTOGP_${el("tarikh").value || hariIniMalaysia()}.csv`;
+  pautan.download = `SKPO_F1_${el("tarikh").value || hariIniMalaysia()}.csv`;
   pautan.click();
   URL.revokeObjectURL(pautan.href);
 }
@@ -1768,8 +1896,8 @@ function binaRekodImportPenggunaCsv(barisCsv) {
     NO_BADAN: ["NO_BADAN", "NOBADAN", "NO_POLIS", "BODY_NO"],
     PANGKAT: ["PANGKAT", "RANK"],
     NAMA: ["NAMA", "NAMA_PENUH", "NAME"],
-    PERANAN: ["PERANAN", "ROLE"],
     TELEFON: ["TELEFON", "NO_TELEFON", "NO_TEL", "PHONE"],
+    PERANAN: ["PERANAN", "ROLE"],
     BAHAGIAN: ["BAHAGIAN", "BALAI", "CAWANGAN", "BAHAGIAN_BALAI_CAWANGAN"],
     DAERAH: ["DAERAH", "DISTRICT"],
     KATA_LALUAN: ["KATA_LALUAN", "KATALALUAN", "PASSWORD"],
@@ -1821,8 +1949,8 @@ function binaRekodImportPenggunaCsv(barisCsv) {
         no_badan: noBadan,
         pangkat,
         nama,
-        peranan,
         telefon: ambil(baris, "TELEFON") || null,
+        peranan,
         bahagian: atas(ambil(baris, "BAHAGIAN")) || null,
         daerah: atas(ambil(baris, "DAERAH")) || null,
         password,
@@ -1960,15 +2088,15 @@ function kosongkanImportPengguna() {
 function muatTurunTemplatPengguna() {
   const kandungan = [
     "NO_BADAN,PANGKAT,NAMA,NO_TELEFON,PERANAN,BAHAGIAN,DAERAH,KATA_LALUAN,AKTIF",
-    "197898,L/KPL,NORHISHAM BIN CHE MAT,0193151615,PETUGAS,BKDNKA,KLIA,Skpo@A7m2#1,YA",
-    "199898,SJN,AHMAD BIN ALI,0123456789,PENYELIA,IPD KLIA,SEPANG,Skpo@B9n4#2,YA",
-    "PUSATMGP,INSP,PUSAT KAWALAN MOTOGP,0123456789,PUSAT_KAWALAN,IPK,KUALA LUMPUR,Skpo@MotoGP2026#1,YA"
+    "197898,L/KPL,NORHISHAM BIN CHE MAT,0193151615,PETUGAS,BKDNKA,SEPANG,Skpo@A7m2#1,YA",
+    "199898,SJN,AHMAD BIN ALI,0123456789,PENYELIA,CAWANGAN KHAS,SEPANG,Skpo@B9n4#2,YA",
+    "PUSATF1,INSP,PUSAT KAWALAN FORMULA 1,0123456789,PUSAT_KAWALAN,IPK,SELANGOR,Skpo@F1PK2026#1,YA"
   ].join("\r\n");
 
   const blob = new Blob(["\uFEFF", kandungan], { type: "text/csv;charset=utf-8" });
   const pautan = document.createElement("a");
   pautan.href = URL.createObjectURL(blob);
-  pautan.download = "TEMPLAT_PENGGUNA_SKPO_MOTOGP.csv";
+  pautan.download = "TEMPLAT_PENGGUNA_SKPO_F1.csv";
   document.body.appendChild(pautan);
   pautan.click();
   const alamat = pautan.href;
@@ -2040,8 +2168,8 @@ async function importPenggunaCsv() {
             noBadan: d.no_badan,
             pangkat: d.pangkat,
             nama: d.nama,
-            peranan: d.peranan || "PETUGAS",
             telefon: d.telefon || "",
+            peranan: d.peranan || "PETUGAS",
             bahagian: d.bahagian || "",
             daerah: d.daerah || "",
             password: d.password,
@@ -2640,6 +2768,10 @@ async function importPenugasanCsv() {
   }
 }
 
+/* ================================================================
+   JANA PENUGASAN AUTOMATIK 3–5 HARI — FORMULA 1
+================================================================ */
+
 function tambahHariISO(tarikhISO, jumlahHari) {
   const padanan = teks(tarikhISO).match(/^(\d{4})-(\d{2})-(\d{2})$/);
 
@@ -2657,7 +2789,150 @@ function tambahHariISO(tarikhISO, jumlahHari) {
 }
 
 
-function bukaJanaPenugasan() {
+async function muatJadualTersimpanKePratontonAuto() {
+  const mula =
+    teks(el("autoTarikhMula")?.value) ||
+    teks(el("tarikh")?.value) ||
+    hariIniMalaysia();
+
+  const tamat =
+    teks(el("autoTarikhTamat")?.value) ||
+    mula;
+
+  if (!mula || !tamat) return;
+
+  try {
+    const { data: rekod, error } = await denganHadMasa(
+      db.from("penugasan")
+        .select("*")
+        .gte("tarikh", mula)
+        .lte("tarikh", tamat)
+        .order("tarikh", { ascending: true })
+        .order("created_at", { ascending: true })
+    );
+
+    if (error) throw error;
+
+    const senarai = rekod || [];
+
+    if (!senarai.length) {
+      previewPenugasanAuto = [];
+      paparPreviewPenugasanAuto();
+
+      paparMesej(
+        "statusJanaAuto",
+        `Tiada jadual tersimpan di Supabase bagi ${escapeHtml(formatTarikhMalaysia(mula))}` +
+        (tamat !== mula ? ` hingga ${escapeHtml(formatTarikhMalaysia(tamat))}` : "") + ".",
+        "warning"
+      );
+      return;
+    }
+
+    /*
+      PENTING:
+      penugasan.petugas_id mungkin menyimpan profiles.id ATAU profiles.auth_user_id.
+      Oleh itu jangan query profiles hanya dengan .in("id", ids).
+      Muat profil dan bina dua indeks supaya rekod lama dan baharu sama-sama boleh dipadankan.
+    */
+    const { data: profilData, error: profilError } = await denganHadMasa(
+      db.from("profiles").select("*")
+    );
+
+    if (profilError) throw profilError;
+
+    const profil = profilData || [];
+    const profilById = new Map();
+    const profilByAuth = new Map();
+    const profilByNoBadan = new Map();
+
+    profil.forEach(item => {
+      if (item?.id) profilById.set(String(item.id), item);
+      if (item?.auth_user_id) profilByAuth.set(String(item.auth_user_id), item);
+
+      const noBadan = atas(item?.no_badan);
+      if (noBadan) profilByNoBadan.set(noBadan, item);
+    });
+
+    const mulaUTC = Date.parse(`${mula}T00:00:00Z`);
+
+    previewPenugasanAuto = senarai.map(item => {
+      const petugasId = String(item.petugas_id || item.profile_id || "");
+      const noBadanRekod = atas(item.no_badan || "");
+
+      const pengguna =
+        profilById.get(petugasId) ||
+        profilByAuth.get(petugasId) ||
+        profilByNoBadan.get(noBadanRekod) ||
+        {};
+
+      const tarikhItem = teks(item.tarikh);
+      const tarikhUTC = Date.parse(`${tarikhItem}T00:00:00Z`);
+
+      const hari =
+        Number.isFinite(tarikhUTC) && Number.isFinite(mulaUTC)
+          ? Math.floor((tarikhUTC - mulaUTC) / 86400000) + 1
+          : 1;
+
+      return {
+        acara: "FORMULA1",
+        hari,
+        tarikh: tarikhItem,
+        no_badan: atas(pengguna.no_badan || item.no_badan || ""),
+        pangkat: atas(pengguna.pangkat || item.pangkat || ""),
+        nama: atas(pengguna.nama || item.nama || ""),
+        telefon:
+          pengguna.telefon ||
+          pengguna.no_telefon ||
+          item.telefon ||
+          item.no_telefon ||
+          "",
+        daerah:
+          pengguna.daerah ||
+          item.daerah ||
+          "",
+        corak_tugas: atas(item.corak_tugas || "ROTATION"),
+        call_sign: atas(item.call_sign || ""),
+        jenis_tugas: atas(item.jenis_tugas || ""),
+        tempat_tugas: atas(item.tempat_tugas || item.lokasi || ""),
+        penyelia: nilaiBoolean(item.penyelia),
+        pemegang_set: nilaiBoolean(item.pemegang_set),
+        latitude: item.latitude ?? null,
+        longitude: item.longitude ?? null,
+        radius_meter: item.radius_meter ?? item.radius ?? null,
+        status: atas(item.status || "AKTIF")
+      };
+    });
+
+    paparPreviewPenugasanAuto();
+
+    if (el("btnSimpanAuto")) {
+      el("btnSimpanAuto").disabled = true;
+    }
+
+    paparMesej(
+      "statusJanaAuto",
+      `<strong>JADUAL TERSIMPAN DIMUATKAN</strong><br>` +
+      `${previewPenugasanAuto.length} rekod daripada ${escapeHtml(formatTarikhMalaysia(mula))}` +
+      (tamat !== mula ? ` hingga ${escapeHtml(formatTarikhMalaysia(tamat))}` : "") +
+      ` dipaparkan semula dari Supabase.`,
+      "success"
+    );
+
+  } catch (error) {
+    console.error("Muat jadual tersimpan ke pratonton gagal:", error);
+
+    previewPenugasanAuto = [];
+    paparPreviewPenugasanAuto();
+
+    paparMesej(
+      "statusJanaAuto",
+      `Jadual tersimpan gagal dimuatkan: ${escapeHtml(error.message)}`,
+      "error"
+    );
+  }
+}
+
+async function bukaJanaPenugasan() {
   tutupSemuaModulPentadbir();
 
   const modul = el("modulJanaPenugasan");
@@ -2677,16 +2952,10 @@ function bukaJanaPenugasan() {
     butangHeader.setAttribute("aria-expanded", "true");
   }
 
-  const inputTarikh =
-    el("autoTarikhMula");
+  const inputTarikh = el("autoTarikhMula");
+  const inputTarikhTamat = el("autoTarikhTamat");
 
-  const inputTarikhTamat =
-    el("autoTarikhTamat");
-
-  if (
-    inputTarikh &&
-    !inputTarikh.value
-  ) {
+  if (inputTarikh && !inputTarikh.value) {
     inputTarikh.value =
       el("tarikh")?.value ||
       hariIniMalaysia();
@@ -2731,6 +3000,9 @@ function bukaJanaPenugasan() {
   }
 
   kemasKiniTarikhMuatTurunPenugasanAuto();
+
+  // Paparkan semula jadual yang telah disimpan walaupun halaman di-refresh/login semula.
+  await muatJadualTersimpanKePratontonAuto();
 
   window.setTimeout(() => {
     modul.scrollIntoView({
@@ -2802,6 +3074,9 @@ async function muatPetugasAuto() {
         return !["PENTADBIR", "ADMIN"].includes(peranan);
       });
 
+    // Kunci petugas yang sudah mempunyai penugasan dalam julat tarikh operasi.
+    await muatJenisPenugasanTersimpanAuto();
+
     paparPetugasAuto();
 
     paparMesej(
@@ -2827,6 +3102,77 @@ async function muatPetugasAuto() {
 }
 
 
+async function muatJenisPenugasanTersimpanAuto() {
+  const mula =
+    teks(el("autoTarikhMula")?.value) ||
+    teks(el("tarikh")?.value) ||
+    hariIniMalaysia();
+
+  const tamat =
+    teks(el("autoTarikhTamat")?.value) ||
+    mula;
+
+  Object.keys(jenisTersimpanPetugasAuto).forEach(kunci => {
+    delete jenisTersimpanPetugasAuto[kunci];
+  });
+
+  const { data: rekod, error } = await denganHadMasa(
+    db.from("penugasan")
+      .select("*")
+      .gte("tarikh", mula)
+      .lte("tarikh", tamat)
+      .order("tarikh", { ascending: true })
+  );
+
+  if (error) throw error;
+
+  const profilById = new Map();
+  const profilByAuth = new Map();
+
+  dataPetugasAuto.forEach(profil => {
+    if (profil?.id) profilById.set(String(profil.id), profil);
+    if (profil?.auth_user_id) {
+      profilByAuth.set(String(profil.auth_user_id), profil);
+    }
+  });
+
+  (rekod || []).forEach(item => {
+    const petugasId = String(item.petugas_id || item.profile_id || "");
+    const profil =
+      profilById.get(petugasId) ||
+      profilByAuth.get(petugasId) ||
+      null;
+
+    const noBadan =
+      atas(
+        profil?.no_badan ||
+        item.no_badan ||
+        ""
+      );
+
+    const jenis =
+      atas(item.jenis_tugas || "");
+
+    if (!noBadan || !jenis) return;
+
+    /*
+      Jika seseorang mempunyai rekod pada beberapa hari untuk jenis yang sama,
+      ia tetap dianggap satu Jenis Penugasan.
+    */
+    if (!jenisTersimpanPetugasAuto[noBadan]) {
+      jenisTersimpanPetugasAuto[noBadan] = jenis;
+    }
+
+    /*
+      Penugasan yang sudah tersimpan adalah authoritative.
+      Ini memastikan refresh/login semula masih mengunci petugas.
+    */
+    jenisTetapPetugasAuto[noBadan] =
+      jenisTersimpanPetugasAuto[noBadan];
+  });
+}
+
+
 function petugasDipilihJenisAuto(noBadan) {
   const jenis =
     jenisPenugasanAutoAktif ||
@@ -2839,7 +3185,12 @@ function petugasDipilihJenisAuto(noBadan) {
 
 
 function jenisPetugasAuto(noBadan) {
-  return jenisTetapPetugasAuto[atas(noBadan)] || "";
+  const kunci = atas(noBadan);
+  return (
+    jenisTersimpanPetugasAuto[kunci] ||
+    jenisTetapPetugasAuto[kunci] ||
+    ""
+  );
 }
 
 
@@ -2873,7 +3224,20 @@ function ubahPilihanPetugasJenisAuto(checkbox) {
     return;
   }
 
-  const jenisSediaAda = jenisTetapPetugasAuto[noBadan] || "";
+  const jenisTersimpan = jenisTersimpanPetugasAuto[noBadan] || "";
+  const jenisSediaAda = jenisPetugasAuto(noBadan);
+
+  if (jenisTersimpan) {
+    checkbox.checked = jenisTersimpan === jenisSemasa;
+
+    alert(
+      `${profil.pangkat || ""} ${profil.nama || noBadan} sudah mempunyai penugasan ` +
+      `${jenisTersimpan}.\n\nPetugas yang sudah mempunyai penugasan tidak boleh dipilih semula.`
+    );
+
+    paparPetugasAuto();
+    return;
+  }
 
   if (checkbox.checked) {
     if (
@@ -3005,12 +3369,17 @@ function paparPetugasAuto() {
     .map((item, index) => {
       const penyeliaAsal = nilaiBoolean(item.penyelia);
       const pemegangAsal = nilaiBoolean(item.pemegang_set);
+      const noBadanKunci = atas(item.no_badan);
+      const jenisTersimpan =
+        jenisTersimpanPetugasAuto[noBadanKunci] || "";
       const jenisSediaAda = jenisPetugasAuto(item.no_badan);
       const dimilikiJenisLain =
         Boolean(jenisSediaAda) &&
         jenisSediaAda !== jenisPenugasanAutoAktif;
       const dipilihJenisSemasa =
         jenisSediaAda === jenisPenugasanAutoAktif;
+      const sudahAdaPenugasan =
+        Boolean(jenisTersimpan);
 
       return `
         <tr data-auto-petugas-index="${index}">
@@ -3019,7 +3388,7 @@ function paparPetugasAuto() {
               class="auto-pilih-petugas"
               type="checkbox"
               ${dipilihJenisSemasa ? "checked" : ""}
-              ${dimilikiJenisLain ? "disabled" : ""}
+              ${(dimilikiJenisLain || sudahAdaPenugasan) ? "disabled" : ""}
               onchange="ubahPilihanPetugasJenisAuto(this)"
               aria-label="Pilih ${escapeHtml(item.no_badan || "")}"
             >
@@ -3033,6 +3402,7 @@ function paparPetugasAuto() {
 
           <td class="auto-jenis-tetap-cell">
             ${labelJenisPetugasAuto(item.no_badan)}
+            ${sudahAdaPenugasan ? '<div style="font-size:10px;color:#f0c94d;margin-top:4px;">SUDAH ADA PENUGASAN</div>' : ''}
           </td>
 
           <td>
@@ -3256,9 +3626,7 @@ function kiraBilHariAutoDariKalendar() {
 
   if (masaTamat < masaMula) return 0;
 
-  return Math.floor(
-    (masaTamat - masaMula) / 86400000
-  ) + 1;
+  return Math.floor((masaTamat - masaMula) / 86400000) + 1;
 }
 
 
@@ -3283,18 +3651,13 @@ function htmlKapasitiHariAuto(hari, nilai = 0) {
 
 
 function selaraskanKolumHariAuto() {
-  const bilHari =
-    kiraBilHariAutoDariKalendar();
+  const bilHari = kiraBilHariAutoDariKalendar();
 
-  const inputBilHari =
-    el("autoBilHari");
-
-  const paparanBilHari =
-    el("autoBilHariPaparan");
+  const inputBilHari = el("autoBilHari");
+  const paparanBilHari = el("autoBilHariPaparan");
 
   if (inputBilHari) {
-    inputBilHari.value =
-      String(bilHari || 0);
+    inputBilHari.value = String(bilHari || 0);
   }
 
   if (paparanBilHari) {
@@ -3304,95 +3667,46 @@ function selaraskanKolumHariAuto() {
         : "PILIH TARIKH";
   }
 
-  const headerTindakan =
-    el("autoHeaderTindakan");
+  const headerTindakan = el("autoHeaderTindakan");
 
   if (headerTindakan) {
-    const trHeader =
-      headerTindakan.parentElement;
+    const trHeader = headerTindakan.parentElement;
 
     trHeader
-      ?.querySelectorAll(
-        ".auto-kapasiti-hari-header"
-      )
-      .forEach(item =>
-        item.remove()
-      );
+      ?.querySelectorAll(".auto-kapasiti-hari-header")
+      .forEach(item => item.remove());
 
-    if (bilHari > 0) {
-      for (
-        let hari = 1;
-        hari <= bilHari;
-        hari += 1
-      ) {
-        const th =
-          document.createElement("th");
-
-        th.className =
-          "auto-kapasiti-hari-header";
-
-        th.dataset.hari =
-          String(hari);
-
-        th.textContent =
-          `Hari ${hari}`;
-
-        trHeader.insertBefore(
-          th,
-          headerTindakan
-        );
-      }
+    for (let hari = 1; hari <= bilHari; hari += 1) {
+      const th = document.createElement("th");
+      th.className = "auto-kapasiti-hari-header";
+      th.dataset.hari = String(hari);
+      th.textContent = `Hari ${hari}`;
+      trHeader.insertBefore(th, headerTindakan);
     }
   }
 
   document
-    .querySelectorAll(
-      "#tbodyLokasiAuto tr"
-    )
+    .querySelectorAll("#tbodyLokasiAuto tr")
     .forEach(tr => {
       const nilaiLama = {};
 
-      tr
-        .querySelectorAll(
-          ".auto-kapasiti-hari-cell"
-        )
+      tr.querySelectorAll(".auto-kapasiti-hari-cell")
         .forEach(td => {
-          const hari =
-            Number(
-              td.dataset.hari || 0
-            );
-
-          const input =
-            td.querySelector(
-              ".auto-jumlah-petugas"
-            );
+          const hari = Number(td.dataset.hari || 0);
+          const input = td.querySelector(".auto-jumlah-petugas");
 
           if (hari > 0) {
-            nilaiLama[hari] =
-              input?.value ?? "0";
+            nilaiLama[hari] = input?.value ?? "0";
           }
         });
 
-      tr
-        .querySelectorAll(
-          ".auto-kapasiti-hari-cell"
-        )
-        .forEach(td =>
-          td.remove()
-        );
+      tr.querySelectorAll(".auto-kapasiti-hari-cell")
+        .forEach(td => td.remove());
 
-      const tdTindakan =
-        tr.lastElementChild;
+      const tdTindakan = tr.lastElementChild;
 
-      if (
-        tdTindakan &&
-        bilHari > 0
-      ) {
-        for (
-          let hari = 1;
-          hari <= bilHari;
-          hari += 1
-        ) {
+      if (tdTindakan) {
+        for (let hari = 1; hari <= bilHari; hari += 1) {
           tdTindakan.insertAdjacentHTML(
             "beforebegin",
             htmlKapasitiHariAuto(
@@ -3407,29 +3721,16 @@ function selaraskanKolumHariAuto() {
 
 
 function kemasKiniBilHariAutoDariKalendar() {
-  const mula =
-    teks(
-      el("autoTarikhMula")?.value
-    );
+  const mula = teks(el("autoTarikhMula")?.value);
+  const tamat = teks(el("autoTarikhTamat")?.value);
 
-  const tamat =
-    teks(
-      el("autoTarikhTamat")?.value
-    );
-
-  if (
-    mula &&
-    tamat &&
-    tamat < mula
-  ) {
+  if (mula && tamat && tamat < mula) {
     if (el("autoBilHari")) {
-      el("autoBilHari").value =
-        "0";
+      el("autoBilHari").value = "0";
     }
 
     if (el("autoBilHariPaparan")) {
-      el("autoBilHariPaparan").value =
-        "TARIKH TIDAK SAH";
+      el("autoBilHariPaparan").value = "TARIKH TIDAK SAH";
     }
 
     paparMesej(
@@ -3525,11 +3826,10 @@ function tambahLokasiAuto(data = {}) {
 
     ${Array.from(
       {
-        length:
-          Math.max(
-            1,
-            kiraBilHariAutoDariKalendar()
-          )
+        length: Math.max(
+          1,
+          kiraBilHariAutoDariKalendar()
+        )
       },
       (_, index) => {
         const hari = index + 1;
@@ -3612,9 +3912,23 @@ function bacaPetugasDipilihAuto() {
 
       hasil.push({
         id: profil.id,
+        auth_user_id: profil.auth_user_id || null,
         no_badan: atas(profil.no_badan),
         pangkat: atas(profil.pangkat),
         nama: atas(profil.nama),
+
+        // Bawa sekali maklumat profil untuk Pratonton dan Cetakan Jadual.
+        telefon:
+          teks(profil.telefon) ||
+          teks(profil.no_telefon) ||
+          "",
+        no_telefon:
+          teks(profil.no_telefon) ||
+          teks(profil.telefon) ||
+          "",
+        daerah:
+          atas(profil.daerah || ""),
+
         corak_tugas: corak,
         lokasi_kekal: lokasiKekal || null,
         penyelia:
@@ -3659,15 +3973,13 @@ function bacaLokasiAuto() {
       const jumlahMengikutHari =
         Array.from(
           {
-            length:
-              Math.max(
-                0,
-                bilHari
-              )
+            length: Math.max(
+              0,
+              bilHari
+            )
           },
           (_, kedudukanHari) => {
-            const hari =
-              kedudukanHari + 1;
+            const hari = kedudukanHari + 1;
 
             const nilai = Number(
               teks(
@@ -3813,6 +4125,36 @@ function binaAgihanLokasiAuto(petugas, lokasi, hari) {
 
   const hasil = [];
 
+  /*
+    PERATURAN WAJIB PENYELIA
+    ------------------------------------------------------------
+    - Setiap TEMPAT TUGAS yang aktif pada hari berkenaan WAJIB
+      mempunyai TEPAT 1 penyelia.
+    - Petugas yang ditanda PENYELIA = YA akan digunakan sebagai
+      penyelia lokasi.
+    - Bilangan penyelia yang dipilih mesti sama dengan bilangan
+      lokasi aktif pada hari tersebut.
+    - Penyelia KEKAL kekal di lokasi yang dipilih.
+    - Penyelia ROTATION diagihkan dahulu ke lokasi yang masih belum
+      mempunyai penyelia.
+    - Selepas itu barulah petugas biasa diagihkan mengikut baki kuota.
+  */
+
+  const lokasiAktif =
+    baki.filter(item => item.baki > 0);
+
+  const penyeliaDipilih =
+    petugas.filter(item => item.penyelia === true);
+
+  if (penyeliaDipilih.length !== lokasiAktif.length) {
+    throw new Error(
+      `Hari ${hari + 1}: Terdapat ${lokasiAktif.length} Tempat Tugas aktif, ` +
+      `jadi sistem memerlukan tepat ${lokasiAktif.length} penyelia. ` +
+      `Penyelia yang ditetapkan sekarang ialah ${penyeliaDipilih.length}. ` +
+      `Sila tandakan tepat seorang penyelia bagi setiap Tempat Tugas.`
+    );
+  }
+
   const petugasKekal =
     petugas.filter(item =>
       item.corak_tugas === "KEKAL"
@@ -3823,9 +4165,55 @@ function binaAgihanLokasiAuto(petugas, lokasi, hari) {
       item.corak_tugas !== "KEKAL"
     );
 
+  const penyeliaLokasi = new Map();
+  const petugasSudahDiagih = new Set();
+
+  function masukkanKeSlot(anggota, slot, sebagaiPenyelia = false) {
+    if (!slot) {
+      throw new Error(
+        `Hari ${hari + 1}: Lokasi untuk ${anggota.pangkat} ${anggota.nama} tidak dijumpai.`
+      );
+    }
+
+    if (slot.baki <= 0) {
+      throw new Error(
+        `Hari ${hari + 1}: Kuota ${slot.tempat_tugas} tidak mencukupi.`
+      );
+    }
+
+    if (sebagaiPenyelia) {
+      if (penyeliaLokasi.has(slot.kunci_lokasi)) {
+        const sediaAda = penyeliaLokasi.get(slot.kunci_lokasi);
+        throw new Error(
+          `Hari ${hari + 1}: Tempat Tugas ${slot.tempat_tugas} mempunyai lebih daripada seorang penyelia ` +
+          `(${sediaAda.pangkat} ${sediaAda.nama} dan ${anggota.pangkat} ${anggota.nama}). ` +
+          `Setiap Tempat Tugas hanya dibenarkan 1 penyelia.`
+        );
+      }
+
+      penyeliaLokasi.set(slot.kunci_lokasi, anggota);
+    }
+
+    slot.baki -= 1;
+    petugasSudahDiagih.add(anggota.no_badan);
+
+    /*
+      Nilai penyelia pada hasil ditentukan oleh kedudukan sebenar
+      dalam jadual hari tersebut, bukan sekadar nilai dropdown asal.
+    */
+    hasil.push({
+      anggota: {
+        ...anggota,
+        penyelia: sebagaiPenyelia
+      },
+      slot
+    });
+  }
+
   /*
-    1. PETUGAS KEKAL DIMASUKKAN DAHULU.
-    Mereka menggunakan kuota lokasi bagi hari tersebut.
+    1. MASUKKAN PETUGAS KEKAL DAHULU.
+       Jika petugas KEKAL ialah penyelia, lokasi itu terus mempunyai
+       seorang penyelia dan tidak akan menerima penyelia kedua.
   */
   petugasKekal.forEach(anggota => {
     const slot =
@@ -3847,17 +4235,16 @@ function binaAgihanLokasiAuto(petugas, lokasi, hari) {
       );
     }
 
-    slot.baki -= 1;
-
-    hasil.push({
+    masukkanKeSlot(
       anggota,
-      slot
-    });
+      slot,
+      anggota.penyelia === true
+    );
   });
 
   /*
-    Ambil lokasi petugas ROTATION pada hari sebelumnya sahaja.
-    Petugas KEKAL tidak perlu disemak kerana mereka memang kekal.
+    Ambil lokasi petugas ROTATION pada hari sebelumnya supaya sistem
+    masih cuba mengelakkan lokasi yang sama dua hari berturut-turut.
   */
   const lokasiSemalam = new Map();
 
@@ -3876,10 +4263,95 @@ function binaAgihanLokasiAuto(petugas, lokasi, hari) {
   }
 
   /*
-    2. BAKI KUOTA DIISI OLEH PETUGAS ROTATION.
+    2. AGIHKAN PENYELIA ROTATION DAHULU.
+       Hanya lokasi yang BELUM mempunyai penyelia boleh dipilih.
   */
-  const susunanPetugas =
+  const penyeliaRotation =
     petugasRotation
+      .filter(item => item.penyelia === true)
+      .map((item, index) => ({ item, index }))
+      .sort((a, b) => {
+        const panjang = Math.max(1, penyeliaDipilih.length);
+        const ka = (a.index + hari) % panjang;
+        const kb = (b.index + hari) % panjang;
+        return ka - kb;
+      })
+      .map(x => x.item);
+
+  penyeliaRotation.forEach((anggota, urutan) => {
+    if (petugasSudahDiagih.has(anggota.no_badan)) return;
+
+    const lokasiSebelum =
+      lokasiSemalam.get(anggota.no_badan) || "";
+
+    const lokasiPerluPenyelia =
+      baki.filter(item =>
+        item.baki > 0 &&
+        !penyeliaLokasi.has(item.kunci_lokasi)
+      );
+
+    let calon = null;
+
+    /* Utamakan lokasi yang bukan lokasi semalam. */
+    for (let offset = 0; offset < lokasiPerluPenyelia.length; offset += 1) {
+      const idx =
+        (urutan + hari + offset) %
+        Math.max(1, lokasiPerluPenyelia.length);
+
+      const item = lokasiPerluPenyelia[idx];
+      if (!item) continue;
+
+      if (item.kunci_lokasi !== lokasiSebelum) {
+        calon = item;
+        break;
+      }
+    }
+
+    /* Jika semua pilihan sama dengan semalam, tetap isi lokasi kosong. */
+    if (!calon) {
+      calon = lokasiPerluPenyelia[0] || null;
+    }
+
+    if (!calon) {
+      throw new Error(
+        `Hari ${hari + 1}: Tiada Tempat Tugas kosong untuk penyelia ` +
+        `${anggota.pangkat} ${anggota.nama}. Semak tetapan penyelia.`
+      );
+    }
+
+    masukkanKeSlot(anggota, calon, true);
+  });
+
+  /*
+    3. SEMAKAN WAJIB: SETIAP LOKASI AKTIF MESTI SUDAH ADA 1 PENYELIA
+       sebelum petugas biasa diagihkan.
+  */
+  const lokasiTiadaPenyelia =
+    lokasiAktif.filter(item =>
+      !penyeliaLokasi.has(item.kunci_lokasi)
+    );
+
+  if (lokasiTiadaPenyelia.length) {
+    const senarai =
+      lokasiTiadaPenyelia
+        .map(item => item.tempat_tugas)
+        .join(", ");
+
+    throw new Error(
+      `Hari ${hari + 1}: Tempat Tugas berikut belum mempunyai penyelia: ${senarai}. ` +
+      `Setiap Tempat Tugas wajib mempunyai tepat 1 penyelia.`
+    );
+  }
+
+  /*
+    4. AGIHKAN BAKI PETUGAS ROTATION BIASA.
+       Penyelia sudah selesai diagihkan dan tidak masuk semula di sini.
+  */
+  const petugasRotationBiasa =
+    petugasRotation
+      .filter(item =>
+        !petugasSudahDiagih.has(item.no_badan)
+      )
       .map((item, index) => ({ item, index }))
       .sort((a, b) => {
         const panjang = Math.max(1, petugasRotation.length);
@@ -3889,7 +4361,7 @@ function binaAgihanLokasiAuto(petugas, lokasi, hari) {
       })
       .map(x => x.item);
 
-  susunanPetugas.forEach((anggota, urutan) => {
+  petugasRotationBiasa.forEach((anggota, urutan) => {
     const lokasiSebelum =
       lokasiSemalam.get(anggota.no_badan) || "";
 
@@ -3898,11 +4370,11 @@ function binaAgihanLokasiAuto(petugas, lokasi, hari) {
     for (let offset = 0; offset < baki.length; offset += 1) {
       const idx =
         (urutan + hari + offset) %
-        baki.length;
+        Math.max(1, baki.length);
 
       const item = baki[idx];
 
-      if (item.baki <= 0) continue;
+      if (!item || item.baki <= 0) continue;
 
       if (item.kunci_lokasi !== lokasiSebelum) {
         calon = item;
@@ -3924,14 +4396,12 @@ function binaAgihanLokasiAuto(petugas, lokasi, hari) {
       );
     }
 
-    calon.baki -= 1;
-
-    hasil.push({
-      anggota,
-      slot: calon
-    });
+    masukkanKeSlot(anggota, calon, false);
   });
 
+  /*
+    5. SEMAK KUOTA LOKASI MESTI HABIS TEPAT.
+  */
   const bakiTidakDiguna =
     baki.reduce(
       (jumlah, item) =>
@@ -3945,6 +4415,24 @@ function binaAgihanLokasiAuto(petugas, lokasi, hari) {
       `yang belum diisi. Semak jumlah petugas.`
     );
   }
+
+  /*
+    6. SEMAKAN AKHIR: TEPAT 1 PENYELIA BAGI SETIAP TEMPAT TUGAS.
+  */
+  lokasiAktif.forEach(slot => {
+    const jumlahPenyelia =
+      hasil.filter(item =>
+        item.slot.kunci_lokasi === slot.kunci_lokasi &&
+        item.anggota.penyelia === true
+      ).length;
+
+    if (jumlahPenyelia !== 1) {
+      throw new Error(
+        `Hari ${hari + 1}: ${slot.tempat_tugas} mempunyai ${jumlahPenyelia} penyelia. ` +
+        `Setiap Tempat Tugas wajib mempunyai tepat 1 penyelia.`
+      );
+    }
+  });
 
   return hasil;
 }
@@ -4039,7 +4527,7 @@ function janaPreviewPenugasanAuto() {
       AGIHAN MENGIKUT KAPASITI + ROTATION TERKAWAL
 
       Setiap hari, setiap lokasi menerima tepat jumlah anggota
-      yang ditetapkan pada kolum HARI yang dijana daripada julat kalendar.
+      yang ditetapkan pada kolum HARI 1 hingga HARI 5.
 
       Sistem cuba mengelakkan seseorang berada di lokasi yang sama
       dua hari berturut-turut. Jika kekangan kapasiti menjadikannya
@@ -4061,12 +4549,14 @@ function janaPreviewPenugasanAuto() {
 
       agihan.forEach(({ anggota, slot }) => {
         previewPenugasanAuto.push({
-          acara: "MOTOGP",
+          acara: "FORMULA1",
           hari: hari + 1,
           tarikh,
           no_badan: anggota.no_badan,
           pangkat: anggota.pangkat,
           nama: anggota.nama,
+          telefon: anggota.telefon || anggota.no_telefon || "",
+          daerah: anggota.daerah || "",
           corak_tugas: anggota.corak_tugas,
           call_sign: slot.call_sign,
           jenis_tugas: slot.jenis_tugas,
@@ -4142,6 +4632,7 @@ function paparPreviewPenugasanAuto() {
         "Belum ada jadual dijana.";
     }
 
+    kemasKiniPenapisCetakJadualAuto();
     return;
   }
 
@@ -4160,7 +4651,7 @@ function paparPreviewPenugasanAuto() {
               &nbsp;•&nbsp;
               ${escapeHtml(formatTarikhMalaysia(item.tarikh))}
               &nbsp;•&nbsp;
-              MOTOGP
+              FORMULA 1
             </td>
           </tr>
         `;
@@ -4244,6 +4735,8 @@ function paparPreviewPenugasanAuto() {
   const bilRotation =
     bilPetugas - bilKekal;
 
+  kemasKiniPenapisCetakJadualAuto();
+
   if (ringkasan) {
     ringkasan.innerHTML =
       `<strong>${bilPetugas}</strong> Petugas &nbsp;•&nbsp; ` +
@@ -4259,6 +4752,397 @@ function paparPreviewPenugasanAuto() {
 }
 
 
+/* ================================================================
+   CETAK JADUAL PENUGASAN AUTOMATIK
+   Penapis: Tarikh -> Jenis Tugas -> Tempat Tugas
+================================================================ */
+
+function pilihanUnikCetakAuto(senarai) {
+  return [...new Set(
+    (senarai || [])
+      .map(item => teks(item))
+      .filter(Boolean)
+  )].sort((a, b) => a.localeCompare(b, "ms"));
+}
+
+
+function isiSelectCetakAuto(id, labelSemua, senarai, nilaiSemasa = "") {
+  const select = el(id);
+  if (!select) return;
+
+  const unik = pilihanUnikCetakAuto(senarai);
+
+  select.innerHTML =
+    `<option value="">${escapeHtml(labelSemua)}</option>` +
+    unik.map(item =>
+      `<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`
+    ).join("");
+
+  if (unik.includes(nilaiSemasa)) {
+    select.value = nilaiSemasa;
+  }
+}
+
+
+function kemasKiniPenapisCetakJadualAuto() {
+  const selectTarikh = el("cetakTarikhAuto");
+  const selectJenis = el("cetakJenisTugasAuto");
+  const selectTempat = el("cetakTempatTugasAuto");
+  const btnCetak = el("btnCetakJadualAuto");
+
+  if (!selectTarikh || !selectJenis) return;
+
+  const adaJadual = previewPenugasanAuto.length > 0;
+
+  selectTarikh.disabled = !adaJadual;
+  selectJenis.disabled = !adaJadual;
+  if (selectTempat) selectTempat.disabled = !adaJadual;
+  if (btnCetak) btnCetak.disabled = !adaJadual;
+
+  const tarikhLama = selectTarikh.value;
+  const jenisLama = selectJenis.value;
+
+  const tarikh = pilihanUnikCetakAuto(
+    previewPenugasanAuto.map(item => item.tarikh)
+  );
+
+  selectTarikh.innerHTML =
+    '<option value="">PILIH TARIKH</option>' +
+    tarikh.map(item =>
+      `<option value="${escapeHtml(item)}">${escapeHtml(formatTarikhMalaysia(item))}</option>`
+    ).join("");
+
+  if (tarikh.includes(tarikhLama)) {
+    selectTarikh.value = tarikhLama;
+  } else if (tarikh.length === 1) {
+    selectTarikh.value = tarikh[0];
+  }
+
+  const dataTarikh = selectTarikh.value
+    ? previewPenugasanAuto.filter(item => item.tarikh === selectTarikh.value)
+    : previewPenugasanAuto;
+
+  isiSelectCetakAuto(
+    "cetakJenisTugasAuto",
+    "SEMUA JENIS TUGAS",
+    dataTarikh.map(item => item.jenis_tugas),
+    jenisLama
+  );
+
+  kemasKiniPilihanTempatCetakAuto();
+}
+
+
+function kemasKiniPilihanCetakAuto() {
+  const tarikh = el("cetakTarikhAuto")?.value || "";
+  const jenisLama = el("cetakJenisTugasAuto")?.value || "";
+
+  const dataTarikh = tarikh
+    ? previewPenugasanAuto.filter(item => item.tarikh === tarikh)
+    : previewPenugasanAuto;
+
+  isiSelectCetakAuto(
+    "cetakJenisTugasAuto",
+    "SEMUA JENIS TUGAS",
+    dataTarikh.map(item => item.jenis_tugas),
+    jenisLama
+  );
+
+  kemasKiniPilihanTempatCetakAuto();
+}
+
+
+function kemasKiniPilihanTempatCetakAuto() {
+  const tarikh = el("cetakTarikhAuto")?.value || "";
+  const jenis = atas(el("cetakJenisTugasAuto")?.value);
+  const tempatLama = el("cetakTempatTugasAuto")?.value || "";
+
+  const dataDitapis = previewPenugasanAuto.filter(item => {
+    if (tarikh && item.tarikh !== tarikh) return false;
+    if (jenis && atas(item.jenis_tugas) !== jenis) return false;
+    return true;
+  });
+
+  isiSelectCetakAuto(
+    "cetakTempatTugasAuto",
+    "SEMUA TEMPAT TUGAS",
+    dataDitapis.map(item => item.tempat_tugas),
+    tempatLama
+  );
+}
+
+
+function cetakJadualPenugasanAuto() {
+  if (!previewPenugasanAuto.length) {
+    alert("Jana pratonton jadual terlebih dahulu.");
+    return;
+  }
+
+  const tarikh = el("cetakTarikhAuto")?.value || "";
+  const jenis = atas(el("cetakJenisTugasAuto")?.value);
+  const tempat = atas(el("cetakTempatTugasAuto")?.value);
+
+  if (!tarikh) {
+    alert("Sila pilih tarikh untuk dicetak.");
+    el("cetakTarikhAuto")?.focus();
+    return;
+  }
+
+  const rekod = previewPenugasanAuto
+    .filter(item => {
+      if (item.tarikh !== tarikh) return false;
+      if (jenis && atas(item.jenis_tugas) !== jenis) return false;
+      if (tempat && atas(item.tempat_tugas) !== tempat) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      // No. Badan paling kecil di atas, paling besar di bawah.
+      const teksA = teks(a.no_badan);
+      const teksB = teks(b.no_badan);
+      const noA = Number(teksA);
+      const noB = Number(teksB);
+      const sahA = Number.isFinite(noA);
+      const sahB = Number.isFinite(noB);
+
+      if (sahA && sahB && noA !== noB) return noA - noB;
+      if (sahA && !sahB) return -1;
+      if (!sahA && sahB) return 1;
+
+      return teksA.localeCompare(teksB, "ms", {
+        numeric: true,
+        sensitivity: "base"
+      });
+    });
+
+  if (!rekod.length) {
+    alert("Tiada rekod dijumpai untuk pilihan cetakan tersebut.");
+    return;
+  }
+
+  const labelJenis =
+    teks(el("cetakJenisTugasAuto")?.value) || "SEMUA JENIS TUGAS";
+
+  const labelTempat =
+    teks(el("cetakTempatTugasAuto")?.value) || "SEMUA TEMPAT TUGAS";
+
+  const baris = rekod.map((item, index) => `
+    <tr>
+      <td class="center">${index + 1}</td>
+      <td class="center">${escapeHtml(item.no_badan || "-")}</td>
+      <td class="center">${escapeHtml(item.pangkat || "-")}</td>
+      <td class="nama">${escapeHtml(item.nama || "-")}</td>
+      <td class="center">${escapeHtml(item.telefon || "-")}</td>
+      <td class="center">${escapeHtml(item.daerah || "-")}</td>
+      <td class="center">${escapeHtml(item.call_sign || "-")}</td>
+      <td class="center">${item.penyelia ? "YA" : "TIDAK"}</td>
+      <td class="center">${item.pemegang_set ? "YA" : "TIDAK"}</td>
+    </tr>
+  `).join("");
+
+  const tetingkap = window.open(
+    "",
+    "_blank",
+    "width=1400,height=900"
+  );
+
+  if (!tetingkap) {
+    alert(
+      "Pelayar menghalang tetingkap cetak. " +
+      "Benarkan pop-up untuk laman ini dan cuba semula."
+    );
+    return;
+  }
+
+  tetingkap.document.open();
+  tetingkap.document.write(`
+    <!DOCTYPE html>
+    <html lang="ms">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Jadual Penugasan - ${escapeHtml(formatTarikhMalaysia(tarikh))}</title>
+
+      <style>
+        @page {
+          size: A4 landscape;
+          margin: 9mm;
+        }
+
+        * {
+          box-sizing: border-box;
+        }
+
+        html,
+        body {
+          margin: 0;
+          padding: 0;
+          background: #fff;
+          color: #111;
+          font-family: Arial, Helvetica, sans-serif;
+        }
+
+        body {
+          padding: 5mm;
+        }
+
+        .header {
+          text-align: center;
+          margin-bottom: 12px;
+        }
+
+        .header h1 {
+          margin: 0;
+          font-size: 19px;
+          font-weight: 800;
+        }
+
+        .header h2 {
+          margin: 4px 0 0;
+          font-size: 15px;
+          font-weight: 700;
+        }
+
+        .maklumat {
+          width: 100%;
+          margin: 12px 0 10px;
+          border-collapse: collapse;
+          font-size: 11px;
+        }
+
+        .maklumat td {
+          border: 0;
+          padding: 2px 4px;
+          vertical-align: top;
+        }
+
+        .maklumat .label {
+          width: 105px;
+          font-weight: 700;
+        }
+
+        .jadual {
+          width: 100%;
+          border-collapse: collapse;
+          table-layout: fixed;
+          font-size: 9px;
+        }
+
+        .jadual th,
+        .jadual td {
+          border: 1px solid #333;
+          padding: 5px 4px;
+          vertical-align: middle;
+          overflow-wrap: anywhere;
+        }
+
+        .jadual th {
+          background: #ececec;
+          text-align: center;
+          font-weight: 800;
+        }
+
+        .jadual .center {
+          text-align: center;
+        }
+
+        .jadual .nama {
+          text-align: left;
+          font-weight: 600;
+        }
+
+        .jadual th:nth-child(1) { width: 4%; }
+        .jadual th:nth-child(2) { width: 9%; }
+        .jadual th:nth-child(3) { width: 7%; }
+        .jadual th:nth-child(4) { width: 25%; }
+        .jadual th:nth-child(5) { width: 12%; }
+        .jadual th:nth-child(6) { width: 10%; }
+        .jadual th:nth-child(7) { width: 11%; }
+        .jadual th:nth-child(8) { width: 10%; }
+        .jadual th:nth-child(9) { width: 12%; }
+
+        .jumlah {
+          margin-top: 10px;
+          font-size: 11px;
+          font-weight: 700;
+        }
+
+        thead {
+          display: table-header-group;
+        }
+
+        tr {
+          break-inside: avoid;
+        }
+
+        @media print {
+          body {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+        }
+      </style>
+    </head>
+
+    <body>
+      <header class="header">
+        <h1>OP LITAR MOTOGP 2026</h1>
+        <h2>JADUAL PENUGASAN PETUGAS</h2>
+      </header>
+
+      <table class="maklumat">
+        <tr>
+          <td class="label">TARIKH</td>
+          <td>: ${escapeHtml(formatTarikhMalaysia(tarikh))}</td>
+        </tr>
+        <tr>
+          <td class="label">JENIS TUGAS</td>
+          <td>: ${escapeHtml(labelJenis)}</td>
+        </tr>
+        <tr>
+          <td class="label">TEMPAT TUGAS</td>
+          <td>: ${escapeHtml(labelTempat)}</td>
+        </tr>
+      </table>
+
+      <table class="jadual">
+        <thead>
+          <tr>
+            <th>BIL</th>
+            <th>NO BADAN</th>
+            <th>PANGKAT</th>
+            <th>NAMA</th>
+            <th>NO TELEFON</th>
+            <th>DAERAH</th>
+            <th>CALL SIGN</th>
+            <th>PENYELIA</th>
+            <th>PEMEGANG SET</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${baris}
+        </tbody>
+      </table>
+
+      <div class="jumlah">
+        JUMLAH PETUGAS: ${rekod.length}
+      </div>
+
+      <script>
+        window.addEventListener("load", function () {
+          setTimeout(function () {
+            window.focus();
+            window.print();
+          }, 300);
+        });
+      <\/script>
+    </body>
+    </html>
+  `);
+
+  tetingkap.document.close();
+}
+
+
 async function simpanPenugasanAuto() {
   if (
     autoSedangSimpan ||
@@ -4271,7 +5155,7 @@ async function simpanPenugasanAuto() {
     previewPenugasanAuto.length;
 
   if (!confirm(
-    `Simpan ${jumlah} rekod penugasan MOTOGP ke Supabase?\n\n` +
+    `Simpan ${jumlah} rekod penugasan FORMULA 1 ke Supabase?\n\n` +
     `Jika No Badan dan tarikh yang sama sudah wujud, ` +
     `rekod tersebut akan dikemas kini oleh sistem import sedia ada.`
   )) {
@@ -4458,18 +5342,25 @@ async function simpanPenugasanAuto() {
 }
 
 
-function resetJanaPenugasanAuto() {
+async function resetJanaPenugasanAuto() {
   if (
-    previewPenugasanAuto.length &&
     !confirm(
-      "Kosongkan pratonton dan tetapan lokasi penugasan?"
+      "Reset borang Jana Penugasan? Jadual yang telah disimpan di Supabase akan dikekalkan dan dimuatkan semula ke Pratonton Jadual."
     )
   ) {
     return;
   }
 
-  previewPenugasanAuto = [];
-  paparPreviewPenugasanAuto();
+  // Kekalkan julat tarikh operasi supaya RESET tidak mengecilkan
+  // pratonton tersimpan kepada satu hari sahaja.
+  const tarikhMulaSebelumReset =
+    teks(el("autoTarikhMula")?.value) ||
+    teks(el("tarikh")?.value) ||
+    hariIniMalaysia();
+
+  const tarikhTamatSebelumReset =
+    teks(el("autoTarikhTamat")?.value) ||
+    tarikhMulaSebelumReset;
 
   const tbodyLokasi =
     el("tbodyLokasiAuto");
@@ -4508,18 +5399,12 @@ function resetJanaPenugasanAuto() {
       }
     });
 
-  const tarikhAsas =
-    el("tarikh")?.value ||
-    hariIniMalaysia();
-
   if (el("autoTarikhMula")) {
-    el("autoTarikhMula").value =
-      tarikhAsas;
+    el("autoTarikhMula").value = tarikhMulaSebelumReset;
   }
 
   if (el("autoTarikhTamat")) {
-    el("autoTarikhTamat").value =
-      tarikhAsas;
+    el("autoTarikhTamat").value = tarikhTamatSebelumReset;
   }
 
   selaraskanKolumHariAuto();
@@ -4535,15 +5420,25 @@ function resetJanaPenugasanAuto() {
     status.className = "status-box";
     status.innerHTML = "";
   }
+
+  // RESET hanya mengosongkan borang penjanaan.
+  // Jadual yang sudah disimpan tidak dipadam; muat semula dari Supabase.
+  try {
+    await muatJadualTersimpanKePratontonAuto();
+  } catch (error) {
+    console.error("Gagal memuat semula pratonton selepas RESET:", error);
+    paparMesej(
+      "statusJanaAuto",
+      `Borang telah direset tetapi jadual tersimpan gagal dimuatkan semula: ${escapeHtml(error.message)}`,
+      "error"
+    );
+  }
 }
 
 
 function sediakanJanaPenugasanAuto() {
-  const inputMula =
-    el("autoTarikhMula");
-
-  const inputTamat =
-    el("autoTarikhTamat");
+  const inputMula = el("autoTarikhMula");
+  const inputTamat = el("autoTarikhTamat");
 
   const tarikhAsas =
     el("tarikh")?.value ||
@@ -4602,8 +5497,6 @@ function sediakanJanaPenugasanAuto() {
 
   selaraskanKolumHariAuto();
 }
-
-
 
 
 /* ================================================================
@@ -5364,7 +6257,7 @@ function bukaCetakanAdmin(tajuk, kandungan) {
       @media print{button{display:none}}
     </style></head><body>
     <h1>${escapeHtml(tajuk)}</h1>
-    <p class="subtitle">SKPO MOTOGP</p>
+    <p class="subtitle">SKPO FORMULA 1</p>
     ${kandungan}
     <script>window.onload=()=>setTimeout(()=>window.print(),250);<\/script>
     </body></html>`);
@@ -5928,6 +6821,11 @@ async function muatDataCartaPentadbir() {
           tarikhMalaysiaDaripadaMasa(item.tarikh_masa) === tarikh
         );
 
+    /*
+      Rekod tambahan manual Pengunjung dan Kenderaan
+      dimuat terus daripada Supabase supaya data sama
+      pada semua peranti Pentadbir.
+    */
     await muatDataManualCartaPentadbir(tarikh);
 
     await Promise.all([
@@ -6053,9 +6951,22 @@ function masaDaripadaSupabasePentadbir(nilai) {
 
   if (!masa) return "00:00";
 
-  return masa.slice(0, 5);
+  return masa
+    .slice(
+      0,
+      5
+    );
 }
 
+
+function masaSekarangInputPentadbir() {
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: ZON_MASA,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  }).format(new Date()).replace('.', ':');
+}
 
 function masaManualCartaPentadbir(item) {
   const tarikh =
@@ -6072,7 +6983,6 @@ function masaManualCartaPentadbir(item) {
 
   return `${tarikh}T${masa}:00+08:00`;
 }
-
 
 function rekodPengunjungManualSintetikPentadbir(item) {
   return {
@@ -6136,7 +7046,6 @@ function rekodPengunjungManualSintetikPentadbir(item) {
       item.id
   };
 }
-
 
 function rekodKenderaanManualSintetikPentadbir(item) {
   const bas =
@@ -6222,148 +7131,36 @@ function rekodKenderaanManualSintetikPentadbir(item) {
   };
 }
 
-
 function senaraiPengunjungCartaPentadbir() {
-  const laporan =
-    laporanKeselamatanCarta();
-
-  const manual =
-    dataPengunjungManualPentadbir
-      .map(
-        rekodPengunjungManualSintetikPentadbir
-      );
-
-  return [
-    ...laporan,
-    ...manual
-  ].sort(
-    (a, b) =>
-      new Date(
-        a.tarikh_masa
-      ) -
-      new Date(
-        b.tarikh_masa
-      )
-  );
+  const tarikh = el("tarikhCartaPentadbir")?.value || el("tarikh")?.value || hariIniMalaysia();
+  const manual = dataPengunjungManualPentadbir
+    .filter(item => teks(item.tarikh) === tarikh)
+    .map(rekodPengunjungManualSintetikPentadbir);
+  return [...laporanKeselamatanCarta(), ...manual].sort((a,b) => new Date(a.tarikh_masa || 0) - new Date(b.tarikh_masa || 0));
 }
-
 
 function senaraiKenderaanCartaPentadbir() {
-  const laporan =
-    laporanKeselamatanCarta();
-
-  const manual =
-    dataKenderaanManualPentadbir
-      .map(
-        rekodKenderaanManualSintetikPentadbir
-      );
-
-  return [
-    ...laporan,
-    ...manual
-  ].sort(
-    (a, b) =>
-      new Date(
-        a.tarikh_masa
-      ) -
-      new Date(
-        b.tarikh_masa
-      )
-  );
+  const tarikh = el("tarikhCartaPentadbir")?.value || el("tarikh")?.value || hariIniMalaysia();
+  const manual = dataKenderaanManualPentadbir
+    .filter(item => teks(item.tarikh) === tarikh)
+    .map(rekodKenderaanManualSintetikPentadbir);
+  return [...laporanKeselamatanCarta(), ...manual].sort((a,b) => new Date(a.tarikh_masa || 0) - new Date(b.tarikh_masa || 0));
 }
-
-
-function masaSekarangInputPentadbir() {
-  return new Intl.DateTimeFormat(
-    "en-GB",
-    {
-      timeZone:
-        ZON_MASA,
-      hour:
-        "2-digit",
-      minute:
-        "2-digit",
-      hour12:
-        false
-    }
-  ).format(
-    new Date()
-  );
-}
-
 
 function bukaTambahPengunjungManualPentadbir() {
-  const modal =
-    el(
-      "modalPengunjungManualPentadbir"
-    );
-
-  if (!modal) return;
-
-  el(
-    "tarikhPengunjungManualPentadbir"
-  ).value =
-    el(
-      "tarikhCartaPentadbir"
-    )?.value ||
-    el("tarikh")?.value ||
-    hariIniMalaysia();
-
-  el(
-    "masaPengunjungManualPentadbir"
-  ).value =
-    masaSekarangInputPentadbir();
-
-  el(
-    "lokasiPengunjungManualPentadbir"
-  ).value =
-    "";
-
-  el(
-    "jumlahPengunjungManualPentadbir"
-  ).value =
-    "0";
-
-  el(
-    "catatanPengunjungManualPentadbir"
-  ).value =
-    "";
-
-  paparMesej(
-    "statusPengunjungManualPentadbir",
-    "",
-    "warning"
-  );
-
-  modal.classList.add(
-    "open"
-  );
-
-  modal.setAttribute(
-    "aria-hidden",
-    "false"
-  );
+  const tarikh = el("tarikhCartaPentadbir")?.value || el("tarikh")?.value || hariIniMalaysia();
+  if (el("tarikhPengunjungManualPentadbir")) el("tarikhPengunjungManualPentadbir").value = tarikh;
+  if (el("masaPengunjungManualPentadbir")) el("masaPengunjungManualPentadbir").value = masaSekarangInputPentadbir();
+  if (el("lokasiPengunjungManualPentadbir")) el("lokasiPengunjungManualPentadbir").value = "";
+  if (el("jumlahPengunjungManualPentadbir")) el("jumlahPengunjungManualPentadbir").value = "0";
+  if (el("catatanPengunjungManualPentadbir")) el("catatanPengunjungManualPentadbir").value = "";
+  const status = el("statusPengunjungManualPentadbir"); if (status) { status.className="status-box"; status.innerHTML=""; }
+  const modal = el("modalPengunjungManualPentadbir"); if (modal) { modal.hidden=false; modal.classList.add("open"); }
 }
-
 
 function tutupModalPengunjungManualPentadbir() {
-  const modal =
-    el(
-      "modalPengunjungManualPentadbir"
-    );
-
-  if (!modal) return;
-
-  modal.classList.remove(
-    "open"
-  );
-
-  modal.setAttribute(
-    "aria-hidden",
-    "true"
-  );
+  const modal = el("modalPengunjungManualPentadbir"); if (modal) { modal.classList.remove("open"); modal.hidden=true; }
 }
-
 
 async function simpanPengunjungManualPentadbir() {
   const tarikh =
@@ -6421,6 +7218,7 @@ async function simpanPengunjungManualPentadbir() {
         "PENGUNJUNG",
 
       tarikh,
+
       masa,
 
       lokasi:
@@ -6434,9 +7232,14 @@ async function simpanPengunjungManualPentadbir() {
       jumlah_pengunjung:
         jumlah,
 
-      bas: 0,
-      motosikal: 0,
-      motokar: 0,
+      bas:
+        0,
+
+      motosikal:
+        0,
+
+      motokar:
+        0,
 
       catatan:
         atas(
@@ -6588,87 +7391,20 @@ async function padamPengunjungManualPentadbir(id) {
   }
 }
 
-
 function bukaTambahKenderaanManualPentadbir() {
-  const modal =
-    el(
-      "modalKenderaanManualPentadbir"
-    );
-
-  if (!modal) return;
-
-  el(
-    "tarikhKenderaanManualPentadbir"
-  ).value =
-    el(
-      "tarikhCartaPentadbir"
-    )?.value ||
-    el("tarikh")?.value ||
-    hariIniMalaysia();
-
-  el(
-    "masaKenderaanManualPentadbir"
-  ).value =
-    masaSekarangInputPentadbir();
-
-  el(
-    "lokasiKenderaanManualPentadbir"
-  ).value =
-    "";
-
-  [
-    "basKenderaanManualPentadbir",
-    "motosikalKenderaanManualPentadbir",
-    "motokarKenderaanManualPentadbir"
-  ].forEach(
-    id => {
-      if (el(id)) {
-        el(id).value =
-          "0";
-      }
-    }
-  );
-
-  el(
-    "catatanKenderaanManualPentadbir"
-  ).value =
-    "";
-
-  paparMesej(
-    "statusKenderaanManualPentadbir",
-    "",
-    "warning"
-  );
-
-  modal.classList.add(
-    "open"
-  );
-
-  modal.setAttribute(
-    "aria-hidden",
-    "false"
-  );
+  const tarikh = el("tarikhCartaPentadbir")?.value || el("tarikh")?.value || hariIniMalaysia();
+  if (el("tarikhKenderaanManualPentadbir")) el("tarikhKenderaanManualPentadbir").value = tarikh;
+  if (el("masaKenderaanManualPentadbir")) el("masaKenderaanManualPentadbir").value = masaSekarangInputPentadbir();
+  ["basKenderaanManualPentadbir","motosikalKenderaanManualPentadbir","motokarKenderaanManualPentadbir"].forEach(id => { if(el(id)) el(id).value="0"; });
+  if (el("lokasiKenderaanManualPentadbir")) el("lokasiKenderaanManualPentadbir").value = "";
+  if (el("catatanKenderaanManualPentadbir")) el("catatanKenderaanManualPentadbir").value = "";
+  const status=el("statusKenderaanManualPentadbir"); if(status){status.className="status-box";status.innerHTML="";}
+  const modal=el("modalKenderaanManualPentadbir"); if(modal){modal.hidden=false;modal.classList.add("open");}
 }
-
 
 function tutupModalKenderaanManualPentadbir() {
-  const modal =
-    el(
-      "modalKenderaanManualPentadbir"
-    );
-
-  if (!modal) return;
-
-  modal.classList.remove(
-    "open"
-  );
-
-  modal.setAttribute(
-    "aria-hidden",
-    "true"
-  );
+  const modal=el("modalKenderaanManualPentadbir"); if(modal){modal.classList.remove("open");modal.hidden=true;}
 }
-
 
 async function simpanKenderaanManualPentadbir() {
   const tarikh =
@@ -6752,6 +7488,7 @@ async function simpanKenderaanManualPentadbir() {
         "KENDERAAN",
 
       tarikh,
+
       masa,
 
       lokasi:
@@ -6766,7 +7503,9 @@ async function simpanKenderaanManualPentadbir() {
         0,
 
       bas,
+
       motosikal,
+
       motokar,
 
       catatan:
@@ -6919,7 +7658,6 @@ async function padamKenderaanManualPentadbir(id) {
   }
 }
 
-
 function laporanKeselamatanCarta() {
   return dataCartaLaporanPentadbir.filter(
     item => jenisTugasCarta(item) === "KAWALAN KESELAMATAN"
@@ -6928,7 +7666,7 @@ function laporanKeselamatanCarta() {
 
 
 function laporanTerkiniKeselamatanCarta() {
-  const senarai = laporanKeselamatanCarta();
+  const senarai = senaraiPengunjungCartaPentadbir();
 
   return senarai.length
     ? senarai[senarai.length - 1]
@@ -7227,8 +7965,13 @@ function paparRingkasanCartaPentadbir() {
   }
 
   /*
-    Ringkasan Insiden Operasi MotoGP:
-    TANGKAPAN, RAMPASAN dan KEMALANGAN.
+    Ringkasan insiden operasi:
+    - TANGKAPAN
+    - RAMPASAN
+    - KEMALANGAN
+
+    Nilai diambil terus daripada laporan petugas
+    bagi tarikh carta yang dipilih.
   */
   if (el("cartaJumlahTangkapan")) {
     el("cartaJumlahTangkapan").textContent =
@@ -7247,6 +7990,7 @@ function paparRingkasanCartaPentadbir() {
 }
 
 
+
 function binaPanelPengunjungPentadbir() {
   const kanvas =
     el("canvasCartaPengunjung");
@@ -7257,6 +8001,301 @@ function binaPanelPengunjungPentadbir() {
     '[data-chart-section="PENGUNJUNG"]'
   );
 }
+
+
+function lokasiLaporanPengunjungPentadbir(item) {
+  const data =
+    dataLaporanCarta(item);
+
+  const petugas =
+    rekodPetugasUntukLaporanPengunjungPentadbir(
+      item
+    );
+
+  return (
+    atas(
+      data.lokasi ??
+      data.tempat_tugas ??
+      item.lokasi ??
+      item.tempat_tugas ??
+      petugas?.tempatTugas
+    ) ||
+    "TIDAK DINYATAKAN"
+  );
+}
+
+
+function ringkasanPengunjungMengikutLokasiPentadbir() {
+  const kumpulan =
+    new Map();
+
+  senaraiPengunjungCartaPentadbir()
+    .forEach(item => {
+      const lokasi =
+        lokasiLaporanPengunjungPentadbir(
+          item
+        );
+
+      const jumlah =
+        nilaiJumlahPengunjungPentadbir(
+          item
+        );
+
+      const sediaAda =
+        kumpulan.get(lokasi) || {
+          lokasi,
+          jumlah: 0,
+          bilLaporan: 0
+        };
+
+      sediaAda.jumlah += jumlah;
+      sediaAda.bilLaporan += 1;
+
+      kumpulan.set(
+        lokasi,
+        sediaAda
+      );
+    });
+
+  return Array
+    .from(
+      kumpulan.values()
+    )
+    .sort(
+      (a, b) =>
+        b.jumlah - a.jumlah ||
+        a.lokasi.localeCompare(
+          b.lokasi,
+          "ms"
+        )
+    );
+}
+
+
+function paparSemuaLokasiPengunjungPentadbir() {
+  lokasiPengunjungDipilihPentadbir =
+    "SEMUA";
+
+  paparButiranPengunjungPentadbir();
+
+  paparCartaPengunjungLokasiPentadbir();
+}
+
+
+function pilihLokasiPengunjungPentadbir(lokasi) {
+  lokasiPengunjungDipilihPentadbir =
+    atas(lokasi) ||
+    "SEMUA";
+
+  paparButiranPengunjungPentadbir();
+
+  paparCartaPengunjungLokasiPentadbir();
+}
+
+
+function paparCartaPengunjungLokasiPentadbir() {
+  const kanvas =
+    el("canvasCartaPengunjungLokasi");
+
+  if (!kanvas) return;
+
+  try {
+    pastikanChartJsPentadbir();
+  } catch (error) {
+    return;
+  }
+
+  const ringkasan =
+    ringkasanPengunjungMengikutLokasiPentadbir();
+
+  const labels =
+    ringkasan.map(
+      item => item.lokasi
+    );
+
+  const nilai =
+    ringkasan.map(
+      item => item.jumlah
+    );
+
+  const jumlahKeseluruhan =
+    ringkasan.reduce(
+      (jumlah, item) =>
+        jumlah + item.jumlah,
+      0
+    );
+
+  if (
+    el(
+      "jumlahKeseluruhanPengunjungLokasiPentadbir"
+    )
+  ) {
+    el(
+      "jumlahKeseluruhanPengunjungLokasiPentadbir"
+    ).textContent =
+      jumlahKeseluruhan.toLocaleString(
+        "ms-MY"
+      );
+  }
+
+  kemusnahkanCartaPentadbir(
+    cartaPengunjungLokasiPentadbir
+  );
+
+  cartaPengunjungLokasiPentadbir =
+    new Chart(
+      kanvas,
+      {
+        type: "bar",
+
+        data: {
+          labels,
+
+          datasets: [
+            {
+              label:
+                "Jumlah Pengunjung Mengikut Lokasi",
+
+              data: nilai,
+
+              borderWidth: 2,
+
+              borderRadius: 6,
+
+              borderSkipped: false
+            }
+          ]
+        },
+
+        options: {
+          ...pilihanCartaPentadbir(
+            "Jumlah Pengunjung"
+          ),
+
+          indexAxis: "y",
+
+          maintainAspectRatio: false,
+
+          scales: {
+            x: {
+              beginAtZero: true,
+              ticks: {
+                color: "#d8d8d8",
+                precision: 0
+              },
+              grid: {
+                color:
+                  "rgba(255,255,255,.08)"
+              },
+              title: {
+                display: true,
+                text:
+                  "Jumlah Pengunjung",
+                color: "#d8d8d8"
+              }
+            },
+
+            y: {
+              ticks: {
+                color: "#ffffff",
+                font: {
+                  weight: "700"
+                }
+              },
+              grid: {
+                color:
+                  "rgba(255,255,255,.05)"
+              }
+            }
+          },
+
+          onClick(event) {
+            const elemen =
+              cartaPengunjungLokasiPentadbir
+                ?.getElementsAtEventForMode(
+                  event,
+                  "nearest",
+                  {
+                    intersect: true
+                  },
+                  true
+                ) || [];
+
+            if (!elemen.length) return;
+
+            const rekod =
+              ringkasan[
+                elemen[0].index
+              ];
+
+            if (!rekod) return;
+
+            pilihLokasiPengunjungPentadbir(
+              rekod.lokasi
+            );
+          },
+
+          onHover(event, elements) {
+            const sasaran =
+              event?.native?.target;
+
+            if (sasaran) {
+              sasaran.style.cursor =
+                elements?.length
+                  ? "pointer"
+                  : "default";
+            }
+          },
+
+          plugins: {
+            ...pilihanCartaPentadbir(
+              "Jumlah Pengunjung"
+            ).plugins,
+
+            legend: {
+              labels: {
+                color: "#ffffff",
+                font: {
+                  weight: "700"
+                }
+              }
+            },
+
+            tooltip: {
+              enabled: true,
+
+              callbacks: {
+                label(context) {
+                  const rekod =
+                    ringkasan[
+                      context.dataIndex
+                    ];
+
+                  return [
+                    `${Number(context.raw || 0).toLocaleString("ms-MY")} pengunjung`,
+                    `${rekod?.bilLaporan || 0} laporan`
+                  ];
+                },
+
+                afterLabel() {
+                  return (
+                    "Klik untuk papar butiran lokasi ini"
+                  );
+                }
+              }
+            }
+          }
+        }
+      }
+    );
+
+  /*
+    Highlight lokasi dipilih pada senarai label
+    melalui tajuk/panel butiran. Chart.js tidak
+    memerlukan perubahan data asal.
+  */
+}
+
 
 
 function rekodPetugasUntukLaporanPengunjungPentadbir(item) {
@@ -7664,6 +8703,7 @@ function paparButiranPengunjungPentadbir(indexDipilih = -1) {
 }
 
 
+
 function pilihRekodPengunjungPentadbir(index) {
   const senarai =
     senaraiPengunjungCartaPentadbir();
@@ -7919,27 +8959,117 @@ function jumlahKeseluruhanKenderaanLaporanPentadbir(item) {
 }
 
 
-function senaraiKenderaanMengikutKategoriPentadbir(kategori) {
-  return laporanKeselamatanCarta()
-    .filter(item =>
-      nilaiKenderaanDaripadaLaporanPentadbir(
-        item,
-        kategori
-      ) > 0
-    )
-    .sort((a, b) => {
-      const masaA =
-        new Date(
-          a.tarikh_masa || 0
-        ).getTime();
+function lokasiLaporanKenderaanPentadbir(item) {
+  const data =
+    dataLaporanCarta(item);
 
-      const masaB =
-        new Date(
-          b.tarikh_masa || 0
-        ).getTime();
+  const petugas =
+    rekodPetugasUntukLaporanKenderaanPentadbir(
+      item
+    );
 
-      return masaB - masaA;
+  return (
+    atas(
+      data.lokasi ??
+      data.tempat_tugas ??
+      item.lokasi ??
+      item.tempat_tugas ??
+      petugas?.tempatTugas
+    ) ||
+    "TIDAK DINYATAKAN"
+  );
+}
+
+
+function ringkasanKenderaanMengikutLokasiPentadbir() {
+  const kumpulan =
+    new Map();
+
+  senaraiKenderaanCartaPentadbir()
+    .forEach(item => {
+      const lokasi =
+        lokasiLaporanKenderaanPentadbir(
+          item
+        );
+
+      const jumlah =
+        jumlahKeseluruhanKenderaanLaporanPentadbir(
+          item
+        );
+
+      const bas =
+        nilaiKenderaanDaripadaLaporanPentadbir(
+          item,
+          "BAS"
+        );
+
+      const motosikal =
+        nilaiKenderaanDaripadaLaporanPentadbir(
+          item,
+          "MOTOSIKAL"
+        );
+
+      const motokar =
+        nilaiKenderaanDaripadaLaporanPentadbir(
+          item,
+          "MOTOKAR"
+        );
+
+      const sediaAda =
+        kumpulan.get(lokasi) || {
+          lokasi,
+          jumlah: 0,
+          bas: 0,
+          motosikal: 0,
+          motokar: 0,
+          bilLaporan: 0
+        };
+
+      sediaAda.jumlah += jumlah;
+      sediaAda.bas += bas;
+      sediaAda.motosikal += motosikal;
+      sediaAda.motokar += motokar;
+      sediaAda.bilLaporan += 1;
+
+      kumpulan.set(
+        lokasi,
+        sediaAda
+      );
     });
+
+  return Array
+    .from(
+      kumpulan.values()
+    )
+    .sort(
+      (a, b) =>
+        b.jumlah - a.jumlah ||
+        a.lokasi.localeCompare(
+          b.lokasi,
+          "ms"
+        )
+    );
+}
+
+
+function paparSemuaLokasiKenderaanPentadbir() {
+  lokasiKenderaanDipilihPentadbir =
+    "SEMUA";
+
+  paparButiranKenderaanPentadbir();
+
+  paparCartaKenderaanLokasiPentadbir();
+}
+
+
+function pilihLokasiKenderaanPentadbir(lokasi) {
+  lokasiKenderaanDipilihPentadbir =
+    atas(lokasi) ||
+    "SEMUA";
+
+  paparButiranKenderaanPentadbir();
+
+  paparCartaKenderaanLokasiPentadbir();
 }
 
 
@@ -8249,628 +9379,6 @@ function paparButiranKenderaanPentadbir() {
 }
 
 
-function pilihKategoriCartaKenderaanPentadbir(index) {
-  const kategori = [
-    "BAS",
-    "MOTOSIKAL",
-    "MOTOKAR"
-  ][index];
-
-  if (!kategori) return;
-
-  paparButiranKenderaanPentadbir(
-    kategori
-  );
-
-  sorotBarKenderaanPentadbir(
-    index
-  );
-}
-
-
-function sorotBarKenderaanPentadbir(indexDipilih) {
-  const carta =
-    cartaKenderaanPentadbir;
-
-  if (!carta) return;
-
-  const dataset =
-    carta.data.datasets?.[0];
-
-  if (!dataset) return;
-
-  dataset.backgroundColor =
-    carta.data.labels.map(
-      (_, index) =>
-        index === indexDipilih
-          ? "rgba(212,175,55,.95)"
-          : "rgba(54,162,235,.48)"
-    );
-
-  dataset.borderColor =
-    carta.data.labels.map(
-      (_, index) =>
-        index === indexDipilih
-          ? "#ffffff"
-          : "rgba(255,255,255,.25)"
-    );
-
-  dataset.borderWidth =
-    carta.data.labels.map(
-      (_, index) =>
-        index === indexDipilih
-          ? 2
-          : 1
-    );
-
-  carta.update();
-}
-
-
-function paparCartaKenderaanPentadbir() {
-  const kanvas =
-    el("canvasCartaKenderaan");
-
-  if (!kanvas) return;
-
-  try {
-    pastikanChartJsPentadbir();
-  } catch (_) {
-    return;
-  }
-
-  const senarai =
-    senaraiKenderaanCartaPentadbir();
-
-  const labels =
-    senarai.map(item =>
-      formatMasaPendekCartaPentadbir(
-        item.tarikh_masa
-      )
-    );
-
-  let jumlahBas = 0;
-  let jumlahMotokar = 0;
-  let jumlahMotosikal = 0;
-
-  const dataBas = [];
-  const dataMotokar = [];
-  const dataMotosikal = [];
-
-  senarai.forEach(item => {
-    jumlahBas +=
-      nilaiKenderaanDaripadaLaporanPentadbir(
-        item,
-        "BAS"
-      );
-
-    jumlahMotokar +=
-      nilaiKenderaanDaripadaLaporanPentadbir(
-        item,
-        "MOTOKAR"
-      );
-
-    jumlahMotosikal +=
-      nilaiKenderaanDaripadaLaporanPentadbir(
-        item,
-        "MOTOSIKAL"
-      );
-
-    dataBas.push(jumlahBas);
-    dataMotokar.push(jumlahMotokar);
-    dataMotosikal.push(jumlahMotosikal);
-  });
-
-  kemusnahkanCartaPentadbir(
-    cartaKenderaanPentadbir
-  );
-
-  cartaKenderaanPentadbir =
-    new Chart(
-      kanvas,
-      {
-        type: "line",
-
-        data: {
-          labels,
-
-          datasets: [
-            {
-              label: "Bas",
-              data: dataBas,
-              tension: .28,
-              pointRadius: 4,
-              pointHoverRadius: 6,
-              borderWidth: 3,
-              fill: false
-            },
-            {
-              label: "Motokar",
-              data: dataMotokar,
-              tension: .28,
-              pointRadius: 4,
-              pointHoverRadius: 6,
-              borderWidth: 3,
-              fill: false
-            },
-            {
-              label: "Motosikal",
-              data: dataMotosikal,
-              tension: .28,
-              pointRadius: 4,
-              pointHoverRadius: 6,
-              borderWidth: 3,
-              fill: false
-            }
-          ]
-        },
-
-        options: {
-          ...pilihanCartaPentadbir(
-            "Jumlah Kenderaan"
-          ),
-
-          interaction: {
-            mode: "index",
-            intersect: false
-          },
-
-          plugins: {
-            ...pilihanCartaPentadbir(
-              "Jumlah Kenderaan"
-            ).plugins,
-
-            legend: {
-              display: true,
-              labels: {
-                color: "#ffffff",
-                font: {
-                  weight: "700"
-                }
-              }
-            },
-
-            tooltip: {
-              callbacks: {
-                footer(context) {
-                  if (!context?.length) return "";
-
-                  const indeks =
-                    context[0].dataIndex;
-
-                  const bas =
-                    Number(
-                      dataBas[indeks] || 0
-                    );
-
-                  const motokar =
-                    Number(
-                      dataMotokar[indeks] || 0
-                    );
-
-                  const motosikal =
-                    Number(
-                      dataMotosikal[indeks] || 0
-                    );
-
-                  return (
-                    `JUMLAH TERKUMPUL: ` +
-                    `${(bas + motokar + motosikal).toLocaleString("ms-MY")} KENDERAAN`
-                  );
-                }
-              }
-            }
-          }
-        }
-      }
-    );
-
-  paparCartaKenderaanLokasiPentadbir();
-
-  paparButiranKenderaanPentadbir();
-}
-
-
-
-function lokasiLaporanPengunjungPentadbir(item) {
-  const data =
-    dataLaporanCarta(item);
-
-  const petugas =
-    rekodPetugasUntukLaporanPengunjungPentadbir(
-      item
-    );
-
-  return (
-    atas(
-      data.lokasi ??
-      data.tempat_tugas ??
-      item.lokasi ??
-      item.tempat_tugas ??
-      petugas?.tempatTugas
-    ) ||
-    "TIDAK DINYATAKAN"
-  );
-}
-
-function ringkasanPengunjungMengikutLokasiPentadbir() {
-  const kumpulan =
-    new Map();
-
-  senaraiPengunjungCartaPentadbir()
-    .forEach(item => {
-      const lokasi =
-        lokasiLaporanPengunjungPentadbir(
-          item
-        );
-
-      const jumlah =
-        nilaiJumlahPengunjungPentadbir(
-          item
-        );
-
-      const sediaAda =
-        kumpulan.get(lokasi) || {
-          lokasi,
-          jumlah: 0,
-          bilLaporan: 0
-        };
-
-      sediaAda.jumlah += jumlah;
-      sediaAda.bilLaporan += 1;
-
-      kumpulan.set(
-        lokasi,
-        sediaAda
-      );
-    });
-
-  return Array
-    .from(
-      kumpulan.values()
-    )
-    .sort(
-      (a, b) =>
-        b.jumlah - a.jumlah ||
-        a.lokasi.localeCompare(
-          b.lokasi,
-          "ms"
-        )
-    );
-}
-
-function paparSemuaLokasiPengunjungPentadbir() {
-  lokasiPengunjungDipilihPentadbir =
-    "SEMUA";
-
-  paparButiranPengunjungPentadbir();
-
-  paparCartaPengunjungLokasiPentadbir();
-}
-
-function pilihLokasiPengunjungPentadbir(lokasi) {
-  lokasiPengunjungDipilihPentadbir =
-    atas(lokasi) ||
-    "SEMUA";
-
-  paparButiranPengunjungPentadbir();
-
-  paparCartaPengunjungLokasiPentadbir();
-}
-
-function paparCartaPengunjungLokasiPentadbir() {
-  const kanvas =
-    el("canvasCartaPengunjungLokasi");
-
-  if (!kanvas) return;
-
-  try {
-    pastikanChartJsPentadbir();
-  } catch (error) {
-    return;
-  }
-
-  const ringkasan =
-    ringkasanPengunjungMengikutLokasiPentadbir();
-
-  const labels =
-    ringkasan.map(
-      item => item.lokasi
-    );
-
-  const nilai =
-    ringkasan.map(
-      item => item.jumlah
-    );
-
-  const jumlahKeseluruhan =
-    ringkasan.reduce(
-      (jumlah, item) =>
-        jumlah + item.jumlah,
-      0
-    );
-
-  if (
-    el(
-      "jumlahKeseluruhanPengunjungLokasiPentadbir"
-    )
-  ) {
-    el(
-      "jumlahKeseluruhanPengunjungLokasiPentadbir"
-    ).textContent =
-      jumlahKeseluruhan.toLocaleString(
-        "ms-MY"
-      );
-  }
-
-  kemusnahkanCartaPentadbir(
-    cartaPengunjungLokasiPentadbir
-  );
-
-  cartaPengunjungLokasiPentadbir =
-    new Chart(
-      kanvas,
-      {
-        type: "bar",
-
-        data: {
-          labels,
-
-          datasets: [
-            {
-              label:
-                "Jumlah Pengunjung Mengikut Lokasi",
-
-              data: nilai,
-
-              borderWidth: 2,
-
-              borderRadius: 6,
-
-              borderSkipped: false
-            }
-          ]
-        },
-
-        options: {
-          ...pilihanCartaPentadbir(
-            "Jumlah Pengunjung"
-          ),
-
-          indexAxis: "y",
-
-          maintainAspectRatio: false,
-
-          scales: {
-            x: {
-              beginAtZero: true,
-              ticks: {
-                color: "#d8d8d8",
-                precision: 0
-              },
-              grid: {
-                color:
-                  "rgba(255,255,255,.08)"
-              },
-              title: {
-                display: true,
-                text:
-                  "Jumlah Pengunjung",
-                color: "#d8d8d8"
-              }
-            },
-
-            y: {
-              ticks: {
-                color: "#ffffff",
-                font: {
-                  weight: "700"
-                }
-              },
-              grid: {
-                color:
-                  "rgba(255,255,255,.05)"
-              }
-            }
-          },
-
-          onClick(event) {
-            const elemen =
-              cartaPengunjungLokasiPentadbir
-                ?.getElementsAtEventForMode(
-                  event,
-                  "nearest",
-                  {
-                    intersect: true
-                  },
-                  true
-                ) || [];
-
-            if (!elemen.length) return;
-
-            const rekod =
-              ringkasan[
-                elemen[0].index
-              ];
-
-            if (!rekod) return;
-
-            pilihLokasiPengunjungPentadbir(
-              rekod.lokasi
-            );
-          },
-
-          onHover(event, elements) {
-            const sasaran =
-              event?.native?.target;
-
-            if (sasaran) {
-              sasaran.style.cursor =
-                elements?.length
-                  ? "pointer"
-                  : "default";
-            }
-          },
-
-          plugins: {
-            ...pilihanCartaPentadbir(
-              "Jumlah Pengunjung"
-            ).plugins,
-
-            legend: {
-              labels: {
-                color: "#ffffff",
-                font: {
-                  weight: "700"
-                }
-              }
-            },
-
-            tooltip: {
-              enabled: true,
-
-              callbacks: {
-                label(context) {
-                  const rekod =
-                    ringkasan[
-                      context.dataIndex
-                    ];
-
-                  return [
-                    `${Number(context.raw || 0).toLocaleString("ms-MY")} pengunjung`,
-                    `${rekod?.bilLaporan || 0} laporan`
-                  ];
-                },
-
-                afterLabel() {
-                  return (
-                    "Klik untuk papar butiran lokasi ini"
-                  );
-                }
-              }
-            }
-          }
-        }
-      }
-    );
-
-  /*
-    Highlight lokasi dipilih pada senarai label
-    melalui tajuk/panel butiran. Chart.js tidak
-    memerlukan perubahan data asal.
-  */
-}
-
-function lokasiLaporanKenderaanPentadbir(item) {
-  const data =
-    dataLaporanCarta(item);
-
-  const petugas =
-    rekodPetugasUntukLaporanKenderaanPentadbir(
-      item
-    );
-
-  return (
-    atas(
-      data.lokasi ??
-      data.tempat_tugas ??
-      item.lokasi ??
-      item.tempat_tugas ??
-      petugas?.tempatTugas
-    ) ||
-    "TIDAK DINYATAKAN"
-  );
-}
-
-function ringkasanKenderaanMengikutLokasiPentadbir() {
-  const kumpulan =
-    new Map();
-
-  senaraiKenderaanCartaPentadbir()
-    .forEach(item => {
-      const lokasi =
-        lokasiLaporanKenderaanPentadbir(
-          item
-        );
-
-      const jumlah =
-        jumlahKeseluruhanKenderaanLaporanPentadbir(
-          item
-        );
-
-      const bas =
-        nilaiKenderaanDaripadaLaporanPentadbir(
-          item,
-          "BAS"
-        );
-
-      const motosikal =
-        nilaiKenderaanDaripadaLaporanPentadbir(
-          item,
-          "MOTOSIKAL"
-        );
-
-      const motokar =
-        nilaiKenderaanDaripadaLaporanPentadbir(
-          item,
-          "MOTOKAR"
-        );
-
-      const sediaAda =
-        kumpulan.get(lokasi) || {
-          lokasi,
-          jumlah: 0,
-          bas: 0,
-          motosikal: 0,
-          motokar: 0,
-          bilLaporan: 0
-        };
-
-      sediaAda.jumlah += jumlah;
-      sediaAda.bas += bas;
-      sediaAda.motosikal += motosikal;
-      sediaAda.motokar += motokar;
-      sediaAda.bilLaporan += 1;
-
-      kumpulan.set(
-        lokasi,
-        sediaAda
-      );
-    });
-
-  return Array
-    .from(
-      kumpulan.values()
-    )
-    .sort(
-      (a, b) =>
-        b.jumlah - a.jumlah ||
-        a.lokasi.localeCompare(
-          b.lokasi,
-          "ms"
-        )
-    );
-}
-
-function paparSemuaLokasiKenderaanPentadbir() {
-  lokasiKenderaanDipilihPentadbir =
-    "SEMUA";
-
-  paparButiranKenderaanPentadbir();
-
-  paparCartaKenderaanLokasiPentadbir();
-}
-
-function pilihLokasiKenderaanPentadbir(lokasi) {
-  lokasiKenderaanDipilihPentadbir =
-    atas(lokasi) ||
-    "SEMUA";
-
-  paparButiranKenderaanPentadbir();
-
-  paparCartaKenderaanLokasiPentadbir();
-}
-
 function paparCartaKenderaanLokasiPentadbir() {
   const kanvas =
     el("canvasCartaKenderaanLokasi");
@@ -9099,6 +9607,173 @@ function paparCartaKenderaanLokasiPentadbir() {
     );
 }
 
+
+
+function paparCartaKenderaanPentadbir() {
+  const kanvas =
+    el("canvasCartaKenderaan");
+
+  if (!kanvas) return;
+
+  try {
+    pastikanChartJsPentadbir();
+  } catch (_) {
+    return;
+  }
+
+  const senarai =
+    senaraiKenderaanCartaPentadbir();
+
+  const labels =
+    senarai.map(item =>
+      formatMasaPendekCartaPentadbir(
+        item.tarikh_masa
+      )
+    );
+
+  let jumlahBas = 0;
+  let jumlahMotokar = 0;
+  let jumlahMotosikal = 0;
+
+  const dataBas = [];
+  const dataMotokar = [];
+  const dataMotosikal = [];
+
+  senarai.forEach(item => {
+    jumlahBas +=
+      nilaiKenderaanDaripadaLaporanPentadbir(
+        item,
+        "BAS"
+      );
+
+    jumlahMotokar +=
+      nilaiKenderaanDaripadaLaporanPentadbir(
+        item,
+        "MOTOKAR"
+      );
+
+    jumlahMotosikal +=
+      nilaiKenderaanDaripadaLaporanPentadbir(
+        item,
+        "MOTOSIKAL"
+      );
+
+    dataBas.push(jumlahBas);
+    dataMotokar.push(jumlahMotokar);
+    dataMotosikal.push(jumlahMotosikal);
+  });
+
+  kemusnahkanCartaPentadbir(
+    cartaKenderaanPentadbir
+  );
+
+  cartaKenderaanPentadbir =
+    new Chart(
+      kanvas,
+      {
+        type: "line",
+
+        data: {
+          labels,
+
+          datasets: [
+            {
+              label: "Bas",
+              data: dataBas,
+              tension: .28,
+              pointRadius: 4,
+              pointHoverRadius: 6,
+              borderWidth: 3,
+              fill: false
+            },
+            {
+              label: "Motokar",
+              data: dataMotokar,
+              tension: .28,
+              pointRadius: 4,
+              pointHoverRadius: 6,
+              borderWidth: 3,
+              fill: false
+            },
+            {
+              label: "Motosikal",
+              data: dataMotosikal,
+              tension: .28,
+              pointRadius: 4,
+              pointHoverRadius: 6,
+              borderWidth: 3,
+              fill: false
+            }
+          ]
+        },
+
+        options: {
+          ...pilihanCartaPentadbir(
+            "Jumlah Kenderaan"
+          ),
+
+          interaction: {
+            mode: "index",
+            intersect: false
+          },
+
+          plugins: {
+            ...pilihanCartaPentadbir(
+              "Jumlah Kenderaan"
+            ).plugins,
+
+            legend: {
+              display: true,
+              labels: {
+                color: "#ffffff",
+                font: {
+                  weight: "700"
+                }
+              }
+            },
+
+            tooltip: {
+              callbacks: {
+                footer(context) {
+                  if (!context?.length) return "";
+
+                  const indeks =
+                    context[0].dataIndex;
+
+                  const bas =
+                    Number(
+                      dataBas[indeks] || 0
+                    );
+
+                  const motokar =
+                    Number(
+                      dataMotokar[indeks] || 0
+                    );
+
+                  const motosikal =
+                    Number(
+                      dataMotosikal[indeks] || 0
+                    );
+
+                  return (
+                    `JUMLAH TERKUMPUL: ` +
+                    `${(bas + motokar + motosikal).toLocaleString("ms-MY")} KENDERAAN`
+                  );
+                }
+              }
+            }
+          }
+        }
+      }
+    );
+
+  paparCartaKenderaanLokasiPentadbir();
+
+  paparButiranKenderaanPentadbir();
+}
+
+
+
 /* ================================================================
    CARTA KEHADIRAN — FUNGSI INTERAKTIF
 ================================================================ */
@@ -9132,7 +9807,7 @@ function labelKategoriKehadiranPentadbir(kategori) {
   const peta = {
     HADIR: "HADIR",
     TIDAK_HADIR: "TIDAK HADIR",
-    SELESAI: "SELESAI TUGAS",
+    SELESAI: "SELESAI",
     MENUNGGU: "MENUNGGU"
   };
 
@@ -9298,7 +9973,7 @@ function paparSenaraiKehadiranPentadbir(kategori) {
               <small>
                 ${
                   kategori === "SELESAI"
-                    ? "Selesai Tugas"
+                    ? "Check-Out"
                     : kategori === "HADIR"
                       ? "Check-In"
                       : "Masa"
@@ -12529,12 +13204,10 @@ function simpanTetapanPetaCartaTempatan(
 }
 
 
-function normalisasiJenisTugasMarkerPentadbir(nilai) {
-  return atas(nilai)
-    .replace(/\s+/g, " ")
-    .trim();
-}
 
+function normalisasiJenisTugasMarkerPentadbir(nilai) {
+  return atas(nilai).replace(/\s+/g, " ").trim();
+}
 
 function jenisTugasMarkerDisokongPentadbir(nilai) {
   const jenis =
@@ -12635,10 +13308,8 @@ function binaPilihanJenisTugasPetaPentadbir() {
       nilaiSemasa &&
       semuaJenis.includes(nilaiSemasa)
     ) {
-      urus.value =
-        nilaiSemasa;
-      jenisTugasMarkerUrusPentadbir =
-        nilaiSemasa;
+      urus.value = nilaiSemasa;
+      jenisTugasMarkerUrusPentadbir = nilaiSemasa;
     } else {
       urus.value = "";
       jenisTugasMarkerUrusPentadbir = "";
@@ -12646,262 +13317,74 @@ function binaPilihanJenisTugasPetaPentadbir() {
   }
 }
 
-
 function padanJenisTugasMarkerPentadbir(nilaiData, pilihan) {
-  const dipilih =
-    normalisasiJenisTugasMarkerPentadbir(
-      pilihan
-    );
-
-  if (
-    !dipilih ||
-    dipilih === "SEMUA"
-  ) {
-    return true;
-  }
-
-  return (
-    normalisasiJenisTugasMarkerPentadbir(
-      nilaiData
-    ) === dipilih
-  );
+  const dipilih = normalisasiJenisTugasMarkerPentadbir(pilihan);
+  if (!dipilih || dipilih === "SEMUA") return true;
+  return normalisasiJenisTugasMarkerPentadbir(nilaiData) === dipilih;
 }
-
 
 function kunciMarkerPetaPentadbir(jenisTugas, lokasi) {
-  return (
-    normalisasiJenisTugasMarkerPentadbir(
-      jenisTugas
-    ) +
-    "|||" +
-    atas(lokasi)
-  );
+  return `${normalisasiJenisTugasMarkerPentadbir(jenisTugas)}|||${atas(lokasi)}`;
 }
-
 
 function pecahKunciMarkerPetaPentadbir(kunci) {
-  const bahagian =
-    teks(kunci).split("|||");
-
-  return {
-    jenisTugas:
-      bahagian[0] ||
-      "",
-    lokasi:
-      bahagian
-        .slice(1)
-        .join("|||") ||
-      ""
-  };
+  const bahagian = teks(kunci).split("|||");
+  return { jenisTugas: bahagian[0] || "", lokasi: bahagian.slice(1).join("|||") || "" };
 }
-
 
 function jenisTugasPetaSemasaPentadbir() {
-  return (
-    normalisasiJenisTugasMarkerPentadbir(
-      el("penapisJenisTugasPetaPentadbir")?.value ||
-      jenisTugasPetaDipilihPentadbir ||
-      "SEMUA"
-    ) ||
+  return normalisasiJenisTugasMarkerPentadbir(
+    el("penapisJenisTugasPetaPentadbir")?.value ||
+    jenisTugasPetaDipilihPentadbir ||
     "SEMUA"
-  );
+  ) || "SEMUA";
 }
 
-
 function tukarJenisTugasPetaPentadbir(nilai) {
-  jenisTugasPetaDipilihPentadbir =
-    normalisasiJenisTugasMarkerPentadbir(
-      nilai ||
-      "SEMUA"
-    ) ||
-    "SEMUA";
-
+  jenisTugasPetaDipilihPentadbir = normalisasiJenisTugasMarkerPentadbir(nilai || "SEMUA") || "SEMUA";
   lokasiPetaDipilihPentadbir = "";
   tabPetugasLokasiAktif = "BERTUGAS";
-
-  const kosong =
-    el("panelLokasiPetaPentadbir")
-      ?.querySelector(
-        ".admin-map-location-empty"
-      );
-
-  if (kosong) {
-    kosong.style.display = "";
-  }
-
-  const kandungan =
-    el("kandunganLokasiPetaPentadbir");
-
-  if (kandungan) {
-    kandungan.hidden = true;
-    kandungan.setAttribute(
-      "hidden",
-      ""
-    );
-  }
-
+  const kosong = el("panelLokasiPetaPentadbir")?.querySelector(".admin-map-location-empty");
+  if (kosong) kosong.style.display = "";
+  const kandungan = el("kandunganLokasiPetaPentadbir");
+  if (kandungan) { kandungan.hidden = true; kandungan.setAttribute("hidden", ""); }
   paparMarkerPetaPentadbir();
 }
 
-
 function tukarJenisTugasUrusMarkerPentadbir(nilai) {
-  jenisTugasMarkerUrusPentadbir =
-    normalisasiJenisTugasMarkerPentadbir(
-      nilai
-    );
-
+  jenisTugasMarkerUrusPentadbir = normalisasiJenisTugasMarkerPentadbir(nilai);
   binaPilihanLokasiMarkerPentadbir();
   paparMarkerUrusPetaPentadbir();
-
-  if (
-    el("lokasiMarkerDipilihPentadbir")
-  ) {
-    el(
-      "lokasiMarkerDipilihPentadbir"
-    ).textContent =
-      "BELUM DIPILIH";
-  }
+  if (el("lokasiMarkerDipilihPentadbir")) el("lokasiMarkerDipilihPentadbir").textContent = "BELUM DIPILIH";
 }
 
-
-function kombinasiMarkerPetaPentadbir(
-  jenisPilihan =
-    jenisTugasPetaSemasaPentadbir()
-) {
-  const pilihan =
-    normalisasiJenisTugasMarkerPentadbir(
-      jenisPilihan ||
-      "SEMUA"
-    );
-
-  const pasangan =
-    new Map();
-
+function kombinasiMarkerPetaPentadbir(jenisPilihan = jenisTugasPetaSemasaPentadbir()) {
+  const pilihan = normalisasiJenisTugasMarkerPentadbir(jenisPilihan || "SEMUA");
+  const pasangan = new Map();
   dataDashboard.forEach(item => {
-    const jenis =
-      normalisasiJenisTugasMarkerPentadbir(
-        item.jenisTugas
-      );
-
-    const lokasi =
-      teks(
-        item.tempatTugas
-      );
-
-    if (
-      !jenisTugasMarkerDisokongPentadbir(
-        jenis
-      ) ||
-      !lokasi ||
-      lokasi === "-"
-    ) {
-      return;
-    }
-
-    if (
-      pilihan !== "SEMUA" &&
-      jenis !== pilihan
-    ) {
-      return;
-    }
-
-    const kunci =
-      kunciMarkerPetaPentadbir(
-        jenis,
-        lokasi
-      );
-
-    if (!pasangan.has(kunci)) {
-      pasangan.set(
-        kunci,
-        {
-          kunci,
-          jenisTugas: jenis,
-          lokasi
-        }
-      );
-    }
+    const jenis = normalisasiJenisTugasMarkerPentadbir(item.jenisTugas);
+    const lokasi = teks(item.tempatTugas);
+    if (!jenisTugasMarkerDisokongPentadbir(jenis) || !lokasi || lokasi === "-") return;
+    if (pilihan !== "SEMUA" && jenis !== pilihan) return;
+    const kunci = kunciMarkerPetaPentadbir(jenis,lokasi);
+    if (!pasangan.has(kunci)) pasangan.set(kunci,{kunci,jenisTugas:jenis,lokasi});
   });
-
-  return [
-    ...pasangan.values()
-  ].sort(
-    (a, b) =>
-      a.jenisTugas.localeCompare(
-        b.jenisTugas,
-        "ms"
-      ) ||
-      a.lokasi.localeCompare(
-        b.lokasi,
-        "ms"
-      )
-  );
+  return [...pasangan.values()].sort((a,b) => a.jenisTugas.localeCompare(b.jenisTugas,"ms") || a.lokasi.localeCompare(b.lokasi,"ms"));
 }
 
-
-function posisiMarkerJenisLokasiPentadbir(
-  tetapan,
-  jenisTugas,
-  lokasi,
-  index,
-  jumlah
-) {
-  const kunci =
-    kunciMarkerPetaPentadbir(
-      jenisTugas,
-      lokasi
-    );
-
-  return (
-    tetapan.marker?.[kunci] ||
-    tetapan.marker?.[lokasi] ||
-    posisiAutomatikMarker(
-      index,
-      jumlah
-    )
-  );
+function posisiMarkerJenisLokasiPentadbir(tetapan, jenisTugas, lokasi, index, jumlah) {
+  const kunci = kunciMarkerPetaPentadbir(jenisTugas,lokasi);
+  return tetapan.marker?.[kunci] || tetapan.marker?.[lokasi] || posisiAutomatikMarker(index,jumlah);
 }
 
-
-
-function lokasiUnikCartaPentadbir(
-  jenisTugas = "SEMUA"
-) {
-  const pilihan =
-    normalisasiJenisTugasMarkerPentadbir(
-      jenisTugas ||
-      "SEMUA"
-    );
-
-  return [
-    ...new Set(
-      dataDashboard
-        .filter(item =>
-          pilihan === "SEMUA" ||
-          padanJenisTugasMarkerPentadbir(
-            item.jenisTugas,
-            pilihan
-          )
-        )
-        .map(item =>
-          teks(
-            item.tempatTugas
-          )
-        )
-        .filter(item =>
-          item &&
-          item !== "-"
-        )
-    )
-  ].sort(
-    (a, b) =>
-      a.localeCompare(
-        b,
-        "ms"
-      )
-  );
+function lokasiUnikCartaPentadbir(jenisTugas = "SEMUA") {
+  const pilihan = normalisasiJenisTugasMarkerPentadbir(jenisTugas || "SEMUA");
+  return [...new Set(dataDashboard
+    .filter(item => pilihan === "SEMUA" || padanJenisTugasMarkerPentadbir(item.jenisTugas,pilihan))
+    .map(item => teks(item.tempatTugas))
+    .filter(item => item && item !== "-"))]
+    .sort((a,b) => a.localeCompare(b,"ms"));
 }
-
 
 function posisiAutomatikMarker(
   index,
@@ -13019,60 +13502,32 @@ function toggleMarkerPetaPentadbir() {
 
 
 function muatPetaCartaPentadbir() {
-  const imej =
-    el("imejPetaCartaPentadbir");
+  const imej = el("imejPetaCartaPentadbir");
+  if (imej) imej.src = URL_PETA_ADMIN_MOTOGP;
+  const imejUrus = el("imejUrusPetaPentadbir");
+  if (imejUrus) { imejUrus.src = URL_PETA_ADMIN_MOTOGP; delete imejUrus.dataset.imejBaharu; }
 
-  if (imej) {
-    imej.src = URL_PETA_ADMIN_MOTOGP;
-  }
-
-  const imejUrus =
-    el("imejUrusPetaPentadbir");
-
-  if (imejUrus) {
-    imejUrus.src = URL_PETA_ADMIN_MOTOGP;
-    delete imejUrus.dataset.imejBaharu;
-  }
-
+  /*
+    Senarai Jenis Tugas marker dijana automatik daripada
+    semua Jenis Tugas yang wujud dalam dataDashboard.
+  */
   binaPilihanJenisTugasPetaPentadbir();
+
   binaPilihanLokasiMarkerPentadbir();
   paparMarkerPetaPentadbir();
   paparMarkerUrusPetaPentadbir();
   pasangZoomPetaPentadbir();
-
-  setPaparanMarkerPetaPentadbir(
-    markerPetaDipaparkanPentadbir
-  );
+  setPaparanMarkerPetaPentadbir(markerPetaDipaparkanPentadbir);
 }
 
-function dataPetugasLokasiPentadbir(
-  lokasi,
-  jenisTugas =
-    jenisTugasPetaSemasaPentadbir()
-) {
-  const namaLokasi =
-    atas(lokasi);
-
-  const tugas =
-    normalisasiJenisTugasMarkerPentadbir(
-      jenisTugas ||
-      "SEMUA"
-    );
-
+function dataPetugasLokasiPentadbir(lokasi, jenisTugas = jenisTugasPetaSemasaPentadbir()) {
+  const namaLokasi = atas(lokasi);
+  const tugas = normalisasiJenisTugasMarkerPentadbir(jenisTugas || "SEMUA");
   return dataDashboard.filter(item =>
-    atas(
-      item.tempatTugas
-    ) === namaLokasi &&
-    (
-      tugas === "SEMUA" ||
-      padanJenisTugasMarkerPentadbir(
-        item.jenisTugas,
-        tugas
-      )
-    )
+    atas(item.tempatTugas) === namaLokasi &&
+    (tugas === "SEMUA" || padanJenisTugasMarkerPentadbir(item.jenisTugas,tugas))
   );
 }
-
 
 function statusPetugasLokasiPentadbir(
   item
@@ -13092,104 +13547,30 @@ function statusPetugasLokasiPentadbir(
 
 
 function paparMarkerPetaPentadbir() {
-  const lapisan =
-    el("lapisanMarkerPetaPentadbir");
-
+  const lapisan = el("lapisanMarkerPetaPentadbir");
   if (!lapisan) return;
+  const jenisDipilih = jenisTugasPetaSemasaPentadbir();
+  const kombinasi = kombinasiMarkerPetaPentadbir(jenisDipilih);
+  const tetapan = tetapanPetaCartaPentadbir();
 
-  const jenisDipilih =
-    jenisTugasPetaSemasaPentadbir();
-
-  const kombinasi =
-    kombinasiMarkerPetaPentadbir(
-      jenisDipilih
-    );
-
-  const tetapan =
-    tetapanPetaCartaPentadbir();
-
-  lapisan.innerHTML =
-    kombinasi
-      .map(
-        (
-          item,
-          index
-        ) => {
-          const posisi =
-            posisiMarkerJenisLokasiPentadbir(
-              tetapan,
-              item.jenisTugas,
-              item.lokasi,
-              index,
-              kombinasi.length
-            );
-
-          const petugas =
-            dataPetugasLokasiPentadbir(
-              item.lokasi,
-              item.jenisTugas
-            );
-
-          const bertugas =
-            petugas.filter(
-              p =>
-                statusPetugasLokasiPentadbir(
-                  p
-                ) === "BERTUGAS"
-            ).length;
-
-          const status =
-            atas(
-              posisi.status ||
-              "NORMAL"
-            );
-
-          const lokasiJs =
-            item.lokasi
-              .replace(
-                /\\/g,
-                "\\\\"
-              )
-              .replace(
-                /'/g,
-                "\\'"
-              );
-
-          const jenisJs =
-            item.jenisTugas
-              .replace(
-                /\\/g,
-                "\\\\"
-              )
-              .replace(
-                /'/g,
-                "\\'"
-              );
-
-          return `
-            <button
-              class="admin-map-marker admin-map-marker-${escapeHtml(status.toLowerCase())}"
-              type="button"
-              style="left:${Number(posisi.x).toFixed(3)}%;top:${Number(posisi.y).toFixed(3)}%;"
-              onclick="pilihMarkerLokasiPentadbir('${lokasiJs}','${jenisJs}')"
-              title="${escapeHtml(item.jenisTugas)} — ${escapeHtml(item.lokasi)}"
-            >
-              <span class="admin-map-marker-count">
-                ${bertugas}/${petugas.length}
-              </span>
-              <span class="admin-map-marker-label">
-                ${escapeHtml(item.lokasi)}
-              </span>
-              <small class="admin-map-marker-task">
-                ${escapeHtml(item.jenisTugas)}
-              </small>
-            </button>
-          `;
-        }
-      )
-      .join("");
+  lapisan.innerHTML = kombinasi.map((item,index) => {
+    const posisi = posisiMarkerJenisLokasiPentadbir(tetapan,item.jenisTugas,item.lokasi,index,kombinasi.length);
+    const petugas = dataPetugasLokasiPentadbir(item.lokasi,item.jenisTugas);
+    const bertugas = petugas.filter(p => statusPetugasLokasiPentadbir(p) === "BERTUGAS").length;
+    const status = atas(posisi.status || "NORMAL");
+    const lokasiJs = item.lokasi.replace(/\\/g,"\\\\").replace(/'/g,"\\'");
+    const jenisJs = item.jenisTugas.replace(/\\/g,"\\\\").replace(/'/g,"\\'");
+    return `
+      <button class="admin-map-marker admin-map-marker-${escapeHtml(status.toLowerCase())}" type="button"
+        style="left:${Number(posisi.x).toFixed(3)}%;top:${Number(posisi.y).toFixed(3)}%;"
+        onclick="pilihMarkerLokasiPentadbir('${lokasiJs}','${jenisJs}')"
+        title="${escapeHtml(item.jenisTugas)} — ${escapeHtml(item.lokasi)}">
+        <span class="admin-map-marker-count">${bertugas}/${petugas.length}</span>
+        <span class="admin-map-marker-label">${escapeHtml(item.lokasi)}</span>
+        ${jenisDipilih === "SEMUA" ? `<span class="admin-map-marker-task">${escapeHtml(item.jenisTugas)}</span>` : ""}
+      </button>`;
+  }).join("");
 }
-
 
 function pilihMarkerLokasiPentadbir(lokasi, jenisTugas) {
   lokasiPetaDipilihPentadbir = lokasi;
@@ -13302,13 +13683,8 @@ function paparSenaraiPetugasLokasiPentadbir(
 
 
 function binaPilihanLokasiMarkerPentadbir() {
-  const select =
-    el(
-      "pilihanLokasiMarkerPentadbir"
-    );
-
+  const select = el("pilihanLokasiMarkerPentadbir");
   if (!select) return;
-
   const jenis =
     normalisasiJenisTugasMarkerPentadbir(
       el("pilihanJenisTugasMarkerPentadbir")?.value ||
@@ -13323,127 +13699,35 @@ function binaPilihanLokasiMarkerPentadbir() {
 
   const lokasi =
     jenis
-      ? lokasiUnikCartaPentadbir(
-          jenis
-        )
+      ? lokasiUnikCartaPentadbir(jenis)
       : [];
-
-  select.innerHTML =
-    '<option value="">PILIH TEMPAT TUGAS</option>' +
-    lokasi
-      .map(item => `
-        <option value="${escapeHtml(item)}">
-          ${escapeHtml(item)}
-        </option>
-      `)
-      .join("");
-
-  if (
-    lokasi.includes(
-      semasa
-    )
-  ) {
-    select.value =
-      semasa;
-  }
-
-  if (
-    !select.dataset.listenerLokasiMarker
-  ) {
-    select.dataset.listenerLokasiMarker =
-      "1";
-
-    select.addEventListener(
-      "change",
-      () => {
-        const nama =
-          teks(
-            select.value
-          );
-
-        const jenisSemasa =
-          normalisasiJenisTugasMarkerPentadbir(
-            el("pilihanJenisTugasMarkerPentadbir")?.value ||
-            jenisTugasMarkerUrusPentadbir
-          );
-
-        if (
-          el(
-            "lokasiMarkerDipilihPentadbir"
-          )
-        ) {
-          el(
-            "lokasiMarkerDipilihPentadbir"
-          ).textContent =
-            nama
-              ? `${jenisSemasa} — ${nama}`
-              : "BELUM DIPILIH";
-        }
-
-        const tetapan =
-          tetapanPetaCartaPentadbir();
-
-        const kunci =
-          kunciMarkerPetaPentadbir(
-            jenisSemasa,
-            nama
-          );
-
-        const status =
-          atas(
-            tetapan.marker?.[kunci]?.status ||
-            tetapan.marker?.[nama]?.status ||
-            "NORMAL"
-          );
-
-        if (
-          el(
-            "statusMarkerPentadbir"
-          )
-        ) {
-          el(
-            "statusMarkerPentadbir"
-          ).value =
-            status;
-        }
-      }
-    );
+  select.innerHTML = '<option value="">PILIH TEMPAT TUGAS</option>' + lokasi.map(item => `<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`).join("");
+  if (lokasi.includes(semasa)) select.value = semasa;
+  if (!select.dataset.listenerLokasiMarker) {
+    select.dataset.listenerLokasiMarker = "1";
+    select.addEventListener("change",() => {
+      const nama = teks(select.value);
+      const jenisSemasa = normalisasiJenisTugasMarkerPentadbir(el("pilihanJenisTugasMarkerPentadbir")?.value || jenisTugasMarkerUrusPentadbir);
+      if (el("lokasiMarkerDipilihPentadbir")) el("lokasiMarkerDipilihPentadbir").textContent = nama ? `${jenisSemasa} — ${nama}` : "BELUM DIPILIH";
+      const tetapan = tetapanPetaCartaPentadbir();
+      const kunci = kunciMarkerPetaPentadbir(jenisSemasa,nama);
+      const status = atas(tetapan.marker?.[kunci]?.status || tetapan.marker?.[nama]?.status || "NORMAL");
+      if (el("statusMarkerPentadbir")) el("statusMarkerPentadbir").value = status;
+    });
   }
 }
 
-
 function bukaUrusPetaPentadbir() {
-  const modal =
-    el("modalUrusPetaPentadbir");
-
-  if (!modal) {
-    alert(
-      "Modal Urus Peta belum terdapat dalam admin.html."
-    );
-    return;
-  }
-
+  const modal = el("modalUrusPetaPentadbir");
+  if (!modal) { alert("Modal Urus Peta belum terdapat dalam admin.html."); return; }
   binaPilihanJenisTugasPetaPentadbir();
   binaPilihanLokasiMarkerPentadbir();
   muatPetaCartaPentadbir();
-
-  if (el("lokasiMarkerDipilihPentadbir")) {
-    const lokasiSemasa =
-      el("pilihanLokasiMarkerPentadbir")?.value || "";
-
-    el("lokasiMarkerDipilihPentadbir").textContent =
-      lokasiSemasa || "BELUM DIPILIH";
-  }
-
-  modal.hidden = false;
-  modal.removeAttribute("hidden");
-  modal.classList.add("open");
-
-  document.body.classList.add(
-    "modal-open"
-  );
+  const lokasiSemasa = el("pilihanLokasiMarkerPentadbir")?.value || "";
+  if (el("lokasiMarkerDipilihPentadbir")) el("lokasiMarkerDipilihPentadbir").textContent = lokasiSemasa ? `${jenisTugasMarkerUrusPentadbir} — ${lokasiSemasa}` : "BELUM DIPILIH";
+  modal.hidden = false; modal.removeAttribute("hidden"); modal.classList.add("open");
+  document.body.classList.add("modal-open");
 }
-
 
 function tutupUrusPetaPentadbir() {
   const modal =
@@ -13476,376 +13760,107 @@ function pratontonPetaPentadbir(event) {
 
   paparMesej(
     "statusUrusPetaPentadbir",
-    "Peta Admin MotoGP menggunakan images/petaadmin.png dari GitHub. Tukar fail petaadmin.png di GitHub jika mahu menukar gambar.",
+    "Peta Admin kini menggunakan images/petaadmin.png dari GitHub. Tukar fail petaadmin.png di GitHub jika mahu menukar gambar.",
     "warning"
   );
 }
 
 function paparMarkerUrusPetaPentadbir() {
-  const lapisan =
-    el(
-      "lapisanMarkerUrusPetaPentadbir"
-    );
-
+  const lapisan = el("lapisanMarkerUrusPetaPentadbir");
   if (!lapisan) return;
-
-  const jenis =
-    normalisasiJenisTugasMarkerPentadbir(
-      el("pilihanJenisTugasMarkerPentadbir")?.value ||
-      jenisTugasMarkerUrusPentadbir
-    );
-
-  jenisTugasMarkerUrusPentadbir =
-    jenis;
-
-  if (!jenis) {
-    lapisan.innerHTML = "";
-    return;
-  }
-
-  const lokasi =
-    lokasiUnikCartaPentadbir(
-      jenis
-    );
-
-  const tetapan =
-    tetapanPetaCartaPentadbir();
-
-  lapisan.innerHTML =
-    lokasi
-      .map(
-        (
-          nama,
-          index
-        ) => {
-          const posisi =
-            posisiMarkerJenisLokasiPentadbir(
-              tetapan,
-              jenis,
-              nama,
-              index,
-              lokasi.length
-            );
-
-          const lokasiJs =
-            nama
-              .replace(
-                /\\/g,
-                "\\\\"
-              )
-              .replace(
-                /'/g,
-                "\\'"
-              );
-
-          const jenisJs =
-            jenis
-              .replace(
-                /\\/g,
-                "\\\\"
-              )
-              .replace(
-                /'/g,
-                "\\'"
-              );
-
-          return `
-            <button
-              class="admin-map-marker admin-map-marker-manage"
-              type="button"
-              style="left:${Number(posisi.x).toFixed(3)}%;top:${Number(posisi.y).toFixed(3)}%;"
-              onpointerdown="mulaSeretMarkerPetaPentadbir(event,'${jenisJs}','${lokasiJs}')"
-              onclick="pilihLokasiUntukUrusMarkerPentadbir('${lokasiJs}','${jenisJs}')"
-            >
-              <span class="admin-map-marker-label">
-                ${escapeHtml(nama)}
-              </span>
-              <small class="admin-map-marker-task">
-                ${escapeHtml(jenis)}
-              </small>
-            </button>
-          `;
-        }
-      )
-      .join("");
-}
-
-
-function pilihLokasiUrusMarkerPentadbir(lokasi) {
-  const select =
-    el("pilihanLokasiMarkerPentadbir");
-
-  if (select) {
-    select.value = lokasi;
-    select.dispatchEvent(
-      new Event("change")
-    );
+  const jenis = normalisasiJenisTugasMarkerPentadbir(el("pilihanJenisTugasMarkerPentadbir")?.value || jenisTugasMarkerUrusPentadbir);
+  jenisTugasMarkerUrusPentadbir = jenis;
+  const lokasi = lokasiUnikCartaPentadbir(jenis);
+  const tetapan = tetapanPetaCartaPentadbir();
+  lapisan.innerHTML = lokasi.map((nama,index) => {
+    const kunci = kunciMarkerPetaPentadbir(jenis,nama);
+    const posisi = posisiMarkerJenisLokasiPentadbir(tetapan,jenis,nama,index,lokasi.length);
+    const status = atas(posisi.status || "NORMAL");
+    const namaAtribut = escapeHtml(nama);
+    const kunciAtribut = escapeHtml(kunci);
+    const namaJs = nama.replace(/\\/g,"\\\\").replace(/'/g,"\\'");
+    const jenisJs = jenis.replace(/\\/g,"\\\\").replace(/'/g,"\\'");
+    return `<button class="admin-map-marker admin-map-marker-manage admin-map-marker-${escapeHtml(status.toLowerCase())}" type="button"
+      style="left:${Number(posisi.x).toFixed(3)}%;top:${Number(posisi.y).toFixed(3)}%;" data-kunci-marker="${kunciAtribut}" data-lokasi="${namaAtribut}"
+      title="${escapeHtml(jenis)} — ${namaAtribut}" onpointerdown="mulaSeretMarkerPetaPentadbir(event,'${jenisJs}','${namaJs}')"
+      onclick="event.stopPropagation(); pilihLokasiUrusMarkerPentadbir('${namaJs}','${jenisJs}')"><span class="admin-map-marker-label">${namaAtribut}</span></button>`;
+  }).join("");
+  const kanvas = el("kanvasUrusPetaPentadbir");
+  if (kanvas && !kanvas.dataset.listenerMarker) {
+    kanvas.dataset.listenerMarker = "1";
+    kanvas.addEventListener("click",event => { if (!sedangSeretMarkerPetaPentadbir) letakMarkerPetaPentadbir(event); });
   }
 }
 
+function pilihLokasiUrusMarkerPentadbir(lokasi, jenisTugas = jenisTugasMarkerUrusPentadbir) {
+  const jenis = normalisasiJenisTugasMarkerPentadbir(jenisTugas);
+  const jenisSelect = el("pilihanJenisTugasMarkerPentadbir");
+  if (jenisSelect && jenisTugasMarkerDisokongPentadbir(jenis)) { jenisSelect.value = jenis; jenisTugasMarkerUrusPentadbir = jenis; binaPilihanLokasiMarkerPentadbir(); }
+  const select = el("pilihanLokasiMarkerPentadbir");
+  if (select) { select.value = lokasi; select.dispatchEvent(new Event("change")); }
+}
 
 function mulaSeretMarkerPetaPentadbir(event, jenisTugas, lokasi) {
-  event.preventDefault();
-  event.stopPropagation();
-
+  event.preventDefault(); event.stopPropagation();
   sedangSeretMarkerPetaPentadbir = true;
-  lokasiMarkerSeretPentadbir = lokasi;
-  jenisTugasMarkerSeretPentadbir =
-    normalisasiJenisTugasMarkerPentadbir(
-      jenisTugas ||
-      jenisTugasMarkerUrusPentadbir
-    );
-  kanvasMarkerSeretPentadbir =
-    el("kanvasUrusPetaPentadbir");
-
-  pilihLokasiUrusMarkerPentadbir(lokasi);
-
-  document.body.classList.add(
-    "marker-dragging"
-  );
-
-  window.addEventListener(
-    "pointermove",
-    gerakSeretMarkerPetaPentadbir
-  );
-
-  window.addEventListener(
-    "pointerup",
-    tamatSeretMarkerPetaPentadbir,
-    { once: true }
-  );
+  lokasiMarkerSeretPentadbir = kunciMarkerPetaPentadbir(jenisTugas,lokasi);
+  kanvasMarkerSeretPentadbir = el("kanvasUrusPetaPentadbir");
+  pilihLokasiUrusMarkerPentadbir(lokasi,jenisTugas);
+  document.body.classList.add("marker-dragging");
+  window.addEventListener("pointermove",gerakSeretMarkerPetaPentadbir);
+  window.addEventListener("pointerup",tamatSeretMarkerPetaPentadbir,{once:true});
 }
-
 
 function gerakSeretMarkerPetaPentadbir(event) {
-  if (
-    !sedangSeretMarkerPetaPentadbir ||
-    !lokasiMarkerSeretPentadbir ||
-    !kanvasMarkerSeretPentadbir
-  ) {
-    return;
-  }
-
-  const rect =
-    kanvasMarkerSeretPentadbir
-      .getBoundingClientRect();
-
+  if (!sedangSeretMarkerPetaPentadbir || !lokasiMarkerSeretPentadbir || !kanvasMarkerSeretPentadbir) return;
+  const rect = kanvasMarkerSeretPentadbir.getBoundingClientRect();
   if (!rect.width || !rect.height) return;
-
-  const x =
-    ((event.clientX - rect.left) /
-    rect.width) *
-    100;
-
-  const y =
-    ((event.clientY - rect.top) /
-    rect.height) *
-    100;
-
-  const tetapan =
-    tetapanPetaCartaPentadbir();
-
-  const lama =
-    tetapan.marker?.[
-      lokasiMarkerSeretPentadbir
-    ] || {};
-
-  tetapan.marker[
-    lokasiMarkerSeretPentadbir
-  ] = {
-    ...lama,
-    x: Math.max(
-      0,
-      Math.min(100, x)
-    ),
-    y: Math.max(
-      0,
-      Math.min(100, y)
-    ),
-    status: atas(
-      el("statusMarkerPentadbir")?.value ||
-      lama.status ||
-      "NORMAL"
-    )
-  };
-
-  simpanTetapanPetaCartaTempatan(
-    tetapan
-  );
-
-  const marker =
-    el("lapisanMarkerUrusPetaPentadbir")
-      ?.querySelector(
-        `[data-lokasi="${CSS.escape(
-          lokasiMarkerSeretPentadbir
-        )}"]`
-      );
-
-  if (marker) {
-    marker.style.left =
-      `${tetapan.marker[
-        lokasiMarkerSeretPentadbir
-      ].x}%`;
-
-    marker.style.top =
-      `${tetapan.marker[
-        lokasiMarkerSeretPentadbir
-      ].y}%`;
-  }
+  const x = ((event.clientX-rect.left)/rect.width)*100;
+  const y = ((event.clientY-rect.top)/rect.height)*100;
+  const tetapan = tetapanPetaCartaPentadbir();
+  const lama = tetapan.marker?.[lokasiMarkerSeretPentadbir] || {};
+  const pecahan = pecahKunciMarkerPetaPentadbir(lokasiMarkerSeretPentadbir);
+  tetapan.marker[lokasiMarkerSeretPentadbir] = {...lama,jenisTugas:pecahan.jenisTugas,lokasi:pecahan.lokasi,x:Math.max(0,Math.min(100,x)),y:Math.max(0,Math.min(100,y)),status:atas(el("statusMarkerPentadbir")?.value || lama.status || "NORMAL")};
+  simpanTetapanPetaCartaTempatan(tetapan);
+  const marker = el("lapisanMarkerUrusPetaPentadbir")?.querySelector(`[data-kunci-marker="${CSS.escape(lokasiMarkerSeretPentadbir)}"]`);
+  if (marker) { marker.style.left = `${tetapan.marker[lokasiMarkerSeretPentadbir].x}%`; marker.style.top = `${tetapan.marker[lokasiMarkerSeretPentadbir].y}%`; }
 }
-
 
 function tamatSeretMarkerPetaPentadbir() {
-  if (!sedangSeretMarkerPetaPentadbir) {
-    return;
-  }
-
-  window.removeEventListener(
-    "pointermove",
-    gerakSeretMarkerPetaPentadbir
-  );
-
-  document.body.classList.remove(
-    "marker-dragging"
-  );
-
-  const lokasi =
-    lokasiMarkerSeretPentadbir;
-
-  sedangSeretMarkerPetaPentadbir = false;
-  lokasiMarkerSeretPentadbir = "";
-  kanvasMarkerSeretPentadbir = null;
-
+  if (!sedangSeretMarkerPetaPentadbir) return;
+  window.removeEventListener("pointermove",gerakSeretMarkerPetaPentadbir);
+  document.body.classList.remove("marker-dragging");
+  const pecahan = pecahKunciMarkerPetaPentadbir(lokasiMarkerSeretPentadbir);
+  sedangSeretMarkerPetaPentadbir = false; lokasiMarkerSeretPentadbir = ""; kanvasMarkerSeretPentadbir = null;
   paparMarkerPetaPentadbir();
-
-  paparMesej(
-    "statusUrusPetaPentadbir",
-    `Marker ${escapeHtml(lokasi)} telah dipindahkan. Tekan SIMPAN MARKER.`,
-    "success"
-  );
+  paparMesej("statusUrusPetaPentadbir",`Marker ${escapeHtml(pecahan.jenisTugas)} — ${escapeHtml(pecahan.lokasi)} telah dipindahkan. Tekan SIMPAN MARKER.`,"success");
 }
 
-
-function letakMarkerPetaPentadbir(
-  event
-) {
-  const lokasi =
-    el(
-      "pilihanLokasiMarkerPentadbir"
-    )?.value;
-
-  if (!lokasi) {
-    paparMesej(
-      "statusUrusPetaPentadbir",
-      "Pilih Tempat Tugas dahulu.",
-      "warning"
-    );
-    return;
-  }
-
-  const kanvas =
-    el("kanvasUrusPetaPentadbir");
-
-  if (!kanvas) return;
-
-  const rect =
-    kanvas.getBoundingClientRect();
-
-  const x =
-    ((event.clientX - rect.left) /
-    rect.width) *
-    100;
-
-  const y =
-    ((event.clientY - rect.top) /
-    rect.height) *
-    100;
-
-  const tetapan =
-    tetapanPetaCartaPentadbir();
-
-  tetapan.marker[kunciMarkerPetaPentadbir(jenisTugasMarkerUrusPentadbir, lokasi)] = {
-    x:
-      Math.max(
-        0,
-        Math.min(100, x)
-      ),
-
-    y:
-      Math.max(
-        0,
-        Math.min(100, y)
-      ),
-
-    status:
-      atas(
-        el(
-          "statusMarkerPentadbir"
-        )?.value ||
-        tetapan.marker?.[lokasi]?.status ||
-        "NORMAL"
-      )
-  };
-
-  simpanTetapanPetaCartaTempatan(
-    tetapan
-  );
-
-  pilihLokasiUrusMarkerPentadbir(lokasi);
-  paparMarkerUrusPetaPentadbir();
-  paparMarkerPetaPentadbir();
-
-  paparMesej(
-    "statusUrusPetaPentadbir",
-    `Marker ${escapeHtml(lokasi)} telah diletakkan. Anda boleh seret marker untuk melaras kedudukan.`,
-    "success"
-  );
+function letakMarkerPetaPentadbir(event) {
+  const jenisTugas = normalisasiJenisTugasMarkerPentadbir(el("pilihanJenisTugasMarkerPentadbir")?.value || jenisTugasMarkerUrusPentadbir);
+  const lokasi = el("pilihanLokasiMarkerPentadbir")?.value;
+  if (!jenisTugas || !jenisTugasMarkerDisokongPentadbir(jenisTugas)) { paparMesej("statusUrusPetaPentadbir","Pilih Jenis Tugas dahulu.","warning"); return; }
+  if (!lokasi) { paparMesej("statusUrusPetaPentadbir","Pilih Tempat Tugas dahulu.","warning"); return; }
+  const kanvas = el("kanvasUrusPetaPentadbir"); if (!kanvas) return;
+  const rect = kanvas.getBoundingClientRect();
+  const x = ((event.clientX-rect.left)/rect.width)*100; const y = ((event.clientY-rect.top)/rect.height)*100;
+  const tetapan = tetapanPetaCartaPentadbir(); const kunci = kunciMarkerPetaPentadbir(jenisTugas,lokasi);
+  tetapan.marker[kunci] = {jenisTugas,lokasi,x:Math.max(0,Math.min(100,x)),y:Math.max(0,Math.min(100,y)),status:atas(el("statusMarkerPentadbir")?.value || tetapan.marker?.[kunci]?.status || tetapan.marker?.[lokasi]?.status || "NORMAL")};
+  simpanTetapanPetaCartaTempatan(tetapan);
+  pilihLokasiUrusMarkerPentadbir(lokasi,jenisTugas); paparMarkerUrusPetaPentadbir(); paparMarkerPetaPentadbir();
+  paparMesej("statusUrusPetaPentadbir",`Marker ${escapeHtml(jenisTugas)} — ${escapeHtml(lokasi)} telah diletakkan. Anda boleh seret marker untuk melaras kedudukan.`,"success");
 }
-
 
 function simpanTetapanPetaPentadbir() {
-  const tetapan =
-    tetapanPetaCartaPentadbir();
-
-  const lokasi =
-    el(
-      "pilihanLokasiMarkerPentadbir"
-    )?.value;
-
-  if (
-    lokasi &&
-    tetapan.marker?.[lokasi]
-  ) {
-    tetapan.marker[lokasi].status =
-      atas(
-        el(
-          "statusMarkerPentadbir"
-        )?.value ||
-        "NORMAL"
-      );
-  }
-
-  try {
-    simpanTetapanPetaCartaTempatan({
-      imej: URL_PETA_ADMIN_MOTOGP,
-      marker: tetapan.marker || {}
-    });
-  } catch (error) {
-    paparMesej(
-      "statusUrusPetaPentadbir",
-      "Tetapan marker gagal disimpan.",
-      "error"
-    );
-    return;
-  }
-
+  const tetapan = tetapanPetaCartaPentadbir();
+  const jenisTugas = normalisasiJenisTugasMarkerPentadbir(el("pilihanJenisTugasMarkerPentadbir")?.value || jenisTugasMarkerUrusPentadbir);
+  const lokasi = el("pilihanLokasiMarkerPentadbir")?.value;
+  const kunci = kunciMarkerPetaPentadbir(jenisTugas,lokasi);
+  if (jenisTugas && lokasi && tetapan.marker?.[kunci]) { tetapan.marker[kunci].status = atas(el("statusMarkerPentadbir")?.value || "NORMAL"); tetapan.marker[kunci].jenisTugas = jenisTugas; tetapan.marker[kunci].lokasi = lokasi; }
+  try { simpanTetapanPetaCartaTempatan({imej:URL_PETA_ADMIN_MOTOGP,marker:tetapan.marker || {}}); }
+  catch (error) { paparMesej("statusUrusPetaPentadbir","Tetapan marker gagal disimpan.","error"); return; }
   muatPetaCartaPentadbir();
-
-  paparMesej(
-    "statusUrusPetaPentadbir",
-    "Marker berjaya disimpan. Peta MotoGP menggunakan petaadmin.png dari GitHub.",
-    "success"
-  );
+  paparMesej("statusUrusPetaPentadbir","Marker berjaya disimpan mengikut Jenis Tugas dan Tempat Tugas.","success");
 }
 
 function pasangZoomPetaPentadbir() {
