@@ -146,6 +146,14 @@
   </a>
 
   <button
+    class="header-action-button"
+    type="button"
+    onclick="bukaTukarPasswordAdmin()"
+  >
+    TUKAR PASSWORD
+  </button>
+
+  <button
     class="logout"
     type="button"
     onclick="logout()"
@@ -754,7 +762,6 @@
             <p class="muted"></p>
           </div>
 
-
           <div class="admin-operation-map-layout">
             <div class="admin-operation-map-stage">
               <div class="admin-operation-map-viewport" id="viewportPetaCartaPentadbir">
@@ -762,7 +769,7 @@
                   <img
                     id="imejPetaCartaPentadbir"
                     class="admin-operation-map-image"
-                    src="images/petaadmin.png?v=20260821-1640"
+                    src="images/petaadmin.png?v=20260821-1334"
                     alt="Peta lokasi penugasan operasi"
                     draggable="false"
                   >
@@ -1679,7 +1686,7 @@
         </div>
 
         <div class="auto-assignment-info">
-          <strong>ACARA:</strong> MOTOGP
+          <strong>ACARA:</strong> FORMULA 1
           <span>•</span>
           <span>Kaedah: Rotation Terkawal</span>
           <span>•</span>
@@ -1718,7 +1725,7 @@
 
           <div class="form-group">
             <label>Acara</label>
-            <input type="text" value="MOTOGP" readonly>
+            <input type="text" value="FORMULA 1" readonly>
           </div>
 
           <div class="form-group">
@@ -1837,7 +1844,6 @@
                 <th>Latitude</th>
                 <th>Longitude</th>
                 <th>Radius (m)</th>
-                <!-- Kolum HARI dijana automatik mengikut julat kalendar -->
                 <th id="autoHeaderTindakan">Tindakan</th>
               </tr>
             </thead>
@@ -1892,6 +1898,49 @@
 
         <div class="auto-assignment-summary" id="ringkasanAuto">
           Belum ada jadual dijana.
+        </div>
+
+        <!-- CETAK JADUAL PENUGASAN -->
+        <div class="auto-print-toolbar" style="
+          display:grid;
+          grid-template-columns:repeat(3,minmax(180px,1fr)) auto;
+          gap:12px;
+          align-items:end;
+          margin:16px 0;
+          padding:14px;
+          border:1px solid #333;
+          border-radius:12px;
+          background:#151515;
+        ">
+          <div>
+            <label for="cetakTarikhAuto">Tarikh</label>
+            <select id="cetakTarikhAuto" onchange="kemasKiniPilihanCetakAuto()" style="width:100%">
+              <option value="">PILIH TARIKH</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="cetakJenisTugasAuto">Jenis Tugas</label>
+            <select id="cetakJenisTugasAuto" onchange="kemasKiniPilihanTempatCetakAuto()" style="width:100%">
+              <option value="">SEMUA JENIS TUGAS</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="cetakTempatTugasAuto">Tempat Tugas</label>
+            <select id="cetakTempatTugasAuto" style="width:100%">
+              <option value="">SEMUA TEMPAT TUGAS</option>
+            </select>
+          </div>
+
+          <button
+            class="gold"
+            id="btnCetakJadualAuto"
+            type="button"
+            onclick="cetakJadualPenugasanAuto()"
+           disabled>
+            CETAK JADUAL
+          </button>
         </div>
 
         <div class="auto-assignment-table-wrap auto-preview-wrap">
@@ -2099,18 +2148,18 @@
       </div>
 
       <div class="admin-marker-selected">
-        <span>LOKASI DIPILIH</span>
+        <span>MARKER DIPILIH</span>
         <strong id="lokasiMarkerDipilihPentadbir">BELUM DIPILIH</strong>
       </div>
 
       <div class="admin-map-manage-preview">
         <div class="admin-map-manage-canvas" id="kanvasUrusPetaPentadbir">
-          <img id="imejUrusPetaPentadbir" src="images/petaadmin.png?v=20260821-1640" alt="Pratonton peta operasi" draggable="false">
+          <img id="imejUrusPetaPentadbir" src="images/petaadmin.png?v=20260821-1334" alt="Pratonton peta operasi" draggable="false">
           <div id="lapisanMarkerUrusPetaPentadbir" class="admin-map-marker-layer"></div>
         </div>
       </div>
 
-      <p class="muted">Pilih tempat tugas, kemudian klik pada gambar peta untuk meletakkan atau memindahkan marker.</p>
+      <p class="muted">Pilih jenis tugas dan tempat tugas, kemudian klik pada gambar peta untuk meletakkan atau memindahkan marker.</p>
 
       <div class="status-box" id="statusUrusPetaPentadbir" role="status" aria-live="polite"></div>
 
@@ -2631,34 +2680,25 @@
   <!-- =====================================================
        SUPABASE DAN JAVASCRIPT
   ====================================================== -->
-  
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/api-config.js?v=20260722-0215"></script>
+<script src="js/supabase-client.js?v=20260722-0215"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="js/admin.js?v=20260917-motogp-sama-f1-007"></script>
+
+
+
   <!-- =====================================================
-       TAMBAH PENGUNJUNG MANUAL
+       TAMBAH PENGUNJUNG MANUAL — CARTA
   ====================================================== -->
-  <section
-    class="modal"
-    id="modalPengunjungManualPentadbir"
-    role="dialog"
-    aria-modal="true"
-    aria-hidden="true"
-    onclick="if(event.target===this)tutupModalPengunjungManualPentadbir()"
-  >
-    <div class="modal-card">
+  <section class="modal" id="modalPengunjungManualPentadbir" hidden>
+    <div class="modal-card admin-manual-chart-modal">
       <div class="section-heading">
         <div>
           <h2>Tambah Pengunjung</h2>
-          <p class="muted">
-            Rekod ini disimpan ke Supabase dan digabungkan dengan laporan petugas untuk carta.
-          </p>
+          <p class="muted">Masukkan rekod pengunjung secara manual untuk Carta Pengunjung.</p>
         </div>
-
-        <button
-          class="gray compact-button"
-          type="button"
-          onclick="tutupModalPengunjungManualPentadbir()"
-        >
-          TUTUP
-        </button>
+        <button class="gray compact-button" type="button" onclick="tutupModalPengunjungManualPentadbir()">TUTUP</button>
       </div>
 
       <div class="form-grid">
@@ -2666,97 +2706,43 @@
           <label for="tarikhPengunjungManualPentadbir">Tarikh *</label>
           <input id="tarikhPengunjungManualPentadbir" type="date">
         </div>
-
         <div class="form-group">
           <label for="masaPengunjungManualPentadbir">Masa *</label>
           <input id="masaPengunjungManualPentadbir" type="time">
         </div>
-
         <div class="form-group form-group-wide">
           <label for="lokasiPengunjungManualPentadbir">Lokasi</label>
-          <input
-            id="lokasiPengunjungManualPentadbir"
-            type="text"
-            placeholder="Contoh: MAIN GRANDSTAND"
-          >
+          <input id="lokasiPengunjungManualPentadbir" type="text" placeholder="Contoh: MAIN GRANDSTAND">
         </div>
-
         <div class="form-group form-group-wide">
           <label for="jumlahPengunjungManualPentadbir">Jumlah Pengunjung *</label>
-          <input
-            id="jumlahPengunjungManualPentadbir"
-            type="number"
-            min="0"
-            step="1"
-            value="0"
-          >
+          <input id="jumlahPengunjungManualPentadbir" type="number" min="0" step="1" value="0">
         </div>
-
         <div class="form-group form-group-wide">
           <label for="catatanPengunjungManualPentadbir">Catatan</label>
-          <textarea
-            id="catatanPengunjungManualPentadbir"
-            placeholder="Catatan tambahan jika ada..."
-          ></textarea>
+          <textarea id="catatanPengunjungManualPentadbir" placeholder="Catatan tambahan jika ada..."></textarea>
         </div>
       </div>
 
-      <div
-        class="status-box"
-        id="statusPengunjungManualPentadbir"
-        role="status"
-        aria-live="polite"
-      ></div>
-
+      <div class="status-box" id="statusPengunjungManualPentadbir" role="status" aria-live="polite"></div>
       <div class="modal-actions">
-        <button
-          class="green-button"
-          id="btnSimpanPengunjungManualPentadbir"
-          type="button"
-          onclick="simpanPengunjungManualPentadbir()"
-        >
-          SIMPAN PENGUNJUNG
-        </button>
-
-        <button
-          class="gray"
-          type="button"
-          onclick="tutupModalPengunjungManualPentadbir()"
-        >
-          BATAL
-        </button>
+        <button class="green-button" type="button" id="btnSimpanPengunjungManualPentadbir" onclick="simpanPengunjungManualPentadbir()">SIMPAN PENGUNJUNG</button>
+        <button class="gray" type="button" onclick="tutupModalPengunjungManualPentadbir()">BATAL</button>
       </div>
     </div>
   </section>
 
-
   <!-- =====================================================
-       TAMBAH KENDERAAN PENGUNJUNG MANUAL
+       TAMBAH KENDERAAN MANUAL — CARTA
   ====================================================== -->
-  <section
-    class="modal"
-    id="modalKenderaanManualPentadbir"
-    role="dialog"
-    aria-modal="true"
-    aria-hidden="true"
-    onclick="if(event.target===this)tutupModalKenderaanManualPentadbir()"
-  >
-    <div class="modal-card">
+  <section class="modal" id="modalKenderaanManualPentadbir" hidden>
+    <div class="modal-card admin-manual-chart-modal">
       <div class="section-heading">
         <div>
           <h2>Tambah Kenderaan Pengunjung</h2>
-          <p class="muted">
-            Rekod ini disimpan ke Supabase dan digabungkan dengan laporan petugas untuk carta.
-          </p>
+          <p class="muted">Masukkan jumlah Bas, Motosikal dan Motokar secara manual.</p>
         </div>
-
-        <button
-          class="gray compact-button"
-          type="button"
-          onclick="tutupModalKenderaanManualPentadbir()"
-        >
-          TUTUP
-        </button>
+        <button class="gray compact-button" type="button" onclick="tutupModalKenderaanManualPentadbir()">TUTUP</button>
       </div>
 
       <div class="form-grid">
@@ -2764,78 +2750,74 @@
           <label for="tarikhKenderaanManualPentadbir">Tarikh *</label>
           <input id="tarikhKenderaanManualPentadbir" type="date">
         </div>
-
         <div class="form-group">
           <label for="masaKenderaanManualPentadbir">Masa *</label>
           <input id="masaKenderaanManualPentadbir" type="time">
         </div>
-
         <div class="form-group form-group-wide">
           <label for="lokasiKenderaanManualPentadbir">Lokasi</label>
-          <input
-            id="lokasiKenderaanManualPentadbir"
-            type="text"
-            placeholder="Contoh: PARKIR / MAIN GRANDSTAND"
-          >
+          <input id="lokasiKenderaanManualPentadbir" type="text" placeholder="Contoh: MAIN GRANDSTAND">
         </div>
-
         <div class="form-group">
           <label for="basKenderaanManualPentadbir">Bas</label>
           <input id="basKenderaanManualPentadbir" type="number" min="0" step="1" value="0">
         </div>
-
         <div class="form-group">
           <label for="motosikalKenderaanManualPentadbir">Motosikal</label>
           <input id="motosikalKenderaanManualPentadbir" type="number" min="0" step="1" value="0">
         </div>
-
-        <div class="form-group">
+        <div class="form-group form-group-wide">
           <label for="motokarKenderaanManualPentadbir">Motokar</label>
           <input id="motokarKenderaanManualPentadbir" type="number" min="0" step="1" value="0">
         </div>
-
         <div class="form-group form-group-wide">
           <label for="catatanKenderaanManualPentadbir">Catatan</label>
-          <textarea
-            id="catatanKenderaanManualPentadbir"
-            placeholder="Catatan tambahan jika ada..."
-          ></textarea>
+          <textarea id="catatanKenderaanManualPentadbir" placeholder="Catatan tambahan jika ada..."></textarea>
         </div>
       </div>
 
-      <div
-        class="status-box"
-        id="statusKenderaanManualPentadbir"
-        role="status"
-        aria-live="polite"
-      ></div>
-
+      <div class="status-box" id="statusKenderaanManualPentadbir" role="status" aria-live="polite"></div>
       <div class="modal-actions">
-        <button
-          class="green-button"
-          id="btnSimpanKenderaanManualPentadbir"
-          type="button"
-          onclick="simpanKenderaanManualPentadbir()"
-        >
-          SIMPAN KENDERAAN
-        </button>
-
-        <button
-          class="gray"
-          type="button"
-          onclick="tutupModalKenderaanManualPentadbir()"
-        >
-          BATAL
-        </button>
+        <button class="green-button" type="button" id="btnSimpanKenderaanManualPentadbir" onclick="simpanKenderaanManualPentadbir()">SIMPAN KENDERAAN</button>
+        <button class="gray" type="button" onclick="tutupModalKenderaanManualPentadbir()">BATAL</button>
       </div>
     </div>
   </section>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/api-config.js?v=20260722-0215"></script>
-<script src="js/supabase-client.js?v=20260722-0215"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-<script src="js/admin.js?v=20260910-1925-kalendar-dinamik"></script>
+  <!-- =====================================================
+       TUKAR PASSWORD PENTADBIR
+  ====================================================== -->
+  <div id="modalTukarPasswordAdmin" class="modal" hidden style="display:none;">
+    <div class="modal-content card" style="max-width:520px;margin:5vh auto;">
+      <div class="section-heading">
+        <div>
+          <h2>TUKAR PASSWORD PENTADBIR</h2>
+          <p class="muted">Sahkan password semasa sebelum menetapkan password baharu.</p>
+        </div>
+      </div>
+
+      <label for="passwordSemasaAdmin">Password Semasa</label>
+      <input id="passwordSemasaAdmin" type="password" autocomplete="current-password"
+             placeholder="Masukkan password semasa">
+
+      <label for="passwordBaharuAdmin" style="margin-top:12px;">Password Baharu</label>
+      <input id="passwordBaharuAdmin" type="password" autocomplete="new-password"
+             placeholder="Masukkan password baharu">
+
+      <label for="sahkanPasswordBaharuAdmin" style="margin-top:12px;">Sahkan Password Baharu</label>
+      <input id="sahkanPasswordBaharuAdmin" type="password" autocomplete="new-password"
+             placeholder="Masukkan semula password baharu">
+
+      <div id="statusTukarPasswordAdmin" class="status-box" role="status"
+           aria-live="polite" style="margin-top:14px;"></div>
+
+      <div class="actions" style="margin-top:16px;">
+        <button id="btnSimpanPasswordAdmin" class="green-button" type="button"
+                onclick="simpanPasswordAdmin()">SIMPAN PASSWORD</button>
+        <button class="gray" type="button" onclick="tutupTukarPasswordAdmin()">BATAL</button>
+      </div>
+    </div>
+  </div>
 
 </body>
 </html>
